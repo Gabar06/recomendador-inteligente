@@ -1,0 +1,29 @@
+# Archivos específicos de Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+
+# Archivos específicos de tu entorno
+virtualenv/
+venv/
+.env
+
+# Directorio de medios generados por usuarios
+media/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+
+# Mac OS
+.DS_Store
+
+# Archivo con información sensible
+settings_secret.py

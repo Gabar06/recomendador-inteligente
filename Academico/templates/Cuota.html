@@ -1,0 +1,64 @@
+{% extends "./base.html" %}
+
+{% block title %} Cuota {% endblock %}
+
+{% block body %}
+<div class="row" style="margin-top:30px">
+    <div class="col-sm-12 col-md-6">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4>Listado de Cuota
+                <a class="btn btn-success btnNuevo" href="CuoNuevo" >Nuevo</a>
+                </h4>
+            </div>
+            </br>
+            <div class="panel-heading">
+                <form action="/CuoBuscar" method="POST">{% csrf_token %}
+                <table>
+                    <tr>
+                        <td>Mes:
+                            <input type="text" id="txtMes" name="txtMes"  >
+                        </td>
+                        <td>
+                            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+                        </td>
+                    </tr>
+                </table>
+                </form>
+            </div>
+            <div class="panel-body">
+                <hr />
+                <div class="table-responsive">
+                    <table class="table table-striped" border="1">
+                        <thead>
+                            <tr>
+                                <!--<th>Fila</th>-->
+                                <th>Id</th>
+                                <th>Mes</th>
+                                <th>Monto</th>
+                                <th colspan="">Opciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            {% for cuo in cuota  %}
+                                <tr>
+                                    <!--<td>{{forloop.counter}}</td>-->
+                                    <td>{{cuo.id}}</td>
+                                    <td>{{cuo.mes}}</td>
+                                    <td>{{cuo.monto}}</td>
+                                    <td>
+                                        <a class="btn btn-warning btn-sm" href="CuoEdicion/{{cuo.id}}">Editar</a>
+                                        <a class="btn btn-danger btn-sm" href="CuoEliminacion/{{cuo.id}}">Borrar</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

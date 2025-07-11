@@ -1,0 +1,38 @@
+{% extends "./base.html" %}
+
+{% block title %} Alumnos {% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-4 "style="margin-top:30px">
+        <h2>Nuevo Alumno</h2>
+        <div class="card">
+            <div class="card-body">
+                <form action="AluRegistrar" method="POST">{% csrf_token %}
+                    <div class="form-group">
+                        Nombre:
+                        <input type="text" id="txtNombre" name="txtNombre" class="form-control" placeholder="Nombre"
+                            maxlength="50" required></br>
+                    </div>
+                    <div class="form-group">
+                        Curso:
+                        <input type="text" id="txtCurso" name="txtCurso" class="form-control" placeholder="Curso"
+                            maxlength="50" required></br>
+                    </div>
+                    <div class="form-group">
+                        Sexo:
+                        <input type="text" id="txtSexo" name="txtSexo" class="form-control" placeholder="Sexo"
+                            maxlength="50" required></br>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-block text-white" >Agregar</button>
+                        <a  class="btn btn-primary " id="cerrar" href="/Alu">Cerrar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        </br
+    </div>
+</div>
+{% endblock %}

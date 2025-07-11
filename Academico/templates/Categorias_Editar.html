@@ -1,0 +1,27 @@
+{% extends "./base.html" %}
+
+{% block title %} Categorias {% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-4"style="margin-top:30px">
+        <h2>Editar Categoria</h2>
+        <div class="card">
+            <div class="card-body">
+                <form action="/CatEditar/{{categorias.id}}" method="POST">{% csrf_token %}
+                    <div class="form-group">
+                        Descripción:
+                        <input type="text" id="txtDescripcion" name="txtDescripcion" value="{{categorias.descripcion}}" class="form-control" placeholder="Descripcion"
+                            maxlength="50" required></br>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-block text-white">Guardar</button>
+                        <a class="btn btn-primary btn-block text-white" href="/Cat">Cerrar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        </br>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,4 @@
+django
+Pillow
+mysqlclient
+language_tool_python

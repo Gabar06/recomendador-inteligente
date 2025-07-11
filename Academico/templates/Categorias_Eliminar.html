@@ -1,0 +1,31 @@
+{% extends "./base.html" %}
+
+{% block title %} Categorias {% endblock %}
+
+{% block body %}
+
+<div class="row" style="margin-top:30px">
+    <div class="col-sm-12">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4>Eliminar Categorias</h4>
+
+            </div>
+            <div class="panel-body">
+                <div class="alert alert-danger">
+                    ¿Desea Eliminar la Categoria?
+                </div>
+                <form action="/CatEliminar/{{categorias.id}}" method="POST">{% csrf_token %}
+                    <label>Descripción:</label>
+                    <input type="text" class="form-control" name="txtDescripcion" value="{{categorias.descripcion}}" /></br>
+                    <button type="submit" class="btn btn-danger btnEliminar">Eliminar</button>
+                    <a class="btn btn-warning" href="/Cat">Volver</a>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

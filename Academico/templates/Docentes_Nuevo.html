@@ -1,0 +1,38 @@
+{% extends "./base.html" %}
+
+{% block title %} Docentes {% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-4 "style="margin-top:30px">
+        <h2>Nuevo Docente</h2>
+        <div class="card">
+            <div class="card-body">
+                <form action="DocRegistrar" method="POST">{% csrf_token %}
+                    <div class="form-group">
+                        Nombre:
+                        <input type="text" id="txtNombre" name="txtNombre" class="form-control" placeholder="Nombre"
+                            maxlength="50" required></br>
+                    </div>
+                    <div class="form-group">
+                        Login:
+                        <input type="text" id="txtLogin" name="txtLogin" class="form-control" placeholder="Login"
+                            maxlength="50" required></br>
+                    </div>
+                    <div class="form-group">
+                        Clave:
+                        <input type="text" id="txtClave" name="txtClave" class="form-control" placeholder="Clave"
+                            maxlength="50" required></br>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-block text-white" >Agregar</button>
+                        <a  class="btn btn-primary " id="cerrar" href="/Doc">Cerrar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        </br
+    </div>
+</div>
+{% endblock %}

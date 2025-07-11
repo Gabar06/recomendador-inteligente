@@ -1,0 +1,66 @@
+{% extends "./base.html" %}
+
+{% block title %} Alumnos {% endblock %}
+
+{% block body %}
+<div class="row" style="margin-top:30px">
+    <div class="col-sm-12 col-md-6">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4>Listado de Alumnos
+                <a class="btn btn-success btnNuevo" href="AluNuevo" >Nuevo</a>
+                </h4>
+                </br>
+            </div>
+            <div class="panel-heading">
+                <form action="/AluBuscar" method="POST">{% csrf_token %}
+                <table>
+                    <tr>
+                        <td>Nombre:
+                            <input type="text" id="txtNombre" name="txtNombre"  >
+                        </td>
+                        <td>
+                            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+                        </td>
+                    </tr>
+                </table>
+                </form>
+            </div>
+            <div class="panel-body">
+                <hr />
+                <div class="table-responsive">
+                    <table class="table table-striped" border="1">
+                        <thead>
+                            <tr>
+                                <!--<th>Fila</th>-->
+                                <th>Id</th>
+                                <th>Nombre</th>
+                                <th>Curso</th>
+                                <th>Sexo</th>
+                                <th colspan="">Opciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            {% for alu in alumnos  %}
+                                <tr>
+                                    <!--<td>{{forloop.counter}}</td>-->
+                                    <td>{{alu.id}}</td>
+                                    <td>{{alu.nombre}}</td>
+                                    <td>{{alu.curso}}</td>
+                                    <td>{{alu.sexo}}</td>
+                                    <td>
+                                        <a class="btn btn-warning btn-sm" href="AluEdicion/{{alu.id}}">Editar</a>
+                                        <a class="btn btn-danger btn-sm" href="AluEliminacion/{{alu.id}}">Borrar</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

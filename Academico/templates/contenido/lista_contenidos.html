@@ -1,0 +1,37 @@
+{% extends "../base.html" %}
+{% load static %}
+
+{% block body %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Contenidos Disponibles</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+  <h2 class="mb-4 text-center">Contenidos Disponibles</h2>
+
+  <div class="row">
+    {% for contenido in contenidos %}
+      <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">{{ contenido.titulo }}</h5>
+            <p class="card-text">{{ contenido.descripcion|truncatechars:100 }}</p>
+            <p class="text-muted">Nivel: {{ contenido.get_nivel_display }}</p>
+            <a href="{% url 'detalle_contenido' contenido.id %}" class="btn btn-primary">Ver más</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-center">No hay contenidos disponibles aún.</p>
+    {% endfor %}
+  </div>
+</div>
+
+</body>
+</html>
+{% endblock %}

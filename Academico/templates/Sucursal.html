@@ -1,0 +1,64 @@
+{% extends "./base.html" %}
+
+{% block title %} Sucursal {% endblock %}
+
+{% block body %}
+<div class="row" style="margin-top:30px">
+    <div class="col-sm-12 col-md-6">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4>Listado de Sucursal
+                <a class="btn btn-success btnNuevo" href="SucNuevo" >Nuevo</a>
+                </h4>
+            </div>
+            </br>
+            <div class="panel-heading">
+                <form action="/SucBuscar" method="POST">{% csrf_token %}
+                <table>
+                    <tr>
+                        <td>Dirección:
+                            <input type="text" id="txtDireccion" name="txtDireccion"  >
+                        </td>
+                        <td>
+                            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+                        </td>
+                    </tr>
+                </table>
+                </form>
+            </div>
+            <div class="panel-body">
+                <hr />
+                <div class="table-responsive">
+                    <table class="table table-striped" border="1">
+                        <thead>
+                            <tr>
+                                <!--<th>Fila</th>-->
+                                <th>Id</th>
+                                <th>Dirección</th>
+                                <th>Nr_Sucursal</th>
+                                <th colspan="">Opciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            {% for suc in sucursal  %}
+                                <tr>
+                                    <!--<td>{{forloop.counter}}</td>-->
+                                    <td>{{suc.id}}</td>
+                                    <td>{{suc.direccion}}</td>
+                                    <td>{{suc.nr_sucursal}}</td>
+                                    <td>
+                                        <a class="btn btn-warning btn-sm" href="SucEdicion/{{suc.id}}">Editar</a>
+                                        <a class="btn btn-danger btn-sm" href="SucEliminacion/{{suc.id}}">Borrar</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

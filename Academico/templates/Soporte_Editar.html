@@ -1,0 +1,32 @@
+{% extends "./base.html" %}
+
+{% block title %} Soporte {% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-4"style="margin-top:30px">
+        <h2>Editar Soporte</h2>
+        <div class="card">
+            <div class="card-body">
+                <form action="/SopEditar/{{soporte.id}}" method="POST">{% csrf_token %}
+                    <div class="form-group">
+                        Mantenimiento:
+                        <input type="text" id="txtMantenimiento" name="txtMantenimiento" value="{{soporte.mantenimiento}}" class="form-control" placeholder="Descripcion"
+                            maxlength="50" required></br>
+                    </div>
+                     <div class="form-group">
+                        Reparación:
+                        <input type="text" id="txtReparacion" name="txtReparacion" value="{{soporte.reparacion}}" class="form-control" placeholder="Reparacion"
+                            maxlength="50" required></br>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-block text-white">Guardar</button>
+                        <a class="btn btn-primary btn-block text-white" href="/Sop">Cerrar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        </br>
+    </div>
+</div>
+{% endblock %}

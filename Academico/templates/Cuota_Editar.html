@@ -1,0 +1,32 @@
+{% extends "./base.html" %}
+
+{% block title %} Cuota {% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-4"style="margin-top:30px">
+        <h2>Editar Cuota</h2>
+        <div class="card">
+            <div class="card-body">
+                <form action="/CuoEditar/{{cuota.id}}" method="POST">{% csrf_token %}
+                    <div class="form-group">
+                        Mes:
+                        <input type="text" id="txtMes" name="txtMes" value="{{cuota.mes}}" class="form-control" placeholder="Mes"
+                            maxlength="50" required></br>
+                    </div>
+                  <div class="form-group">
+                        Monto:
+                        <input type="text" id="numMonto" name="numMonto" value="{{cuota.monto}}" class="form-control" placeholder="Monto"
+                            required></br>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-block text-white">Guardar</button>
+                        <a class="btn btn-primary btn-block text-white" href="/Cuo">Cerrar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        </br>
+    </div>
+</div>
+{% endblock %}
