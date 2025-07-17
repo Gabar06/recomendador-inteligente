@@ -2,8 +2,10 @@ from openai import OpenAI
 from .models import Libro
 import json
 import os
+from django.conf import settings
 
-client =OpenAI(api_key="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")  # o poner directamente la clave
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
 texto=""
 respuestas=""
 
@@ -44,7 +46,9 @@ Luego indica:
 - Si todas están bien, felicítalo.
 
 También da el texto corregido con las palabras modificadas en negrita.
-Devuélveme todo el resultado en formato HTML limpio y estilizado, con <table>, <tr>, <td>, <b>, etc.
+ Devuélveme la tabla de resultados y la recomendación
+en HTML puro, sin bloques de código, sin etiquetas <html>, <head> ni <body>, solo el contenido
+para mostrar dentro de un <div>. No escribas nada fuera de ese HTML.
 
 """
 
