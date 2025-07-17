@@ -94,5 +94,13 @@ urlpatterns = [
     path('subir/', views.subir_contenido, name='subir_contenido'),
     path('guia', views.guia_ortografia, name='guia_ortografia'),
     path('', views.menu, name='menu'),
+    path('guia_aprendizaje', views.guia_aprendizaje, name='guia_aprendizaje'),
+    path('acento_final', views.acento_final, name='acento_final'),
+    path("chat/", views.chat_with_openai, name="chat_openai"),
+    path("c/", views.chat_page, name="chat_page"),
+    path('biblioteca/', views.biblioteca, name='biblioteca'),
+    path('cargar/', views.cargar_libro, name='cargar_libro'),
+    path('editar/<int:libro_id>/', views.editar_libro, name='editar_libro'),
+    path('eliminar/<int:libro_id>/', views.eliminar_libro, name='eliminar_libro'),
 
 ]

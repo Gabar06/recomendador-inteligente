@@ -110,3 +110,17 @@ class Guia(models.Model):
 
     def __str__(self):
         return f"Guía {self.contenido.titulo} para {self.estudiante.usuario.username}"
+
+######################################
+def libro_upload(instance, filename):
+    return f'libros/{instance.titulo}_{filename}'
+
+class Libro(models.Model):
+    titulo = models.CharField(max_length=255)
+    autor = models.CharField(max_length=255)
+    editorial = models.CharField(max_length=255)
+    año = models.PositiveIntegerField()
+    archivo = models.FileField(upload_to=libro_upload)
+
+    def __str__(self):
+        return self.titulo

@@ -2,11 +2,24 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Administrador,Docentes,Alumnos,Asignatura,Asistencia,Categorias,Cuota,Nota,Soporte,Sucursal
 from django.http import HttpResponse
 ################
-from .models import Contenido
+from .models import Contenido, Libro
 from .forms import ContenidoForm
 from django.contrib import messages
 import language_tool_python
+from django.http import JsonResponse
+from openai import OpenAI
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+import json
+from .utils import analizar_respuestas
+import markdown
+from django.db.models import Q
 
+
+
+# Instancia del cliente OpenAI con tu API Key
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
+ALLOWED_EXTENSIONS = ['pdf', 'epub']
 
 # Create your views here.
 #Administrador
@@ -476,10 +489,16 @@ def subir_contenido(request):
     
     return render(request, 'contenido/subir_contenido.html', {'form': form})
 
+@csrf_exempt
 def guia_ortografia(request):
+    if request.method == 'POST':
+        data = request.POST.get('respuestas_json')
+        resultado_md  = analizar_respuestas(data)
+        resultado_html = markdown.markdown(resultado_md, extensions=['fenced_code', 'tables'])
+        return render(request, 'acento/final_resultado.html', {'resultado': resultado_html})
+    """
     resultado = None
     recomendaciones = []
-
     if request.method == 'POST':
         texto = request.POST.get('respuesta')
         tool = language_tool_python.LanguageTool('es')
@@ -498,7 +517,105 @@ def guia_ortografia(request):
     return render(request, 'guia/guia_ortografia.html', {
         'resultado': resultado,
         'recomendaciones': recomendaciones
-    })
+    })"""
     
 def menu(request):
     return render(request, "menu/menu.html")
+
+def guia_aprendizaje(request):
+    return render(request, "menu/guia_aprendizaje.html")
+
+def acento_final(request):
+    return render(request, "acento/final.html")
+
+
+@csrf_exempt
+def chat_with_openai(request):
+    if request.method == "POST":
+        try:
+            data  = json.loads(request.body)
+            mensaje = data.get("mensaje", "")
+            if not mensaje:
+                return JsonResponse({"error": "Mensaje vacío"}, status=400)
+            # Petición al modelo GPT-4.1 Turbo (nuevo estilo)
+            respuesta = client.chat.completions.create(
+                model="gpt-4.1",
+                messages=[
+                    {"role": "system", "content": "Sos un asistente útil."},
+                    {"role": "user", "content": mensaje}
+                ]
+            )
+
+            return JsonResponse({
+                "respuesta": respuesta.choices[0].message.content
+            })
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Solo se aceptan peticiones POST"}, status=405)
+
+
+def chat_page(request):
+    return render(request, 'chat/chat.html')
+
+
+#BIBLIOTECA VIRTUAL
+def biblioteca(request):
+    query = request.GET.get('q', '')
+    libros = Libro.objects.all()
+    if query:
+        libros = libros.filter(
+            Q(titulo__icontains=query) |
+            Q(autor__icontains=query) |
+            Q(editorial__icontains=query)
+        )
+    else:
+        libros = Libro.objects.all()
+    return render(request, 'biblioteca/biblioteca.html', {'libros': libros, 'query': query})
+
+def cargar_libro(request):
+    if request.method == 'POST':
+        titulo = request.POST['titulo']
+        autor = request.POST['autor']
+        editorial = request.POST['editorial']
+        año = request.POST['año']
+        archivo = request.FILES['archivo']
+
+        ext = archivo.name.split('.')[-1].lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            return render(request, 'cargar.html', {'error': 'Formato de archivo no permitido.'})
+
+        Libro.objects.create(
+            titulo=titulo,
+            autor=autor,
+            editorial=editorial,
+            año=año,
+            archivo=archivo
+        )
+        return redirect('biblioteca')
+    return render(request, 'biblioteca/cargar.html')
+
+def editar_libro(request, libro_id):
+    libro = get_object_or_404(Libro, id=libro_id)
+    if request.method == 'POST':
+        libro.titulo = request.POST['titulo']
+        libro.autor = request.POST['autor']
+        libro.editorial = request.POST['editorial']
+        libro.año = request.POST['año']
+        if 'archivo' in request.FILES:
+            archivo = request.FILES['archivo']
+            ext = archivo.name.split('.')[-1].lower()
+            if ext not in ALLOWED_EXTENSIONS:
+                return render(request, 'biblioteca/editar.html', {'libro': libro, 'error': 'Formato no permitido'})
+            libro.archivo = archivo
+        libro.save()
+        return redirect('biblioteca')
+    return render(request, 'biblioteca/editar.html', {'libro': libro})
+
+def eliminar_libro(request, libro_id):
+    libro = get_object_or_404(Libro, id=libro_id)
+    if request.method == 'POST':
+        libro.delete()
+        return redirect('biblioteca')
+    return render(request, 'biblioteca/eliminar.html', {'libro': libro})

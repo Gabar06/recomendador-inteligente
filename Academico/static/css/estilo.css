@@ -1,0 +1,21 @@
+.editar-btn, .eliminar-btn {
+    padding: .35rem .7rem;
+    border-radius: 7px;
+    font-size: .98rem;
+    margin-left: .3rem;
+    text-decoration: none;
+    color: #fff;
+    transition: background .2s;
+}
+.editar-btn {
+    background: #0cb36c;
+}
+.editar-btn:hover {
+    background: #077d4a;
+}
+.eliminar-btn {
+    background: #ea5455;
+}
+.eliminar-btn:hover {
+    background: #b71c1c;
+}
