@@ -30,7 +30,7 @@
             respuestaDiv.innerHTML += `<p class="mensaje"><span class="user">Tú:</span> ${mensaje}</p>`;
 
             try {
-                const res = await fetch("/chat/", {
+                const res = await fetch("/api/", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

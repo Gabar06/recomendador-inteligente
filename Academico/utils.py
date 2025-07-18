@@ -3,7 +3,13 @@ from .models import Libro
 import json
 import os
 from django.conf import settings
+import google.generativeai as genai
 
+# Instancia del cliente Gemini con tu API Key
+genai.configure(api_key=settings.GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-2.5-pro')
+
+# Instancia del cliente OpenAI con tu API Key
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 texto=""
@@ -29,7 +35,7 @@ El señor viejo ayudo galantemente a la señora vieja a despejarse del zapato, y
 """
 
 PROMPT_BASE = """
-Corrige y analiza las palabras ingresadas por el usuario. Para cada fila, devuelve si la palabra con acentuación incorrecta fue identificada correctamente, si la corrección y clasificación es correcta.
+Corrige y analiza las palabras ingresadas por el usuario. Para cada fila, devuelve si la palabra con acentuación incorrecta fue una palabra incorrecta, si la corrección y clasificación es correcta.
 
 Texto original:
 {texto}
@@ -38,6 +44,7 @@ Respuestas del usuario:
 {respuestas}
 
 Luego indica:
+- Cuantas palabras incorrectas fueron identificadas en total de todas las palabras incorrectas del texto.
 - Cuáles palabras están bien.
 - Cuáles están mal.
 - De qué tipo de clasificación de palabras cometió más errores (agudas, graves, etc).
@@ -66,3 +73,7 @@ def analizar_respuestas(json_usuario):
         return respuesta.choices[0].message.content
     except Exception as e:
         return f"Error al analizar: {str(e)}"
+
+def gemini_chat(prompt):
+    response = model.generate_content(PROMPT_BASE.format(texto=TEXTO_ORIGINAL, respuestas=prompt, libro=libro))
+    return response.text  # Puede variar si pides otra cosa que texto

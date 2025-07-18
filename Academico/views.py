@@ -11,15 +11,20 @@ from openai import OpenAI
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .utils import analizar_respuestas
+from .utils import analizar_respuestas, gemini_chat
 import markdown
 from django.db.models import Q
-
+import google.generativeai as genai
 
 
 # Instancia del cliente OpenAI con tu API Key
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 ALLOWED_EXTENSIONS = ['pdf', 'epub']
+
+# Instancia del cliente Gemini con tu API Key
+genai.configure(api_key=settings.GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-2.5-pro')
+
 
 # Create your views here.
 #Administrador
@@ -489,12 +494,21 @@ def subir_contenido(request):
     
     return render(request, 'contenido/subir_contenido.html', {'form': form})
 
+def gemini_demo(request):
+    if request.method == "POST":
+        prompt = request.POST.get('respuestas_json')
+        if prompt:
+            resultado_md  = gemini_chat(prompt)
+            resultado_html = markdown.markdown(resultado_md, extensions=['fenced_code', 'tables'])
+    return render(request, 'acento/final_resultado.html', {'resultado': resultado_html})
+
 @csrf_exempt
 def guia_ortografia(request):
     if request.method == 'POST':
         data = request.POST.get('respuestas_json')
         resultado_md  = analizar_respuestas(data)
         resultado_html = markdown.markdown(resultado_md, extensions=['fenced_code', 'tables'])
+        print(data)
         return render(request, 'acento/final_resultado.html', {'resultado': resultado_html})
     """
     resultado = None
@@ -527,6 +541,15 @@ def guia_aprendizaje(request):
 
 def acento_final(request):
     return render(request, "acento/final.html")
+
+@csrf_exempt
+def chat_con_gemini(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        mensaje = data.get("mensaje", "")
+        respuesta = model.generate_content(mensaje)
+        return JsonResponse({"respuesta": respuesta.text})
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
 @csrf_exempt
