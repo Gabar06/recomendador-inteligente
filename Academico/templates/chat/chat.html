@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat con OpenAI</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background: #f4f4f4; }
+        #chat-box { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+        .mensaje { margin-bottom: 10px; }
+        .user { font-weight: bold; color: green; }
+        .bot { font-weight: bold; color: blue; }
+        #respuesta { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div id="chat-box">
+        <h2>💬 Chat con GPT</h2>
+        <div id="respuesta"></div>
+        <input type="text" id="mensaje" placeholder="Escribí tu mensaje..." style="width: 80%;" />
+        <button onclick="enviarMensaje()">Enviar</button>
+    </div>
+
+    <script>
+        async function enviarMensaje() {
+            const mensaje = document.getElementById("mensaje").value;
+            const respuestaDiv = document.getElementById("respuesta");
+
+            if (mensaje.trim() === "") return;
+
+            respuestaDiv.innerHTML += `<p class="mensaje"><span class="user">Tú:</span> ${mensaje}</p>`;
+
+            try {
+                const res = await fetch("/api/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ mensaje })
+                });
+
+                const data = await res.json();
+
+                if (data.respuesta) {
+                    respuestaDiv.innerHTML += `<p class="mensaje"><span class="bot">GPT:</span> ${data.respuesta}</p>`;
+                } else {
+                    respuestaDiv.innerHTML += `<p class="mensaje"><span class="bot">GPT:</span> Error al procesar tu mensaje.</p>`;
+                }
+            } catch (err) {
+                respuestaDiv.innerHTML += `<p class="mensaje"><span class="bot">GPT:</span> Error de conexión.</p>`;
+            }
+
+            document.getElementById("mensaje").value = "";
+        }
+
+        // Función para obtener el token CSRF de las cookies (Django style)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

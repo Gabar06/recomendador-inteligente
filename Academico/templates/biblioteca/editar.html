@@ -1,0 +1,41 @@
+{% extends "../base.html" %} {% load static %} {% block body %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Libro - Biblioteca Virtual</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fff8; color: #222; }
+        .form-container { max-width: 420px; margin: 2.5rem auto; background: #fff; padding: 2rem 2rem 1.5rem 2rem;
+            border-radius: 16px; box-shadow: 0 6px 24px #b0f7c9; }
+        h2 { color: #2ecc40; text-align: center; }
+        form { display: flex; flex-direction: column; gap: 1.1rem; }
+        label { font-weight: 500; }
+        input, select { padding: .6rem; border-radius: 7px; border: 1.5px solid #2ecc40; outline: none; }
+        input[type="file"] { border: none; }
+        button {
+            background: #2ecc40; color: #fff; border: none;
+            border-radius: 9px; padding: .7rem 1rem; font-size: 1.09rem;
+            cursor: pointer; margin-top: .7rem; font-weight: bold;
+        }
+        button:hover { background: #26b938; }
+        .errorlist { color: #e74c3c; margin: 0 0 1rem 0; }
+    </style>
+</head>
+<body>
+<div class="form-container">
+    <h2 >Editar Libro</h2>
+    {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="text" name="titulo" value="{{ libro.titulo }}" required>
+        <input type="text" name="autor" value="{{ libro.autor }}" required>
+        <input type="text" name="editorial" value="{{ libro.editorial }}" required>
+        <input type="number" name="año" value="{{ libro.año }}" required>
+        <input type="file" name="archivo">
+        <button type="submit">Actualizar</button>
+    </form>
+</div>
+</body>
+</html>
+{% endblock %}

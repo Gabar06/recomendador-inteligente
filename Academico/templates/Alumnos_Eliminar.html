@@ -1,0 +1,31 @@
+{% extends "./base.html" %}
+
+{% block title %} Alumnos {% endblock %}
+
+{% block body %}
+
+<div class="row" style="margin-top:30px">
+    <div class="col-sm-12">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4>Eliminar Alumnos</h4>
+
+            </div>
+            <div class="panel-body">
+                <div class="alert alert-danger">
+                    ¿Desea Eliminar al Alumno?
+                </div>
+                <form action="/AluEliminar/{{alumnos.id}}" method="POST">{% csrf_token %}
+                    <label>Nombre:</label>
+                    <input type="text" class="form-control" name="txtNombre" value="{{alumnos.nombre}}" /></br>
+                    <button type="submit" class="btn btn-danger btnEliminar">Eliminar</button>
+                    <a class="btn btn-warning" href="/Alu">Volver</a>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

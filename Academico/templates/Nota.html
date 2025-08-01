@@ -1,0 +1,64 @@
+{% extends "./base.html" %}
+
+{% block title %} Nota {% endblock %}
+
+{% block body %}
+<div class="row" style="margin-top:30px">
+    <div class="col-sm-12 col-md-6">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4>Listado de Nota
+                <a class="btn btn-success btnNuevo" href="NotNuevo" >Nuevo</a>
+                </h4>
+            </div>
+            </br>
+            <div class="panel-heading">
+                <form action="/NotBuscar" method="POST">{% csrf_token %}
+                <table>
+                    <tr>
+                        <td>Materia:
+                            <input type="text" id="txtMateria" name="txtMateria"  >
+                        </td>
+                        <td>
+                            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+                        </td>
+                    </tr>
+                </table>
+                </form>
+            </div>
+            <div class="panel-body">
+                <hr />
+                <div class="table-responsive">
+                    <table class="table table-striped" border="1">
+                        <thead>
+                            <tr>
+                                <!--<th>Fila</th>-->
+                                <th>Id</th>
+                                <th>Materia</th>
+                                <th>Calificación</th>
+                                <th colspan="">Opciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            {% for not in nota  %}
+                                <tr>
+                                    <!--<td>{{forloop.counter}}</td>-->
+                                    <td>{{not.id}}</td>
+                                    <td>{{not.materia}}</td>
+                                    <td>{{not.calificacion}}</td>
+                                    <td>
+                                        <a class="btn btn-warning btn-sm" href="NotEdicion/{{not.id}}">Editar</a>
+                                        <a class="btn btn-danger btn-sm" href="NotEliminacion/{{not.id}}">Borrar</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

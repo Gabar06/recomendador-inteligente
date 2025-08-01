@@ -1,0 +1,37 @@
+{% extends './login_base.html' %}
+{% load static %}
+
+{% block title %}Iniciar sesión{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="form-wrapper">
+        <h2>Iniciar Sesión</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <div>
+                {{ form.cedula.label_tag }}
+                {{ form.cedula }}
+                {% for error in form.cedula.errors %}
+                    <small style="color:red">{{ error }}</small>
+                {% endfor %}
+            </div>
+            <div>
+                {{ form.password.label_tag }}
+                {{ form.password }}
+                {% for error in form.password.errors %}
+                    <small style="color:red">{{ error }}</small>
+                {% endfor %}
+            </div>
+            <input type="submit" value="Iniciar sesión">
+        </form>
+        <div>
+            <small><a href="{% url 'forgot_password_docente' %}">¿Olvidó la contraseña?</a></small>
+            <small><a href="{% url 'registro_docente' %}">Crear cuenta</a></small>
+            <small><a href="{% url 'portal_selection' %}">Volver</a></small>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

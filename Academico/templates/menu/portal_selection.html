@@ -1,0 +1,25 @@
+{% extends './base.html' %}
+{% load static %}
+
+{% block title %}Portales CLASS{% endblock %}
+{% block body_class %}portal-selection{% endblock %}
+{% block content %}
+<div class="portal-container">
+    <h1>Bienvenid@s a Portales CLASS</h1>
+    <p>Selecciona uno de los portales para continuar.</p>
+    <div class="portal-grid">
+        <a href="{% url 'login_estudiante' %}" class="portal-card">
+            <img src="{% static 'images/portal_estudiantes.jpg' %}" alt="Portal Estudiantes">
+            <span>Portal Estudiantes</span>
+        </a>
+        <a href="{% url 'login_docente' %}" class="portal-card">
+            <img src="{% static 'images/portal_docentes.jpg' %}" alt="Portal Docentes">
+            <span>Portal Profesores</span>
+        </a>
+        <a href="{% url 'registro_estudiante' %}" class="portal-card">
+            <img src="{% static 'images/portal_nuevo_ingreso.jpg' %}" alt="Portal Nuevo Ingreso">
+            <span>Nuevo Ingreso</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "../base.html" %} {% load static %} {% block body %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recomendador Inteligente de Contenidos</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #fefefe; margin: 0; padding: 20px; color: #2c3e50; }
+    .container { max-width: 1000px; margin: auto; }
+    h1 { text-align: center; color: #27ae60; }
+    h2 { margin-top: 40px; }
+    .verde { background-color: #d4edda; color: #155724; padding: 5px; border-radius: 4px; }
+    .rojo { background-color: #f8d7da; color: #721c24; padding: 5px; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; text-align: center; border: 1px solid #ccc; }
+    th { background-color: #34495e; color: white; }
+    pre { background-color: #ecf0f1; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-size: 16px; }
+  h1, h2, h3, h4 {
+    color: #2c3e50;
+    margin-top: 20px;
+  }
+  p {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  code {
+    background-color: #f0f0f0;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+  pre {
+    background-color: #f8f8f8;
+    padding: 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 20px 0;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+  }
+  th {
+    background-color: #2ecc71;
+    color: white;
+  }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Recomendador Inteligente de Contenidos</h1>
+    <p>Abajo se muestran los resultados de tu ejercitación. Las respuestas correctas aparecen en verde, y las incorrectas en rojo.</p>
+
+    <!-- Aquí Django renderizará el contenido generado por GPT -->
+    <div id="resultado-contenido">
+      {{ resultado|safe }}
+    </div>
+
+    <h2>Recuerda</h2>
+    <pre>
+Uso de los acentos
+- Las palabras <b>AGUDAS</b> llevan tilde cuando terminan en <b>VOCAL, N o S</b>. Si termina en <b>S</b> precedida de otra consonante no lleva: <b>robots, tictacs</b>. 
+- Las <b>GRAVES</b> llevan tilde cuando <b>NO</b> terminan en <b>VOCAL, N ni S</b>. ángel, árbol. Si acaba en S precedida de consonante sí lleva: <b>bíceps, cómics</b>. 
+- Las <b>ESDRÚJULAS</b> siempre llevan tilde. Ejemplos: <b>plátano, ángeles, lámpara, teléfono, Málaga, décimo, águila, cántaro, sábana.</b>
+- Las palabras <b>SOBRESDRÚJULAS</b> se acentúan siempre. Ejemplos: <b>gánatela, llévatelo, dígamelo, cómetelo, llévesemela.</b>
+- <b>Diptongo</b>: cuando se juntan dos vocales cerradas <b>I, U,</b> entre sí o con otras abiertas <b>A, O, E.</b> Si lleva tilde será en la abierta: <b>acarició, después.</b>
+- <b>Hiato</b>: Llevarán acento las vocales <b>I, U,</b> cuando están en <b>hiato</b>, sin formar diptongo, como <b>caloría, avemaría, baúl, Andalucía, brío, María, día, caímos.</b>
+- En las oraciones <b>interrogativas y exclamativas</b> llevan tilde: <b>qué, cuál, adónde, cómo, cuán, cuándo, cuánto, dónde y quién.</b> Ejemplo: <b>¿Qué quieres?</b>
+    </pre>
+  </div>
+</body>
+</html>
+{% endblock %}

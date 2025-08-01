@@ -1,0 +1,47 @@
+{% extends "../base.html" %} {% load static %} {% block body %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ejercicio 1 - Unidad: Acentuación</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+  <style>
+    .verde-acento { background: #86d01f; color: white; }
+    .anim-correct { animation: pulse-green 0.7s; }
+    .anim-wrong { animation: shake-red 0.4s; }
+    @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 #86d01f; } 70% { box-shadow: 0 0 0 16px #86d01f44; } 100% { box-shadow: 0 0 0 0 #86d01f; } }
+    @keyframes shake-red { 0%,100%{ transform: translateX(0);} 20%,60%{transform:translateX(-10px);} 40%,80%{transform:translateX(10px);} }
+  </style>
+</head>
+<body class="bg-white flex flex-col items-center min-h-screen justify-center">
+  <!-- Solo el body cambia -->
+<h2 class="text-3xl font-bold mb-4 text-center text-black">Completa la palabra</h2>
+<p class="mb-4 text-center">El ________ pasó rápido.</p>
+<div class="grid gap-4">
+  <button type="button" onclick="verificar('camion')" class="verde-acento p-4 rounded-xl text-xl font-bold hover:bg-green-700">camion</button>
+  <button type="button" onclick="verificar('camión')" class="verde-acento p-4 rounded-xl text-xl font-bold hover:bg-green-700">camión</button>
+  <button type="button" onclick="verificar('camíon')" class="verde-acento p-4 rounded-xl text-xl font-bold hover:bg-green-700">camíon</button>
+</div>
+<div id="feedback" class="text-center text-xl font-bold mt-4"></div>
+<audio id="sound-correct" src="{% static 'sounds/correct.mp3' %}"></audio>
+<audio id="sound-wrong" src="{% static 'sounds/incorrect.mp3' %}"></audio>
+<script>
+function verificar(respuesta){
+  let correcta = 'camión';
+  let feedback = document.getElementById('feedback');
+  if(respuesta === correcta) {
+    feedback.innerHTML = "¡Correcto! 🚀";
+    feedback.className = "text-center text-xl font-bold mt-4 text-green-600 anim-correct";
+    document.getElementById('sound-correct').play();
+    setTimeout(()=>window.location.href="{% url 'siguiente_ejercicio' %}", 1000);
+  } else {
+    feedback.innerHTML = "¡Ups! Intenta de nuevo 🔄";
+    feedback.className = "text-center text-xl font-bold mt-4 text-red-600 anim-wrong";
+    document.getElementById('sound-wrong').play();
+    // Aquí registra el error en BD con fetch o form
+  }
+}
+</script>
+</body>
+</html>
+{% endblock %}

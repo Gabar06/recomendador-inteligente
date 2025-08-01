@@ -1,0 +1,31 @@
+{% extends "./base.html" %}
+
+{% block title %} Cuota {% endblock %}
+
+{% block body %}
+
+<div class="row" style="margin-top:30px">
+    <div class="col-sm-12">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4>Eliminar Cuota</h4>
+
+            </div>
+            <div class="panel-body">
+                <div class="alert alert-danger">
+                    ¿Desea Eliminar la Cuota?
+                </div>
+                <form action="/CuoEliminar/{{cuota.id}}" method="POST">{% csrf_token %}
+                    <label>Mes:</label>
+                    <input type="text" class="form-control" name="txtMes" value="{{cuota.mes}}" /></br>
+                    <button type="submit" class="btn btn-danger btnEliminar">Eliminar</button>
+                    <a class="btn btn-warning" href="/Cuo">Volver</a>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

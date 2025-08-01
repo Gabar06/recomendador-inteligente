@@ -1,0 +1,74 @@
+{% extends "./base.html" %}
+
+{% block title %} Administador {% endblock %}
+
+{% block body %}
+
+<div class="row" style="margin-top:30px">
+    <div class="col-sm-12 col-md-6">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4>Listado de Administrador
+                <a class="btn btn-success btnNuevo" href="AdmNuevo" >Nuevo</a>
+                </h4>
+                </br>
+            </div>
+            <div class="panel-heading">
+                <form action="/Buscar" method="POST">{% csrf_token %}
+                <table>
+                    <tr>
+                        <td>Nombre:
+                            <input type="text" id="txtNombre" name="txtNombre"  >
+                        </td>
+                        <td>
+                            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+                        </td>
+                    </tr>
+                </table>
+                </form>
+            </div>
+            <div class="panel-body">
+                <hr />
+                <div class="table-responsive">
+                    <table class="table table-striped" border="1">
+                        <thead>
+                            <tr>
+                                <!--<th>Fila</th>-->
+                                <th>Id</th>
+                                <th>Nombre</th>
+                                <th>Login</th>
+                                <th>Clave</th>
+                                <th colspan="">Opciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            {% for adm in administrador  %}
+                                <tr>
+                                    <!--<td>{{forloop.counter}}</td>-->
+                                    <td>{{adm.id}}</td>
+                                    <td>{{adm.nombre}}</td>
+                                    <td>{{adm.login}}</td>
+                                    <td>{{adm.clave}}</td>
+                                    <td>
+                                        <a class="btn btn-warning btn-sm" href="AdmEdicion/{{adm.id}}">Editar</a>
+                                        <a class="btn btn-danger btn-sm" href="AdmEliminacion/{{adm.id}}">Borrar</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+   <!-- <h1>Hola soy Fernando</h1>
+    <ul>
+        {% for c in categoria %}
+            <li>{{c.descripcion}}</li>
+        {% endfor %}
+    </ul> -->

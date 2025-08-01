@@ -1,0 +1,96 @@
+{% extends "../base.html" %} {% load static %} {% block body %}
+<!-- templates/ejercicios/ejercicio_uno.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ejercicio 1 - Unidad: Acentuación</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+  <style>
+    .verde-acento { background: #86d01f; color: white; }
+    .anim-correct { animation: pulse-green 0.7s; }
+    .anim-wrong { animation: shake-red 0.4s; }
+    @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 #86d01f; } 70% { box-shadow: 0 0 0 16px #86d01f44; } 100% { box-shadow: 0 0 0 0 #86d01f; } }
+    @keyframes shake-red { 0%,100%{ transform: translateX(0);} 20%,60%{transform:translateX(-10px);} 40%,80%{transform:translateX(10px);} }
+  </style>
+</head>
+<body class="bg-white flex flex-col items-center min-h-screen justify-center">
+  <div class="max-w-md w-full">
+    <h2 class="text-3xl font-bold mb-4 text-center text-black">Ejercicio 1<br><span class="text-green-600 font-bold">Parea</span></h2>
+    <p class="text-lg text-center mb-4">Arrastra cada palabra a su tipo de acentuación correspondiente:</p>
+    <!-- Aquí va el ejercicio de parea -->
+    <form id="pareaForm" method="post" class="flex flex-col gap-4">
+      {% csrf_token %}
+      <div class="grid grid-cols-2 gap-4 text-center font-bold">
+        <div>Palabra</div>
+        <div>Tipo de Acentuación</div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 items-center">
+        <div>canción</div>
+        <select name="tipo_1" class="p-2 rounded verde-acento">
+          <option value="">Selecciona</option>
+          <option value="aguda">Aguda</option>
+          <option value="grave">Grave</option>
+          <option value="esdrujula">Esdrújula</option>
+        </select>
+        <div>rápido</div>
+        <select name="tipo_2" class="p-2 rounded verde-acento">
+          <option value="">Selecciona</option>
+          <option value="aguda">Aguda</option>
+          <option value="grave">Grave</option>
+          <option value="esdrujula">Esdrújula</option>
+        </select>
+        <div>árboles</div>
+        <select name="tipo_3" class="p-2 rounded verde-acento">
+          <option value="">Selecciona</option>
+          <option value="aguda">Aguda</option>
+          <option value="grave">Grave</option>
+          <option value="esdrujula">Esdrújula</option>
+        </select>
+        <div>inglés</div>
+        <select name="tipo_4" class="p-2 rounded verde-acento">
+          <option value="">Selecciona</option>
+          <option value="aguda">Aguda</option>
+          <option value="grave">Grave</option>
+          <option value="esdrujula">Esdrújula</option>
+        </select>
+      </div>
+      <button id="submitBtn" type="button" class="mt-6 w-full bg-green-600 text-white p-3 rounded-xl font-bold hover:bg-green-700 transition">Enviar</button>
+    </form>
+    <div id="feedback" class="text-center text-xl font-bold mt-4"></div>
+    <audio id="sound-correct" src="{% static 'sounds/correct.mp3' %}"></audio>
+    <audio id="sound-wrong" src="{% static 'sounds/incorrect.mp3' %}"></audio>
+  </div>
+  <script>
+    document.getElementById('submitBtn').onclick = function() {
+      // Validar
+      const respuestas = [
+        document.querySelector('[name=tipo_1]').value,
+        document.querySelector('[name=tipo_2]').value,
+        document.querySelector('[name=tipo_3]').value,
+        document.querySelector('[name=tipo_4]').value,
+      ];
+      // Solución correcta
+      const solucion = ['aguda','esdrujula','grave','aguda'];
+      let aciertos = 0, errores = 0;
+      for(let i=0;i<4;i++){
+        if(respuestas[i] === solucion[i]) aciertos++;
+        else errores++;
+      }
+      let feedback = document.getElementById('feedback');
+      if(errores === 0) {
+        feedback.innerHTML = "¡Correcto! <br> Sigue así 🟢";
+        feedback.className = "text-center text-xl font-bold mt-4 text-green-600 anim-correct";
+        document.getElementById('sound-correct').play();
+        setTimeout(()=>window.location.href="{% url 'acento_1_2' %}", 1300);
+      } else {
+        feedback.innerHTML = `Oops, hay ${errores} error(es). Corrige tus errores 🔄`;
+        feedback.className = "text-center text-xl font-bold mt-4 text-red-600 anim-wrong";
+        document.getElementById('sound-wrong').play();
+        // Aquí puedes registrar el intento fallido vía AJAX o en el backend
+      }
+    }
+  </script>
+</body>
+</html>
+{% endblock %}

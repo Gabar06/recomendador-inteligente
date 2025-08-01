@@ -1,0 +1,29 @@
+{% extends "../base.html" %} {% load static %} {% block body %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Eliminar Libro - Biblioteca Virtual</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fff8; color: #222; }
+        .confirm-container { max-width: 400px; margin: 3rem auto; background: #fff; border-radius: 16px; padding: 2rem; box-shadow: 0 6px 24px #b0f7c9; text-align: center;}
+        button {
+            background: #ea5455; color: #fff; border: none; border-radius: 9px; padding: .7rem 1rem; font-size: 1.09rem; cursor: pointer; margin: .7rem; font-weight: bold;
+        }
+        button:hover { background: #b71c1c; }
+        a { color: #2ecc40; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="confirm-container">
+    <h2>¿Eliminar libro?</h2>
+    <p>¿Estás seguro de que quieres borrar el libro <b>{{ libro.titulo }}</b>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Sí, eliminar</button>
+    </form>
+    <a href="{% url 'biblioteca' %}">Cancelar</a>
+</div>
+</body>
+</html>
+{% endblock %}
