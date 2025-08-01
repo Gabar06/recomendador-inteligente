@@ -451,7 +451,12 @@ def vista_resultado(request):
     if request.method == 'POST':
         data = request.POST.get('respuestas_json')
         respuestas = json.loads(data)
-        resultado_md = analizar_respuestas(data)
+        
+        #Gemini
+        resultado_md = gemini_chat(data)
+        #Chat gpt
+        #resultado_md = analizar_respuestas(data) 
+        
         resultado_html = markdown.markdown(resultado_md, extensions=['fenced_code', 'tables'])
         print(data)
     
