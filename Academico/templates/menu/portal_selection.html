@@ -1,4 +1,4 @@
-{% extends './base.html' %}
+{% extends './base_portal.html' %}
 {% load static %}
 
 {% block title %}Portales CLASS{% endblock %}
@@ -16,7 +16,7 @@
             <img src="{% static 'images/portal_docentes.jpg' %}" alt="Portal Docentes">
             <span>Portal Profesores</span>
         </a>
-        <a href="{% url 'registro_estudiante' %}" class="portal-card">
+        <a href="{% url 'register_estudiante' %}" class="portal-card">
             <img src="{% static 'images/portal_nuevo_ingreso.jpg' %}" alt="Portal Nuevo Ingreso">
             <span>Nuevo Ingreso</span>
         </a>

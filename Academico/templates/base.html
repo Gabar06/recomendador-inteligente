@@ -19,12 +19,16 @@
       .navbar-custom {
         background-color: #7cc300;
         border-bottom: 3px solid #5ead00;
-        font-family: Arial, sans-serif;
+        font-family: 'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       }
     </style>
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
       <div class="container-fluid">
-        <a class="navbar-brand" href="/menu">Inicio</a>
+        {% if request.user.role == 'DOCENTE' %}
+          <a class="navbar-brand" href="/menu-docente">Inicio</a>
+        {% else %}
+          <a class="navbar-brand" href="/menu-estudiante">Inicio</a>
+        {% endif %}
         <button
           class="navbar-toggler"
           type="button"
@@ -82,11 +86,24 @@
             </li>
             <li class="nav-item">
               <a class="nav-link" href="/Acerca_de">Acerca de</a>
+            </li>        
+            <li class="nav-item">
+              {% if request.user.role == 'DOCENTE' %}
+                <a class="nav-link" href="{% url 'logout_docente' %}"
+                >Cerrar Sesión</a>
+              {% else %}
+              <a class="nav-link" href="{% url 'logout_estudiante' %}"
+                >Cerrar Sesión</a>
+              {% endif %}
+
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout_docente' %}">Cerrar Sesión</a>
+              <div class="navbar-brand" id="Usuario">
+                  {{ user.cedula }} - {{ user.nombre }} {{ user.apellido }}
+              </div>
             </li>
           </ul>
+          
         </div>
       </div>
     </nav>

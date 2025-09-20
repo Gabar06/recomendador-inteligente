@@ -78,7 +78,8 @@ urlpatterns = [
     path('subir/', views.subir_contenido, name='subir_contenido'),
     path('guia', views.guia_ortografia, name='guia_ortografia'),
     path('vista_resultado', views.vista_resultado, name='vista_resultado'),
-    path('menu', views.menu, name='menu'),
+    path('menu-docente', views.menu_docente, name='menu_docente'),
+    path('menu-estudiante', views.menu_estudiante, name='menu_estudiante'),
     path('guia_aprendizaje', views.guia_aprendizaje, name='guia_aprendizaje'),
     path('acento_final', views.acento_final, name='acento_final'),
     path("chat/", views.chat_with_openai, name="chat_openai"),
@@ -93,17 +94,32 @@ urlpatterns = [
     path('acento_1_2', views.acento_1_2, name='acento_1_2'),
     path('', views.portal_selection, name='portal_selection'),
       
-    path("login-docente", views.login_docente, name="login_docente"),
-    path("registro-docente/", views.register_docente, name="registro_docente"),
+    path('login/docente/', views.login_docente, name='login_docente'),
+    path('login/estudiante/', views.login_estudiante, name='login_estudiante'),
+    path('register/docente/', views.register_docente, name='register_docente'),
+    path('register/estudiante/', views.register_estudiante, name='register_estudiante'),
+    path('reset/', views.reset_request, name='reset_request'),
+    path('reset/verify/', views.reset_verify, name='reset_verify'),
     path("logout-docente/", views.logout_docente, name="logout_docente"),
-    path("forgot-password-docente/", views.forgot_password_docente, name="forgot_password_docente"),
-    path("reset-password-docente/", views.reset_password_docente, name="reset_password_docente"),
-
-    path("login-estudiante", views.login_estudiante, name="login_estudiante"),
-    path("registro-estudiante/", views.register_estudiante, name="registro_estudiante"),
     path("logout-estudiante/", views.logout_estudiante, name="logout_estudiante"),
-    path("forgot-password-estudiante/", views.forgot_password_estudiante, name="forgot_password_estudiante"),
-    path("reset-password-estudiante/", views.reset_password_estudiante, name="reset_password_estudiante"),
+     
+    #######################
+    #Ejercicio1 Acentuación
+    path("acento_1/1/", views.exercise1, name="exercise1"),
+    path("1/submit/", views.exercise1_submit, name="exercise1_submit"),
+
+    path("acento_1/2/", views.exercise2, name="exercise2"),
+    path("2/submit/", views.exercise2_submit, name="exercise2_submit"),
+
+    path("acento_1/3/", views.exercise3, name="exercise3"),
+    path("3/submit/", views.exercise3_submit, name="exercise3_submit"),
+
+    path("acento_1/explicar/<int:attempt_id>/", views.explain_attempt, name="explain_attempt"),
+    path("acento_1/resultados/", views.results_view, name="results"),
+    
+    path("evaluaciones/", views.evaluaciones, name="evaluaciones"),
+    path("evaluaciones/report/", views.evaluaciones_report, name="evaluaciones_report")
+   
 
     
 ]

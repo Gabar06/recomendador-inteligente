@@ -1,0 +1,40 @@
+{% extends './evaluaciones_base.html' %}
+
+{% load static %}
+
+{% block title %}Reporte de Evaluaciones{% endblock %}
+
+{% block content %}
+<section class="report">
+  <div class="report-title">Reporte de Evaluaciones</div>
+
+  <h3 class="edu-head">Información del Educando</h3>
+  <p class="edu-line"><b>Nombre:</b> {{ student_name }}</p>
+  <p class="edu-line"><b>Cédula:</b> {{ student_id }}</p>
+
+  <table class="report-table">
+    <thead>
+      <tr>
+        <th>Unidad</th>
+        <th>Puntuación</th>
+        <th>Dominio</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.unidad }}</td>
+        <td>{% if r.percent is None %}N/A{% else %}{{ r.percent }}%{% endif %}</td>
+        <td>{{ r.dominio }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="eva-actions">
+    <a class="btn primary" href="{% url 'evaluaciones_report' %}" target="_blank" rel="noopener">
+      Generar PDF
+    </a>
+  </div>
+</section>
+{% endblock %}

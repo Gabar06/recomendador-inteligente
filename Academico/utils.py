@@ -4,6 +4,7 @@ import json
 import os
 from django.conf import settings
 import google.generativeai as genai
+import tiktoken
 
 # Instancia del cliente Gemini con tu API Key
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -63,13 +64,18 @@ para mostrar dentro de un <div>. No escribas nada fuera de ese HTML.
 def analizar_respuestas(json_usuario):
     try:
         respuesta = client.chat.completions.create(
-            model="gpt-4.1",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": "Eres un experto en ortografía que evalúa ejercicios"},
                 {"role": "user", "content": PROMPT_BASE.format(texto=TEXTO_ORIGINAL, respuestas=json_usuario, libro=libro )}
             ],
-            temperature=0.5
+            #verbosity="medium",           # Nuevo parámetro
+            #reasoning_effort="minimal",   # Nuevo parámetro
+            #max_completion_tokens=200
         )
+        #tokenizer=tiktoken.endcoding_for_model("gpt-5")
+        #tokens=tokenizer.encode(PROMPT_BASE.format(texto=TEXTO_ORIGINAL, respuestas=json_usuario, libro=libro ))
+        #print("La cantidad de tokens es: ",tokens)
         return respuesta.choices[0].message.content
     except Exception as e:
         return f"Error al analizar: {str(e)}"
@@ -77,3 +83,8 @@ def analizar_respuestas(json_usuario):
 def gemini_chat(prompt):
     response = model.generate_content(PROMPT_BASE.format(texto=TEXTO_ORIGINAL, respuestas=prompt, libro=libro))
     return response.text  # Puede variar si pides otra cosa que texto
+
+
+#######################
+#Ejercicio1 Acentuación
+

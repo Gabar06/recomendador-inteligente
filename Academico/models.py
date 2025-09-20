@@ -3,6 +3,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
+from django.conf import settings
 
 
 
@@ -103,134 +104,109 @@ class MovimientoAcentuacion(models.Model):
     clasificacion = models.CharField(max_length=50)
     #acierto = models.BooleanField()  # True si el usuario acertó, False si falló
 
-#lOGIN DOCENTE
-class DocenteManager(BaseUserManager):
-    """Gestor personalizado para el modelo Docente.
-
-    Proporciona métodos convenientes para crear usuarios y superusuarios. El
-    identificador único utilizado es la ``cedula`` en lugar del nombre de usuario.
-    """
-
-    def create_user(self, cedula: str, nombre: str, apellido: str, email: str, password: str | None = None, **extra_fields: object) -> "Docente":
-        """Crea y guarda un nuevo usuario Docente.
-
-        Args:
-            cedula: Cédula de identidad del docente, utilizada como nombre de usuario.
-            nombre: Nombre del docente.
-            apellido: Apellido del docente.
-            email: Dirección de correo electrónico.
-            password: Contraseña en texto plano. Será hasheada internamente.
-            extra_fields: Campos adicionales para el modelo.
-
-        Returns:
-            Una instancia del modelo Docente recién creada.
-        """
-        if not cedula:
-            raise ValueError("El campo 'Cédula' es obligatorio")
-        if not email:
-            raise ValueError("El campo 'Correo Electrónico' es obligatorio")
+class UsuarioManager(BaseUserManager):
+    def create_user(self, cedula, email, nombre, apellido, role, password=None):
+        if not cedula: raise ValueError("La cédula es obligatoria")
+        if not email:  raise ValueError("El email es obligatorio")
         email = self.normalize_email(email)
-        user = self.model(
-            cedula=cedula,
-            nombre=nombre,
-            apellido=apellido,
-            email=email,
-            **extra_fields,
+        u = self.model(
+            cedula=cedula, email=email,
+            nombre=nombre, apellido=apellido,
+            role=role, is_active=True
         )
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
+        u.set_password(password)
+        u.save(using=self._db)
+        return u
 
-    def create_superuser(self, cedula: str, nombre: str, apellido: str, email: str, password: str | None = None, **extra_fields: object) -> "Docente":
-        """Crea y guarda un superusuario Docente.
+    def create_superuser(self, cedula, email, nombre="Admin", apellido="User", role="DOCENTE", password=None):
+        u = self.create_user(cedula, email, nombre, apellido, role, password)
+        u.is_staff = True
+        u.is_superuser = True
+        u.save(using=self._db)
+        return u
 
-        Asegura que las banderas ``is_staff`` e ``is_superuser`` estén establecidas
-        correctamente. La contraseña es obligatoria para superusuarios.
-        """
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-        if password is None:
-            raise ValueError("Superuser must have a password.")
-        return self.create_user(cedula, nombre, apellido, email, password, **extra_fields)
+class Usuario(AbstractBaseUser, PermissionsMixin):
+    DOCENTE = "DOCENTE"
+    ESTUDIANTE = "ESTUDIANTE"
+    ROLE_CHOICES = [(DOCENTE, "Docente"), (ESTUDIANTE, "Estudiante")]
 
-class Docente(AbstractBaseUser, PermissionsMixin):
-    """Modelo de usuario personalizado para docentes.
-
-    Utiliza la cédula de identidad como ``USERNAME_FIELD``. Incluye campos
-    adicionales de nombre, apellido y correo electrónico. Se añade un
-    ``reset_code`` para manejar el proceso de restablecimiento de contraseña.
-    """
-
-    cedula: models.CharField = models.CharField(
-        max_length=20,
-        unique=True,
-        verbose_name="Cédula de Identidad",
-    )
-    nombre: models.CharField = models.CharField(
-        max_length=50,
-        verbose_name="Nombre",
-    )
-    apellido: models.CharField = models.CharField(
-        max_length=50,
-        verbose_name="Apellido",
-    )
-    email: models.EmailField = models.EmailField(
-        unique=True,
-        verbose_name="Correo Electrónico",
-    )
-    is_staff: models.BooleanField = models.BooleanField(default=False)
-    is_active: models.BooleanField = models.BooleanField(default=True)
-    date_joined: models.DateTimeField = models.DateTimeField(default=timezone.now)
-    reset_code: models.CharField = models.CharField(
-        max_length=10,
-        blank=True,
-        null=True,
-        verbose_name="Código de restablecimiento",
-    )
-
-    objects: DocenteManager = DocenteManager()
-
-    USERNAME_FIELD: str = "cedula"
-    REQUIRED_FIELDS: list[str] = ["nombre", "apellido", "email"]
-
-    class Meta:
-            verbose_name = "Docente"
-            verbose_name_plural = "Docentes"
-
-    def __str__(self) -> str:
-            return f"{self.cedula} - {self.nombre} {self.apellido}"
-
-#LOGIN ESTUDIANTE
-class EstudianteManager(BaseUserManager):
-    def create_user(self, cedula, email, nombre, apellido, password=None):
-        if not email:
-            raise ValueError('Debe proporcionar un correo electrónico válido.')
-
-        estudiante = self.model(
-            cedula=cedula,
-            email=self.normalize_email(email),
-            nombre=nombre,
-            apellido=apellido,
-        )
-
-        estudiante.set_password(password)
-        estudiante.save(using=self._db)
-        return estudiante
-
-class Estudiante(AbstractBaseUser):
-    cedula = models.CharField(max_length=20, unique=True)
-    email = models.EmailField(verbose_name='email', unique=True)
-    nombre = models.CharField(max_length=50)
-    apellido = models.CharField(max_length=50)
-    reset_code = models.CharField(max_length=6, blank=True, null=True)
-
-    objects = EstudianteManager()
+    cedula = models.CharField("Cédula de Identidad", max_length=20, unique=True)
+    email = models.EmailField("Correo Electrónico", unique=True)
+    nombre = models.CharField(max_length=80)
+    apellido = models.CharField(max_length=80)
+    role = models.CharField(max_length=12, choices=ROLE_CHOICES)
+    is_active = models.BooleanField(default=True)
+    is_staff  = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(default=timezone.now)
 
     USERNAME_FIELD = 'cedula'
-    REQUIRED_FIELDS = ['email', 'nombre', 'apellido']
+    REQUIRED_FIELDS = ['email', 'nombre', 'apellido', 'role']
+
+    objects = UsuarioManager()
 
     def __str__(self):
-        return f"{self.nombre} {self.apellido}"
+        return f"{self.cedula} - {self.nombre} {self.apellido} ({self.role})"
+
+class PasswordResetCode(models.Model):
+    user = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='reset_codes')
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    def is_valid(self):
+        return (not self.used) and (timezone.now() <= self.expires_at)
+
+# Si tenés perfiles:
+class Docente(models.Model):
+    user = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='docente')
+    cedula = models.CharField(max_length=20, unique=True, db_index=True)
+    nombre = models.CharField(max_length=80)
+    apellido = models.CharField(max_length=80)
+
+class Estudiante(models.Model):
+    user = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='estudiante')
+    cedula = models.CharField(max_length=20, unique=True, db_index=True)
+    nombre = models.CharField(max_length=80)
+    apellido = models.CharField(max_length=80)
 
 
+#######################
+#Ejercicio1 Acentuación
 
+class ExerciseAttempt(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    run_id = models.CharField(max_length=64, db_index=True)  # agrupa una “pasada” del set
+    exercise_number = models.PositiveSmallIntegerField()
+    user_answer = models.TextField()
+    correct_answer = models.TextField()
+    is_correct = models.BooleanField(default=False)
+    score = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # 0–1
+    meta = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+class ExplanationRequest(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    attempt = models.ForeignKey(ExerciseAttempt, on_delete=models.CASCADE, related_name="explanations")
+    model_response = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ActionLog(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    run_id = models.CharField(max_length=64, db_index=True)
+    exercise_number = models.PositiveSmallIntegerField()
+    action = models.CharField(max_length=64)  # visit/submit/explain/continue
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ResultSummary(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    run_id = models.CharField(max_length=64, db_index=True)
+    total_items = models.PositiveIntegerField()
+    correct_items = models.PositiveIntegerField()
+    percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    breakdown = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

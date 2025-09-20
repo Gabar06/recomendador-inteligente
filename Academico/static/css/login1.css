@@ -1,0 +1,123 @@
+    :root {
+      --fg: #ffffff;
+      --fg-dim: rgba(255,255,255,0.8);
+      --glass-bg: rgba(255,255,255,0.12);
+      --glass-bg-2: rgba(255,255,255,0.24);
+      --shadow: 0 25px 45px rgba(0,0,0,0.35);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial;
+      color:var(--fg);
+      /* Fondo animado en gradiente (sin imágenes externas) */
+      background: linear-gradient(120deg,#1e3c72,#2a5298,#6a82fb,#a1c4fd,#00c6ff,#0072ff);
+      /*background-image: url('../images/login_bg.png');*/
+      background-size: 400% 400%;
+      animation: bgShift 20s ease infinite;
+      overflow:hidden;
+    }
+
+    @keyframes bgShift{
+      0%{ background-position: 0% 50%; }
+      50%{ background-position: 100% 50%; }
+      100%{ background-position: 0% 50%; }
+    }
+
+    /* Estrellas sutiles */
+    .stars{ position:fixed; inset:0; pointer-events:none; opacity:.15; }
+    .stars::before, .stars::after{
+      content:''; position:absolute; inset:-50%;
+      background: radial-gradient(2px 2px at 20% 30%, #fff 60%, transparent 62%),
+                  radial-gradient(2px 2px at 80% 20%, #fff 60%, transparent 62%),
+                  radial-gradient(1.5px 1.5px at 60% 70%, #fff 60%, transparent 62%),
+                  radial-gradient(1.8px 1.8px at 35% 80%, #fff 60%, transparent 62%),
+                  radial-gradient(1.2px 1.2px at 75% 55%, #fff 60%, transparent 62%),
+                  radial-gradient(1.6px 1.6px at 10% 60%, #fff 60%, transparent 62%);
+      animation: drift 60s linear infinite;
+    }
+    .stars::after{ animation-duration: 90s; opacity:.8; }
+    @keyframes drift{ to{ transform: translate3d(25%,25%,0); } }
+
+    .glass-container{
+      position:relative;
+      width:min(420px, 92vw);
+      padding:42px 36px 32px;
+      border-radius:22px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border:1px solid rgba(255,255,255,0.35);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      z-index:1;
+    }
+    /* Brillo diagonal */
+    .glass-container::before{
+      content:""; position:absolute; inset:-20% -120% -20% -120%;
+      background: linear-gradient(100deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%);
+      transform: skewX(-18deg);
+      transition: .8s ease;
+      pointer-events:none;
+    }
+    .glass-container:hover::before{ transform: skewX(-18deg) translateX(35%); }
+
+    h2{
+      margin:0 0 32px; text-align:center; letter-spacing:.5px;
+      font-size:28px; font-weight:700; color:var(--fg);
+      text-shadow:0 2px 6px rgba(0,0,0,.25);
+    }
+
+    .input-group{ position:relative; margin-bottom:26px; }
+    .input-group input{
+      width:100%; padding:15px 18px; border-radius:36px; border:none; outline:none;
+      color:#fff; font-size:16px; background: var(--glass-bg);
+      box-shadow: 0 6px 16px rgba(0,0,0,.10);
+      transition: all .25s ease;
+    }
+    .input-group input::placeholder{ color: rgba(255,255,255,.65); }
+    .input-group label{
+      position:absolute; left:18px; top:50%; transform:translateY(-50%);
+      font-size:16px; color:var(--fg-dim); pointer-events:none;
+      transition: all .25s ease;
+    }
+    .input-group input:focus{ background: var(--glass-bg-2); box-shadow:0 10px 22px rgba(0,0,0,.18); }
+    .input-group input:focus + label,
+    .input-group input:valid + label{
+      top:6px; left:14px; font-size:12px; color:#fff;
+      background: rgba(255,255,255,.18); padding:2px 8px; border-radius:10px;
+    }
+
+    .remember-forgot{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      color:var(--fg-dim); font-size:14px; margin: 2px 0 22px;
+    }
+    .remember-forgot label{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+    .remember-forgot input{ accent-color:#fff; }
+    .remember-forgot a{ color:#fff; text-decoration:none; opacity:.9; transition:.25s; }
+    .remember-forgot a:hover{ text-decoration:underline; opacity:1; }
+
+    .login-btn{
+      width:100%; padding:14px 18px; border-radius:36px; border:none; outline:none;
+      color:#fff; font-weight:700; font-size:16px; cursor:pointer;
+      background: rgba(255,255,255,.28);
+      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .login-btn:hover{ background: rgba(255,255,255,.36); transform: translateY(-4px); box-shadow:0 14px 26px rgba(0,0,0,.22); }
+
+    .register-link{ text-align:center; margin-top:22px; color:var(--fg-dim); font-size:14px; }
+    .register-link a{ color:#fff; font-weight:700; text-decoration:none; }
+    .register-link a:hover{ text-decoration:underline; }
+
+    /* Responsivo */
+    @media (max-width:420px){ h2{ font-size:24px; } }
+
+    #e{margin:0 13.5% 12px}
+    #d{margin:0 18.5% 12px}

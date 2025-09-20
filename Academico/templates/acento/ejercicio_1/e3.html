@@ -1,0 +1,25 @@
+{% extends './e1_base.html' %}
+{% block title %}Ejercicio 3 – Selección múltiple{% endblock %}
+{% block content %}
+<div class="exercise-container">
+  <h2>Ejercicio 3</h2>
+  <p class="question">La palabra <b>{{ word }}</b> es…</p>
+
+  <form id="exercise3-form" class="options-form" data-submit-url="{% url 'exercise3_submit' %}">
+    {% csrf_token %}
+    <div class="options">
+      {% for cat in categories %}
+      <label class="option">
+        <input type="radio" name="answer" value="{{ cat }}"> <span>{{ cat }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn primary">Comprobar</button>
+    </div>
+  </form>
+
+  <div class="feedback-box" data-explain-endpoint="{% url 'explain_attempt' 0 %}"></div>
+</divv>
+{% endblock %}

@@ -20,7 +20,6 @@ import google.generativeai as genai
 from .models import IntentoAcentuacion, MovimientoAcentuacion
 
 
-
 import random
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -38,9 +37,14 @@ from django.views.generic.edit import CreateView
 
 
 #####################
-from .forms import LoginDocente,RegisterDocente, ForgotPasswordDocente, ResetPasswordDocente
-from .forms import LoginEstudiante, EstudianteRegistrationForm, ForgotPasswordEstudiante, ResetPasswordEstudiante
-from .models import Docente, Estudiante
+
+from .models import Usuario, Docente, Estudiante, PasswordResetCode
+
+from .forms import LoginForm, RegisterForm, ResetRequestForm, ResetVerifyForm
+from datetime import timedelta
+from django.utils import timezone
+from .decorators import role_login_required
+from django.utils.http import url_has_allowed_host_and_scheme
 ##########################
 #REACT
 from rest_framework.views import APIView
@@ -49,6 +53,25 @@ from rest_framework import viewsets
 from rest_framework import status
 from .models import Libro
 from .serializer import LibroSerializer
+
+#######################
+#Ejercicio1 Acentuación
+import json, uuid, os
+from decimal import Decimal
+from typing import Dict, Any
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpRequest, HttpResponse
+from django.views.decorators.http import require_http_methods
+from .models import ExerciseAttempt, ExplanationRequest, ActionLog, ResultSummary
+
+# === ReportLab (PDF) ===
+from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas as rl_canvas
+from reportlab.lib.colors import Color, black, white
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 class LibroViewSet(viewsets.ModelViewSet):
     queryset = Libro.objects.all()
@@ -102,8 +125,8 @@ model = genai.GenerativeModel('gemini-2.5-pro')
 
 # Create your views here.
 #Administrador
-def home(request):
-    return render(request, "base.html")
+def home(request, title):
+    return render(request, "base.html", {"rol":title})
 def inicio(request):
     return render(request, "inicio.html")
 def administrador(request):
@@ -453,9 +476,9 @@ def vista_resultado(request):
         respuestas = json.loads(data)
         
         #Gemini
-        resultado_md = gemini_chat(data)
+        #resultado_md = gemini_chat(data)
         #Chat gpt
-        #resultado_md = analizar_respuestas(data) 
+        resultado_md = analizar_respuestas(data) 
         
         resultado_html = markdown.markdown(resultado_md, extensions=['fenced_code', 'tables'])
         print(data)
@@ -514,12 +537,22 @@ def guia_ortografia(request):
         'resultado': resultado,
         'recomendaciones': recomendaciones
     })"""
-@login_required    
-def menu(request):
-    return render(request, "menu/menu.html")
+def _redirect_next_or(request, fallback_name):
+    nxt = request.GET.get("next")
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
+        return redirect(nxt)
+    return redirect(fallback_name)
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+def menu_estudiante(request):
+    return render(request, "menu/estudiante/menu.html", {"rol": "Estudiante", "user": request.user})
+
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def menu_docente(request):
+    return render(request, "menu/docente/menu.html", {"rol": "Docente", "user": request.user})
 
 def guia_aprendizaje(request):
-    return render(request, "menu/guia_aprendizaje.html")
+    return render(request, "menu/estudiante/guia_aprendizaje.html")
 
 def acento_1(request):
     return render(request, "acento/ejercicio_1.html")
@@ -638,174 +671,678 @@ def portal_selection(request):
 
 #LOGIN DOCENTE
 def login_docente(request):
-    """Muestra el formulario de inicio de sesión y autentica al usuario.
+    return _login_role(request, role=Usuario.DOCENTE, title="Login Docente")
 
-    Si las credenciales son válidas, la sesión se inicia y se redirige
-    al panel de control. De lo contrario, se muestran errores dentro del
-    formulario.
-    """
-    if request.user.is_authenticated:
-        return redirect("menu")
-    form = LoginDocente(request.POST or None)
-    if request.method == "POST":
-        if form.is_valid():
-            # La autenticación ya se realiza en form.clean()
-            user = form.user  # type: ignore[attr-defined]
-            login(request, user)
-            return redirect("menu")
-    return render(request, "login/docente/login.html", {"form": form})
+def login_estudiante(request):
+    return _login_role(request, role=Usuario.ESTUDIANTE, title="Login Estudiante")
 
+def _login_role(request, role, title):
+    form = LoginForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+            cedula = form.cleaned_data['cedula']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=cedula, password=password)
+            if user is None:
+                messages.error(request, "Credenciales inválidas.")
+            elif user.role != role:
+                messages.error(request, "Rol incorrecto para este login.")
+
+            elif user and user.role == 'DOCENTE':
+                login(request, user)
+                messages.success(request, f"¡Bienvenido, {user.nombre}!")
+                return redirect("menu_docente")            
+            elif user and user.role == 'ESTUDIANTE':
+                login(request, user)
+                messages.success(request, f"¡Bienvenido, {user.nombre}!")
+                return redirect("menu_estudiante")
+            else:
+                messages.error(request,"Credenciales inválidas o rol incorrecto")
+    else:
+        form = LoginForm()
+    return render(request, "login/login.html", {"form": form, "title": title})
+
+# ======== Registro ========
 def register_docente(request):
-    """Permite a un nuevo docente crear una cuenta.
+    return _register_role(request, role=Usuario.DOCENTE, title="Crear cuenta Docente")
 
-    Utiliza ``RegisterForm`` para recoger los datos requeridos y
-    crear un usuario Docente. Tras el registro, redirige al inicio
-    de sesión.
-    """
-    if request.user.is_authenticated:
-        return redirect("menu")
-    form = RegisterDocente(request.POST or None)
+def register_estudiante(request):
+    return _register_role(request, role=Usuario.ESTUDIANTE, title="Crear cuenta Estudiante")
+
+def _register_role(request, role, title):
     if request.method == "POST":
+        form = RegisterForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect("login_docente")
-    return render(request, "login/docente/registro.html", {"form": form})
+            user = Usuario.objects.create_user(
+                cedula=form.cleaned_data['cedula'],
+                email=form.cleaned_data['email'],
+                nombre=form.cleaned_data['nombre'],
+                apellido=form.cleaned_data['apellido'],
+                role=role,
+                password=form.cleaned_data['password1'],
+            )
+            if role == Usuario.DOCENTE:
+                Docente.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido)
+            else:
+                Estudiante.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido)
+        
+            messages.success(request, "Cuenta creada. Ya podés iniciar sesión.")
+            return redirect("login_docente" if role == Usuario.DOCENTE else "login_estudiante")
+    else:
+        form = RegisterForm()
+    return render(request, "login/registro.html", {"form": form, "title": title})
+
 
 def logout_docente(request):
     """Cierra la sesión del usuario y redirige al inicio de sesión."""
     logout(request)
     return redirect("login_docente")
 
-def forgot_password_docente(request):
-    """Solicita un código de restablecimiento enviándolo por correo.
-
-    El usuario introduce su cédula y correo electrónico. Si se encuentra
-    una coincidencia válida, se genera un código de seis dígitos y se
-    envía por correo utilizando la configuración SMTP definida en
-    ``settings``. El código se almacena en el campo ``reset_code`` de
-    la instancia Docente y el ID del usuario se guarda en la sesión
-    para la siguiente etapa.
-    """
-    form = ForgotPasswordDocente(request.POST or None)
-    sent = False
+# ======== Reset por Código (2 pasos) ========
+def reset_request(request):
     if request.method == "POST":
+        form = ResetRequestForm(request.POST)
         if form.is_valid():
-            email = form.cleaned_data["email"]
-            cedula = form.cleaned_data["cedula"]
-            try:
-                user = Docente.objects.get(cedula=cedula, email=email)
-                # Genera un código de seis dígitos
-                code = f"{random.randint(100000, 999999)}"
-                user.reset_code = code
-                user.save()
-                # Construye el mensaje de correo
-                subject = "Código de restablecimiento de contraseña"
-                message = (
-                    f"Hola {user.nombre},\n\n"
-                    f"Tu código de restablecimiento es: {code}\n\n"
-                    "Si no solicitaste este código, puedes ignorar este correo."
-                )
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [user.email],
-                    fail_silently=False,
-                )
-                # Guarda el ID del usuario en la sesión para la siguiente vista
-                request.session["reset_user_id"] = user.id
-                sent = True
-            except Docente.DoesNotExist:
-                form.add_error(None, "No se encontró un usuario con esa cédula y correo.")
-    return render(request, "login/docente/forgot_password.html", {"form": form, "sent": sent})
-
-def reset_password_docente(request):
-    """Permite al usuario establecer una nueva contraseña utilizando un código.
-
-    Se recupera el ID del usuario almacenado en la sesión. Si no existe,
-    redirige a la vista de solicitud de código. Se compara el código
-    introducido con el almacenado en el modelo. Si coincide, la
-    contraseña se actualiza y se limpia el campo de código y la sesión.
-    """
-    user_id = request.session.get("reset_user_id")
-    if not user_id:
-        return redirect("forgot_password")
-    try:
-        user = Docente.objects.get(id=user_id)
-    except Docente.DoesNotExist:
-        return redirect("forgot_password")
-    form = ResetPasswordDocente(request.POST or None)
-    if request.method == "POST":
-        if form.is_valid():
-            code = form.cleaned_data["code"]
-            if code != user.reset_code:
-                form.add_error("code", "Código incorrecto.")
+            ident = form.cleaned_data["identificador"]
+            user = _find_user_by_ident(ident)
+            if not user:
+                messages.error(request, "Usuario no encontrado.")
             else:
-                # Restablece la contraseña y limpia el código
-                user.set_password(form.cleaned_data["password1"])
-                user.reset_code = ""
-                user.save()
-                # Limpia la sesión
-                del request.session["reset_user_id"]
-                return redirect("login_docente")
-    return render(request, "login/docente/reset_password.html", {"form": form})
-
-#######################
-#LOGIN ESTUDIANTE
-def login_estudiante(request):
-    if request.method == 'POST':
-        form = LoginEstudiante(data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            return redirect('menu')
+                code = f"{random.randint(0, 999999):06d}"
+                prc = PasswordResetCode.objects.create(
+                    user=user,
+                    code=code,
+                    expires_at=timezone.now() + timedelta(minutes=10)
+                )
+                _send_code_email(user, code)
+                messages.success(request, "Te enviamos el código a tu correo.")
+                return redirect("reset_verify")
     else:
-        form = LoginEstudiante()
-    return render(request, 'login/estudiante/login.html', {'form': form})
+        form = ResetRequestForm()
+    return render(request, "login/reset_request.html", {"form": form, "title": "Recuperar contraseña"})
 
-def register_estudiante(request):
-    if request.method == 'POST':
-        form = EstudianteRegistrationForm(request.POST)
+def reset_verify(request):
+    if request.method == "POST":
+        form = ResetVerifyForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            user.set_password(form.cleaned_data['password'])
-            user.save()
-            return redirect('login_estudiante')
+            ident = form.cleaned_data["identificador"]
+            user = _find_user_by_ident(ident)
+            if not user:
+                messages.error(request, "Usuario no encontrado.")
+            else:
+                code = form.cleaned_data["code"]
+                prc = PasswordResetCode.objects.filter(user=user, code=code, used=False).order_by('-created_at').first()
+                if not prc or not prc.is_valid():
+                    messages.error(request, "Código inválido o vencido.")
+                else:
+                    user.set_password(form.cleaned_data["new_password1"])
+                    user.save()
+                    prc.used = True
+                    prc.save()
+                    messages.success(request, "Contraseña actualizada. Iniciá sesión.")
+                    return redirect("login_docente" if user.role == Usuario.DOCENTE else "login_estudiante")
     else:
-        form = EstudianteRegistrationForm()
-    return render(request, 'login/estudiante/registro.html', {'form': form})
+        form = ResetVerifyForm()
+    return render(request, "login/reset_verify.html", {"form": form, "title": "Verificar código"})
+
 
 def logout_estudiante(request):
     """Cierra la sesión del usuario y redirige al inicio de sesión."""
     logout(request)
     return redirect("login_estudiante")
 
-def forgot_password_estudiante(request):
-    if request.method == 'POST':
-        form = ForgotPasswordEstudiante(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            code = f'{random.randint(100000, 999999)}'
-            estudiante = Estudiante.objects.get(email=email)
-            estudiante.reset_code = code
-            estudiante.save()
-            send_mail('Código de recuperación', f'Su código es {code}', settings.EMAIL_HOST_USER, [email])
-            return redirect('reset_password')
-    else:
-        form = ForgotPasswordEstudiante()
-    return render(request, 'login/estudiante/forgot_password.html', {'form': form})
+# ======== Helpers ========
+def _send_code_email(user, code):
+    subject = "Tu código de recuperación"
+    body = f"Hola {user.nombre},\n\nTu código de verificación es: {code}\nTiene validez de 10 minutos.\n\nSi no solicitaste esto, ignorá este correo."
+    send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email])
 
-def reset_password_estudiante(request):
-    if request.method == 'POST':
-        form = ResetPasswordEstudiante(request.POST)
-        if form.is_valid():
-            code = form.cleaned_data['code']
-            new_password = form.cleaned_data['new_password']
-            estudiante = Estudiante.objects.get(reset_code=code)
-            estudiante.set_password(new_password)
-            estudiante.reset_code = ''
-            estudiante.save()
-            return redirect('login_estudiante')
+def _find_user_by_ident(ident):
+    try:
+        if "@" in ident:
+            return Usuario.objects.get(email__iexact=ident)
+        return Usuario.objects.get(cedula=ident)
+    except Usuario.DoesNotExist:
+        return None
+
+
+#######################
+#Ejercicio1 Acentuación
+
+# ---------- utilidades ----------
+def _ensure_run_id(request: HttpRequest) -> str:
+    run_id = request.session.get("run_id")
+    if not run_id:
+        run_id = uuid.uuid4().hex[:12]
+        request.session["run_id"] = run_id
+    return run_id
+
+def _log(user, run_id: str, exercise_number: int, action: str, metadata: Dict[str, Any] = None):
+    ActionLog.objects.create(
+        user=user, run_id=run_id, exercise_number=exercise_number, action=action, metadata=metadata or {}
+    )
+
+def _openai_explain(prompt: str) -> str:
+    """
+    Llama a OpenAI si hay clave y librería instalada; si no, devuelve explicación local.
+    """
+    api_key = settings.OPENAI_API_KEY
+    if not api_key:
+        return prompt  # caemos al prompt (que ya contiene buena explicación)
+    try:
+        # Cliente nuevo (openai>=1.x)
+        from openai import OpenAI  # type: ignore
+        client = OpenAI(api_key=api_key)
+        msg = client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[
+                {"role": "system", "content": "Eres un profesor de lengua conciso. Explica ortografía del español con ejemplos."},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=220,
+            temperature=0.2,
+        )
+        return msg.choices[0].message.content or "No se obtuvo texto de la IA."
+    except Exception:
+        # fallback “old school” por si cambia el SDK
+        return prompt
+
+# ---------- Ejercicio 1 ----------
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+def exercise1(request: HttpRequest) -> HttpResponse:
+    run_id = _ensure_run_id(request)
+    _log(request.user, run_id, 1, "visit")
+    options = ["rapido", "rapidó", "rápido"]
+    # distinto por usuario: reordenamos
+    options.sort(key=lambda x: (hash(request.user.id + hash(run_id + x)) % 10))
+    context = {"options": options}
+    return render(request, "acento/ejercicio_1/e1.html", context)
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@require_http_methods(["POST"])
+def exercise1_submit(request: HttpRequest) -> JsonResponse:
+    run_id = _ensure_run_id(request)
+    selected = request.POST.get("answer", "")
+    correct = "rápido"
+    is_correct = (selected == correct)
+    attempt = ExerciseAttempt.objects.create(
+        user=request.user,
+        run_id=run_id,
+        exercise_number=1,
+        user_answer=selected,
+        correct_answer=correct,
+        is_correct=is_correct,
+        score=Decimal("1.00") if is_correct else Decimal("0.00"),
+    )
+    _log(request.user, run_id, 1, "submit", {"selected": selected, "is_correct": is_correct})
+
+    if is_correct:
+        feedback = "¡Así se hace!"
     else:
-        form = ResetPasswordEstudiante()
-    return render(request, 'login/estudiante/reset_password.html', {'form': form})
+        feedback = "La palabra correcta es <b>rápido</b>"
+
+    return JsonResponse({
+        "ok": True,
+        "attempt_id": attempt.id,
+        "correct": is_correct,
+        "feedback_html": feedback,
+        "next_url": "/acento_1/2/",
+    })
+
+# ---------- Ejercicio 2 ----------
+WORDS2 = {
+    "Atención": "Agudas",
+    "Árbol": "Llanas",
+    "Número": "Esdrújulas",
+    "Cálidamente": "Sobresdrújulas",
+}
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+def exercise2(request: HttpRequest) -> HttpResponse:
+    run_id = _ensure_run_id(request)
+    _log(request.user, run_id, 2, "visit")
+    # orden aleatorio/consistente por usuario
+    items = list(WORDS2.items())
+    items.sort(key=lambda kv: (hash(request.user.id + hash(run_id + kv[0])) % 10))
+    categories = ["Agudas", "Llanas", "Esdrújulas", "Sobresdrújulas"]
+    return render(request, "acento/ejercicio_1/e2.html", {"items": items, "categories": categories})
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@require_http_methods(["POST"])
+def exercise2_submit(request: HttpRequest) -> JsonResponse:
+    run_id = _ensure_run_id(request)
+    answers = {}
+    for word in WORDS2.keys():
+        answers[word] = request.POST.get(word, "")
+
+    mistakes = []
+    correct_count = 0
+    for word, expected in WORDS2.items():
+        user_val = answers.get(word)
+        ok = (user_val == expected)
+        if ok:
+            correct_count += 1
+        else:
+            mistakes.append((word, expected))
+        # guardamos intento por cada palabra (para granularidad y trazabilidad)
+        attempt=ExerciseAttempt.objects.create(
+            user=request.user,
+            run_id=run_id,
+            exercise_number=2,
+            user_answer=json.dumps({word: user_val}),
+            correct_answer=json.dumps({word: expected}),
+            is_correct=ok,
+            score=Decimal("1.00") if ok else Decimal("0.00"),
+            meta={"word": word},
+        )
+
+    _log(request.user, run_id, 2, "submit", {"answers": answers, "correct_count": correct_count})
+
+    total = len(WORDS2)
+    if correct_count == total:
+        feedback = "<div class='big-ok'>¡Acertaste todas!</div>"
+    elif correct_count == 0:
+        lines = [
+            "<div class='big-warn'>Resultados:</div>",
+            "La palabra Atención es <b>Aguda</b>",
+            "La palabra Árbol es <b>Llana o grave</b>",  # llanas/graves
+            "La palabra Número es <b>Esdrújula</b>",
+            "La palabra Cálidamente es <b>Sobresdrújula</b>",
+            "<div class='big-hint'>Falta reforzar un poco, ¡Ánimo!</div>",
+        ]
+        feedback = "<br>".join(lines)
+    else:
+        lines = []
+        for w, exp in mistakes:
+            lines.append(f"La palabra <b>{w}</b> es <b>{exp}</b>")
+        lines.append(f"<div class='big-ok'>¡Felicidades acertaste {correct_count} de {total}!</div>")
+        feedback = "<br>".join(lines)
+
+    return JsonResponse({
+        "ok": True,
+        "attempt_id": attempt.id,  # ya se guardó 1 por palabra
+        "feedback_html": feedback,
+        "next_url": "/acento_1/3/",
+    })
+
+# ---------- Ejercicio 3 ----------
+QUESTION3 = {"word": "exhibición", "correct": "Agudas"}
+CATEGORIES3 = ["Agudas", "Llanas", "Esdrújulas", "Sobresdrújulas"]
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+def exercise3(request: HttpRequest) -> HttpResponse:
+    run_id = _ensure_run_id(request)
+    _log(request.user, run_id, 3, "visit")
+    # reordenamos categorías para “ser diferente” por usuario
+    cats = CATEGORIES3[:]
+    cats.sort(key=lambda c: (hash(request.user.id + hash(run_id + c)) % 10))
+    return render(request, "acento/ejercicio_1/e3.html", {"word": QUESTION3["word"], "categories": cats})
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@require_http_methods(["POST"])
+def exercise3_submit(request: HttpRequest) -> JsonResponse:
+    run_id = _ensure_run_id(request)
+    selected = request.POST.get("answer", "")
+    correct = QUESTION3["correct"]
+    is_correct = (selected == correct)
+
+    attempt = ExerciseAttempt.objects.create(
+        user=request.user,
+        run_id=run_id,
+        exercise_number=3,
+        user_answer=selected,
+        correct_answer=correct,
+        is_correct=is_correct,
+        score=Decimal("1.00") if is_correct else Decimal("0.00"),
+        meta={"word": QUESTION3["word"]},
+    )
+    _log(request.user, run_id, 3, "submit", {"selected": selected, "is_correct": is_correct})
+
+    if is_correct:
+        txt = f"¡Correcta! la palabra <b>{QUESTION3['word']}</b> es <b>{correct}</b>."
+    else:
+        txt = f"¡Incorrecta! la palabra <b>{QUESTION3['word']}</b> es <b>{correct}</b>."
+    return JsonResponse({
+        "ok": True,
+        "attempt_id": attempt.id,
+        "feedback_html": f"{txt}",
+        "next_url": "/acento_1/resultados/",
+    })
+
+# ---------- Explicación (IA) ----------
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@require_http_methods(["POST"])
+def explain_attempt(request: HttpRequest, attempt_id: int) -> JsonResponse:
+    attempt = get_object_or_404(ExerciseAttempt, pk=attempt_id, user=request.user)
+    run_id = attempt.run_id
+    _log(request.user, run_id, attempt.exercise_number, "explain", {"attempt_id": attempt_id})
+
+    # prompt base según ejercicio
+    if attempt.exercise_number == 1:
+        body = (
+            "Explica por qué en la frase 'El perro come muy rápido' la forma correcta es 'rápido'. "
+            "Incluye: tipo de palabra (esdrújula), regla de acentuación y 1 ejemplo extra."
+        )
+    elif attempt.exercise_number == 2:
+        body = (
+            "Explica brevemente las categorías de acentuación: agudas, llanas, esdrújulas y sobresdrújulas. "
+            "Justifica la clasificación de: Atención (Aguda), Árbol (Llana), Número (Esdrújula), Cálidamente (Sobresdrújula)."
+        )
+    else:
+        body = (
+            "Explica por qué 'exhibición' es aguda: termina en 'n' o 's' o vocal y se acentúa cuando la sílaba tónica es la última "
+            "y requiere tilde por terminación. Da 1 ejemplo adicional."
+        )
+
+    # Si fue incorrecto, pide también marcar el error
+    correctness = "El estudiante acertó su respuesta." if attempt.is_correct else "El estudiante se equivocó."
+    prompt = f"{correctness} {body}"
+
+    resp = _openai_explain(prompt)
+    ExplanationRequest.objects.create(user=request.user, attempt=attempt, model_response=resp)
+    return JsonResponse({"ok": True, "explanation_html": f"<div class='explanation'>{resp}</div>"})
+
+# ---------- Resultados ----------
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+def results_view(request: HttpRequest) -> HttpResponse:
+    run_id = _ensure_run_id(request)
+
+    # Tareas totales: 1 (e1) + 4 (e2) + 1 (e3) = 6
+    attempts = ExerciseAttempt.objects.filter(user=request.user, run_id=run_id)
+    correct = sum(1 for a in attempts if a.is_correct)
+    total = 6
+    percentage = (correct / total) * 100 if total else 0
+
+    breakdown = {
+        "e1": {"correct": sum(1 for a in attempts if a.exercise_number == 1 and a.is_correct), "total": 1},
+        "e2": {"correct": sum(1 for a in attempts if a.exercise_number == 2 and a.is_correct), "total": 4},
+        "e3": {"correct": sum(1 for a in attempts if a.exercise_number == 3 and a.is_correct), "total": 1},
+    }
+
+    ResultSummary.objects.update_or_create(
+        user=request.user, run_id=run_id,
+        defaults={
+            "total_items": total, "correct_items": correct,
+            "percentage": round(Decimal(percentage), 2), "breakdown": breakdown
+        }
+    )
+
+    # mensaje final
+    if percentage == 100:
+        title = "¡Completaste todos los ejercicios sin errores, sigue así! 100%"
+        rec = None
+    elif percentage > 60:
+        title = f"¡Felicidades acertaste el {int(round(percentage))}%!"
+        rec = "Recomendación: Reforzar más en el capítulo de Acentuación del libro *Ortografía de la lengua española* (RAE)."
+    else:
+        title = f"¡Uff, falta reforzar más, acertaste solo el {int(round(percentage))}%!"
+        rec = "Recomendación: Reforzar el capítulo de Acentuación del libro *Ortografía de la lengua española* (RAE)."
+
+    _log(request.user, run_id, 4, "visit", {"percentage": percentage})
+    # Limpia el run para un nuevo intento cuando vuelvan a empezar
+    request.session.pop("run_id", None)
+    return render(request, "acento/ejercicio_1/r.html", {"title": title, "recommendation": rec})
+
+
+#Evaluaciones y Reportes
+
+################################################################################
+# Evaluations (Resultados de unidades y reporte PDF)
+################################################################################
+
+# Mapping between units and the exercise numbers that belong to each unit.  You
+# should adjust this mapping to reflect the actual exercises per unit in your
+# application.  For example, if Unidad I incluye los ejercicios 1 y 2, coloca
+# esos números en la lista.  Si hay nuevas unidades, añádelas aquí.
+UNIT_MAPPING = {
+    "Unidad I: Acentuación": [1, 2, 3],
+    "Unidad II: Puntuación": [4, 5, 6],
+    "Unidad III: Reglas de las Letras": [7, 8, 9],
+}
+
+
+def _get_color_class(percent: int) -> str:
+    """Return a CSS class name based on a percentage value."""
+    if percent >= 100:
+        return "complete"
+    if percent >= 80:
+        return "green"
+    if percent >= 60:
+        return "lime"
+    if percent >= 40:
+        return "yellow"
+    if percent >= 20:
+        return "orange"
+    return "red"
+
+
+# Mapea % → etiqueta de dominio (ajusta si querés otros nombres/umbrales)
+def _domain_label(p: int | None) -> str:
+    if p is None:
+        return "N/A"
+    if p >= 90: return "Excelente"
+    if p >= 80: return "Muy Satisfactorio"
+    if p >= 60: return "Satisfactorio"
+    if p >= 40: return "Básico"
+    return "Insuficiente"
+
+def _student_name(user) -> str:
+    full = (user.nombre + " " + user.apellido or "").strip()
+    return full if full else user.nombre + " " + user.apellido
+
+def _student_id(user) -> str:
+    for attr in ("cedula", "dni", "documento"):
+        if hasattr(user, attr) and getattr(user, attr):
+            return str(getattr(user, attr))
+    prof = getattr(user, "profile", None)
+    if prof:
+        for attr in ("cedula", "dni", "documento"):
+            if hasattr(prof, attr) and getattr(prof, attr):
+                return str(getattr(prof, attr))
+    return "—"
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+def evaluaciones(request: HttpRequest) -> HttpResponse:
+    # Configura tus unidades reales (IDs de ejercicios por unidad)
+    UNITS = [
+        {"key": "U1", "title": "Acentuación",             "exercises": [1, 2, 3]},
+        {"key": "U2", "title": "Puntuación",               "exercises": [4, 5]},
+        {"key": "U3", "title": "Mayúscula y Minúscula",    "exercises": [6, 7]},
+        {"key": "U4", "title": "Reglas de las Letras",     "exercises": [8]},  # si no usás, queda N/A
+    ]
+
+    rows = []
+    for u in UNITS:
+        ex_numbers = u["exercises"]
+
+        # intentos por unidad
+        stats_qs = (
+            ExerciseAttempt.objects
+            .filter(user=request.user, exercise_number__in=ex_numbers)
+        )
+        total = stats_qs.count()
+        correct = stats_qs.filter(is_correct=True).count()
+        percent = None if total == 0 else int(round((correct / total) * 100))
+
+        # ¿usó IA? (al menos una explicación en esos ejercicios)
+        used_ia = ExplanationRequest.objects.filter(
+            attempt__user=request.user,
+            attempt__exercise_number__in=ex_numbers
+        ).exists()
+
+        rows.append({
+            "unidad": u["title"],
+            "percent": percent,                         # None → N/A
+            "dominio": _domain_label(percent),
+            "ia": ("N/A" if total == 0 else ("Sí" if used_ia else "No")),
+        })
+
+    context = {
+        "student_name": _student_name(request.user),
+        "student_id": _student_id(request.user),
+        "rows": rows,
+    }
+    return render(request, "reporte/evaluaciones.html", context)
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+def evaluaciones_report(request: HttpRequest) -> HttpResponse:
+    """
+    PDF con ReportLab (canvas) – formato anterior (fuentes más grandes),
+    eliminando la columna 'Uso de IA'.
+    """
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas as rl_canvas
+    from reportlab.lib.colors import Color, black, white
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    # === Datos ===
+    UNITS = [
+        {"key": "U1", "title": "Acentuación",             "exercises": [1, 2, 3]},
+        {"key": "U2", "title": "Puntuación",               "exercises": [4, 5]},
+        {"key": "U3", "title": "Mayúscula y Minúscula",    "exercises": [6, 7]},
+        {"key": "U4", "title": "Reglas de las Letras",     "exercises": [8]},
+    ]
+    rows = []
+    for u in UNITS:
+        ex_numbers = u["exercises"]
+        qs = ExerciseAttempt.objects.filter(user=request.user, exercise_number__in=ex_numbers)
+        total = qs.count()
+        correct = qs.filter(is_correct=True).count()
+        percent = None if total == 0 else int(round((correct/total)*100))
+        # seguimos calculando lo demás si querés, pero ya no lo mostramos
+        rows.append({
+            "unidad": u["title"],
+            "percent": percent,
+            "dominio": _domain_label(percent),
+        })
+
+    # === Layout (estilo anterior) ===
+    PAGE_W, PAGE_H = A4
+    mm = 72 / 25.4
+    M_L, M_R, M_T, M_B = 20*mm, 20*mm, 18*mm, 18*mm
+
+    GREEN = Color(86/255, 140/255, 0/255)
+    GREEN_LIGHT = Color(235/255, 246/255, 220/255)
+
+    try:
+        pdfmetrics.registerFont(TTFont("DejaVu", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
+        pdfmetrics.registerFont(TTFont("DejaVu-Bold", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
+        FONT_REG, FONT_BOLD = "DejaVu", "DejaVu-Bold"
+    except Exception:
+        FONT_REG, FONT_BOLD = "Helvetica", "Helvetica-Bold"
+
+    def strw(txt, font, size): return pdfmetrics.stringWidth(txt, font, size)
+
+    def draw_center(c, x, w, y, txt, font, size, col=black):
+        c.setFont(font, size); c.setFillColor(col)
+        c.drawString(x + (w - strw(txt, font, size))/2.0, y, txt)
+
+    def wrap(txt, font, size, max_w):
+        out, line = [], ""
+        for w in txt.split():
+            probe = (line + " " + w).strip()
+            if strw(probe, font, size) <= max_w or not line:
+                line = probe
+            else:
+                out.append(line); line = w
+        if line: out.append(line)
+        return out
+
+    buf = BytesIO()
+    c = rl_canvas.Canvas(buf, pagesize=A4)
+    c.setTitle("Reporte de Evaluaciones")
+
+    y = PAGE_H - M_T
+
+    # Título (caja, tamaño “anterior”)
+    TITLE = "Reporte de Evaluaciones"
+    c.setStrokeColor(GREEN); c.setLineWidth(2)
+    c.setFont(FONT_BOLD, 20)
+    tw = strw(TITLE, FONT_BOLD, 20)
+    x_title = (PAGE_W - tw)/2.0
+    c.roundRect(x_title - 12, y - 10, tw + 24, 28, 6, stroke=1, fill=0)
+    c.drawString(x_title, y, TITLE)
+    y -= 36
+
+    # Información del educando (tamaños “anteriores”)
+    c.setFont(FONT_BOLD, 14); c.setFillColor(black)
+    c.drawString(M_L, y, "Información del Educando")
+    y -= 18
+    c.setFont(FONT_REG, 12)
+    c.drawString(M_L, y, f"Nombre:  {_student_name(request.user)}"); y -= 16
+    c.drawString(M_L, y, f"Cédula:  {_student_id(request.user)}");   y -= 24
+
+    # === TABLA (3 columnas) ===
+    headers = ["Unidad", "Puntuación", "Dominio"]
+    table_w = PAGE_W - M_L - M_R
+    # ancho por columnas: más espacio a “Unidad”
+    props = [0.60, 0.18, 0.22]     # 60% / 18% / 22%
+    col_w = [table_w*p for p in props]
+    x_cols = [M_L, M_L+col_w[0], M_L+col_w[0]+col_w[1], M_L+table_w]  # 4 puntos, 3 columnas
+
+    header_h = 20
+    row_h    = 22
+    PAD_X    = 6
+
+    # Header verde
+    c.setFillColor(GREEN); c.setStrokeColor(GREEN)
+    c.rect(M_L, y - header_h, table_w, header_h, fill=1, stroke=1)
+    c.setFillColor(white)
+    draw_center(c, x_cols[0], col_w[0], y - header_h + 5, headers[0], FONT_BOLD, 11, white)
+    draw_center(c, x_cols[1], col_w[1], y - header_h + 5, headers[1], FONT_BOLD, 11, white)
+    draw_center(c, x_cols[2], col_w[2], y - header_h + 5, headers[2], FONT_BOLD, 11, white)
+    y -= header_h
+
+    # Filas
+    c.setStrokeColor(GREEN)
+    for i, r in enumerate(rows):
+        # fondo alterno
+        c.setFillColor(GREEN_LIGHT if i % 2 == 0 else white)
+        c.rect(M_L, y - row_h, table_w, row_h, fill=1, stroke=1)
+
+        # líneas verticales
+        for xx in x_cols[1:-1]:
+            c.line(xx, y - row_h, xx, y)
+
+        # 👇 IMPORTANTE: volver a negro para el texto
+        c.setFillColor(black)
+
+        # Col 1: Unidad (wrap a 2 líneas)
+        c.setFont(FONT_REG, 11)
+        lines = wrap(r["unidad"], FONT_REG, 11, col_w[0] - 2*PAD_X)[:2]
+        total_h = len(lines)*11 + (len(lines)-1)*2
+        base_y = y - (row_h + total_h)/2 + 2
+        for j, line in enumerate(lines):
+            c.drawString(x_cols[0] + PAD_X, base_y + j*(11+2), line)
+
+        # Col 2: Puntuación (centrado)
+        pct_text = "N/A" if r["percent"] is None else f"{r['percent']}%"
+        draw_center(c, x_cols[1], col_w[1], y - row_h + 5, pct_text, FONT_REG, 11, black)
+
+        # Col 3: Dominio (centrado)
+        draw_center(c, x_cols[2], col_w[2], y - row_h + 5, r["dominio"], FONT_REG, 11, black)
+
+        y -= row_h
+        if y < M_B + 40:
+            c.showPage()
+            y = PAGE_H - M_T
+            # redibujar header...
+            c.setFillColor(GREEN); c.setStrokeColor(GREEN)
+            c.rect(M_L, y - header_h, table_w, header_h, fill=1, stroke=1)
+            c.setFillColor(white)
+            draw_center(c, x_cols[0], col_w[0], y - header_h + 5, headers[0], FONT_BOLD, 11, white)
+            draw_center(c, x_cols[1], col_w[1], y - header_h + 5, headers[1], FONT_BOLD, 11, white)
+            draw_center(c, x_cols[2], col_w[2], y - header_h + 5, headers[2], FONT_BOLD, 11, white)
+            y -= header_h
+
+
+    c.showPage()
+    c.save()
+    pdf = buf.getvalue()
+    buf.close()
+
+    resp = HttpResponse(pdf, content_type="application/pdf")
+    resp["Content-Disposition"] = 'inline; filename="reporte_evaluaciones.pdf"'
+    return resp

@@ -35,116 +35,36 @@ class ContenidoForm(forms.ModelForm):
         return archivo
 
 ################
-#LOGIN DOCENTE
-class LoginDocente(forms.Form):
-    """Formulario de inicio de sesión para docentes.
-
-    Valida la combinación de cédula y contraseña mediante la función
-    ``authenticate`` de Django. Si la autenticación falla o la cuenta
-    está inactiva, lanza errores correspondientes.
-    """
-
-    cedula = forms.CharField(max_length=20, label="Usuario")
+class LoginForm(forms.Form):
+    cedula = forms.CharField(label="Cédula de Identidad")
     password = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
-
-    def clean(self) -> dict[str, object]:
-        cleaned_data = super().clean()
-        cedula = cleaned_data.get("cedula")
-        password = cleaned_data.get("password")
-        if cedula and password:
-            user = authenticate(username=cedula, password=password)
-            if user is None:
-                raise forms.ValidationError("Credenciales incorrectas.")
-            if not user.is_active:
-                raise forms.ValidationError("Cuenta deshabilitada.")
-            # Guardamos el usuario para usarlo en la vista
-            self.user = user  # type: ignore[attr-defined]
-        return cleaned_data
-
-class RegisterDocente(forms.ModelForm):
-    """Formulario de registro para nuevos docentes.
-
-    Incluye dos campos de contraseña que deben coincidir. Utiliza el
-    modelo Docente para crear una nueva instancia y establecer la
-    contraseña de forma segura mediante ``set_password``.
-    """
-
-    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="Confirmar contraseña", widget=forms.PasswordInput)
-
-    class Meta:
-        model = Docente
-        fields = ("cedula", "nombre", "apellido", "email")
-
-    def clean_password2(self) -> str:
-        password1 = self.cleaned_data.get("password1")
-        password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError("Las contraseñas no coinciden.")
-        return password2
-
-    def save(self, commit: bool = True) -> Docente:
-        user: Docente = super().save(commit=False)
-        user.set_password(self.cleaned_data["password1"])
-        if commit:
-            user.save()
-        return user
-
-class ForgotPasswordDocente(forms.Form):
-    """Formulario para solicitar un código de restablecimiento.
-
-    Se requieren la cédula y el correo del docente. La vista asociada
-    buscará el usuario correspondiente y enviará un código por correo.
-    """
-
-    email = forms.EmailField(label="Correo Electrónico")
-    cedula = forms.CharField(max_length=20, label="Cédula")
-
-class ResetPasswordDocente(forms.Form):
-    """Formulario para restablecer la contraseña con un código.
-
-    El usuario debe proporcionar el código recibido por correo y dos
-    campos de contraseña. Se valida que las contraseñas coincidan.
-    """
-
-    code = forms.CharField(max_length=10, label="Código de verificación")
-    password1 = forms.CharField(label="Nueva contraseña", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="Confirmar contraseña", widget=forms.PasswordInput)
-
-    def clean(self) -> dict[str, object]:
-        cleaned_data = super().clean()
-        p1 = cleaned_data.get("password1")
-        p2 = cleaned_data.get("password2")
-        if p1 and p2 and p1 != p2:
-            raise forms.ValidationError("Las contraseñas no coinciden.")
-        return cleaned_data
     
 
-################
-#LOGIN ESTUDIANTE
-class LoginEstudiante(AuthenticationForm):
-    cedula = forms.CharField(max_length=20, label="Usuario")
-    password = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
-       
-
-class EstudianteRegistrationForm(forms.ModelForm):
-    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="Confirmar contraseña", widget=forms.PasswordInput)
+class RegisterForm(forms.ModelForm):
+    password1 = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
+    password2 = forms.CharField(widget=forms.PasswordInput, label="Confirmar contraseña")
 
     class Meta:
-        model = Estudiante
-        fields = ('cedula', 'email', 'nombre', 'apellido', 'password')
-    
-    def clean_password2(self) -> str:
-        password1 = self.cleaned_data.get("password1")
-        password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError("Las contraseñas no coinciden.")
-        return password2
+        model = Usuario
+        fields = ['cedula', 'email', 'nombre', 'apellido']
 
-class ForgotPasswordEstudiante(forms.Form):
-    email = forms.EmailField()
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("password1") != cleaned.get("password2"):
+            self.add_error("password2", "Las contraseñas no coinciden")
+        return cleaned
 
-class ResetPasswordEstudiante(forms.Form):
-    code = forms.CharField(max_length=6)
-    new_password = forms.CharField(widget=forms.PasswordInput)
+class ResetRequestForm(forms.Form):
+    identificador = forms.CharField(label="Cédula o Email", help_text="Ingresá tu cédula o tu correo")
+
+class ResetVerifyForm(forms.Form):
+    identificador = forms.CharField(label="Cédula o Email")
+    code = forms.CharField(label="Código de verificación", max_length=6)
+    new_password1 = forms.CharField(widget=forms.PasswordInput, label="Nueva contraseña")
+    new_password2 = forms.CharField(widget=forms.PasswordInput, label="Confirmar nueva contraseña")
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("new_password1") != cleaned.get("new_password2"):
+            self.add_error("new_password2", "Las contraseñas no coinciden")
+        return cleaned

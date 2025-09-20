@@ -1,0 +1,184 @@
+/*
+ * Estilos para el entrenador de acentuación. El esquema de color verde se
+ * inspira en el ejercicio pedido por el estudiante. Los elementos están
+ * diseñados para ser claros y accesibles, con suficiente espacio y contraste.
+ */
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #ffffff;
+    color: #222;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.site-header {
+    background-color: #e8ffe4;
+    border-bottom: 4px solid #59c64d;
+    padding: 1rem;
+    text-align: center;
+}
+
+.site-title {
+    margin: 0;
+    color: #2b7a28;
+    font-weight: 700;
+}
+
+.site-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2rem;
+}
+
+.site-footer {
+    background-color: #e8ffe4;
+    border-top: 4px solid #59c64d;
+    text-align: center;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    color: #2b7a28;
+}
+
+/* Container for each exercise */
+.exercise-container {
+    border: 3px solid #59c64d;
+    border-radius: 8px;
+    padding: 2rem;
+    max-width: 720px;
+    width: 100%;
+    background-color: #fcfffb;
+}
+
+.question {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #054d02;
+}
+
+/* Options styling */
+form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+form input[type="radio"] {
+    margin-right: 0.5rem;
+}
+
+form select {
+    font-size: 1rem;
+    padding: 0.3rem;
+    margin-left: 0.5rem;
+}
+
+.btn {
+    appearance: none;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    color: #042b05;
+    background: linear-gradient(to bottom, #bcff4c 0%, #59c64d 100%);
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s ease;
+    margin-right: 0.8rem;
+    margin-top: 1rem;    
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn.explain-btn {
+    background: linear-gradient(to bottom, #e0ff9b 0%, #8adf5d 100%);
+}
+
+.btn.continue-btn {
+    background: linear-gradient(to bottom, #b2f768 0%, #5db43e 100%);
+    text-decoration: none;
+    font-weight: bold;
+    font-style: bold;
+
+    
+}
+
+.feedback-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-top: 2px solid #59c64d;
+    background-color: #f5fff1;
+}
+
+.feedback-box p {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #054d02;
+    margin-bottom: 0.5rem;
+}
+
+.corrections {
+    margin-top: 0.5rem;
+}
+
+.corrections li {
+    margin-bottom: 0.3rem;
+}
+
+.explanation {
+    margin-top: 0.8rem;
+    font-size: 1rem;
+    color: #073a0b;
+    line-height: 1.4;
+}
+
+table.classification-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+table.classification-table th,
+table.classification-table td {
+    padding: 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid #b9e2b2;
+}
+
+table.classification-table th {
+    background-color: #e8ffe4;
+    color: #054d02;
+}
+
+.result-title {
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #054d02;
+    text-align: center;
+}
+
+.recommendation {
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+    text-align: center;
+    color: #073a0b;
+}/*
+ * Estilos para el entrenador de acentuación. El esquema de color verde se
+ * inspira en el ejercicio pedido por el estudiante. Los elementos están
+ * diseñados para ser claros y accesibles, con suficiente espacio y contraste.
+ */

@@ -1,0 +1,37 @@
+{% extends './e1_base.html' %}
+{% block title %}Ejercicio 2 – Clasifica las palabras{% endblock %}
+{% block content %}
+<div class="exercise-container">
+  <h2>Ejercicio 2</h2>
+  <p class="question">Clasifica cada palabra según su tipo de acentuación.</p>
+
+  <form id="exercise2-form" class="classify-form" data-submit-url="{% url 'exercise2_submit' %}">
+    {% csrf_token %}
+    <table class="classification-table">
+      <thead>
+        <tr><th>Palabra</th><th>Clasificación</th></tr>
+      </thead>
+      <tbody>
+        {% for word, _ in items %}
+        <tr>
+          <td class="w">{{ word }}</td>
+          <td>
+            <select name="{{ word }}" required>
+              <option value="" disabled selected>— Elegir —</option>
+              {% for c in categories %}
+              <option value="{{ c }}">{{ c }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="actions">
+      <button type="submit" class="btn primary">Comprobar</button>
+    </div>
+  </form>
+
+  <div class="feedback-box" data-explain-endpoint="{% url 'explain_attempt' 0 %}"></div>
+</div>
+{% endblock %}

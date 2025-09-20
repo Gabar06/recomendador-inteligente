@@ -1,0 +1,24 @@
+{% extends './e1_base.html' %}
+{% block title %}Ejercicio 1 – Completa la frase{% endblock %}
+{% block content %}
+<div class="exercise-container">
+    <div class="question">El perro come muy ..........</div>
+
+  <form id="exercise1-form" class="options-form" data-submit-url="{% url 'exercise1_submit' %}">
+    {% csrf_token %}
+    <div class="options">
+      {% for opt in options %}
+      <label class="option">
+        <input type="radio" name="answer" value="{{ opt }}"> <span>{{ opt }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn primary">Comprobar</button>
+    </div>
+  </form>
+
+  <div class="feedback-box" data-explain-endpoint="{% url 'explain_attempt' 0 %}"></div>
+  
+{% endblock %}
