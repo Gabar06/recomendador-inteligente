@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{#
+  Vista de perfil del educando.
+  Muestra los datos personales del usuario autenticado (nombre, apellido,
+  cédula de identidad y correo electrónico) de forma no editable.
+  Debajo se presenta una barra de progreso para la Guía de Aprendizaje.
+  El progreso se entrega desde la vista como un porcentaje (0 – 100).
+#}
+
+{% block body %}
+<div class="container mt-4">
+  <h2 class="mb-4">Mis Datos Personales</h2>
+  <div class="card p-3 shadow-sm">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label for="nombre" class="form-label">Nombre</label>
+        <input type="text" class="form-control" id="nombre" value="{{ usuario.nombre }}" readonly>
+      </div>
+      <div class="col-md-6">
+        <label for="apellido" class="form-label">Apellido</label>
+        <input type="text" class="form-control" id="apellido" value="{{ usuario.apellido }}" readonly>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label for="cedula" class="form-label">Cédula de Identidad</label>
+        <input type="text" class="form-control" id="cedula" value="{{ usuario.cedula }}" readonly>
+      </div>
+      <div class="col-md-6">
+        <label for="correo" class="form-label">Correo Electrónico</label>
+        <input type="email" class="form-control" id="correo" value="{{ usuario.email }}" readonly>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mt-5 mb-2">Progreso de la Guía de Aprendizaje</h3>
+  <div class="progress" style="height: 25px;">
+    <div class="progress-bar bg-success" role="progressbar"
+         style="width: {{ progress }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+      {{ progress }}%
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1471,3 +1471,21 @@ def calendario_detalle(request):
         })
 
     return JsonResponse({"date": date_str, "items": items})
+
+###############
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def perfil_estudiante(request):
+    """
+    Renderiza la página de perfil del estudiante.
+
+    Obtiene los datos del usuario autenticado a través de `request.user`
+    y los envía a la plantilla `menu/estudiante/perfil.html`.  También
+    suministra un porcentaje de progreso de la guía de aprendizaje.
+    Este valor es 100 por defecto, pero puede ajustarse según el avance
+    real de la persona.
+    """
+    usuario = request.user
+    # Por ahora se establece el progreso al 100%.  Ajustalo según tus
+    # necesidades o calcula el valor real de manera dinámica.
+    progreso = 100
+    return render(request, "perfil/perfil.html", {"usuario": usuario, "progress": progreso})

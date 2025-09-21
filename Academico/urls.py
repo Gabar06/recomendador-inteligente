@@ -123,5 +123,7 @@ urlpatterns = [
     path("calendario/", views.calendario, name="calendario"),
     path("calendario/events/", views.calendario_events, name="calendario_events"),
     path("calendario/detalle/", views.calendario_detalle, name="calendario_detalle"),
+    
+    path("perfil_estudiante/", views.perfil_estudiante, name="perfil_estudiante"),
 
 ]

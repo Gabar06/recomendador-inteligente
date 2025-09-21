@@ -93,10 +93,10 @@
           <img src="/static/icons/calendario.jpeg" alt="Calendario" />
           <h5>Calendario de Actividades</h5>
         </a>
-        <div class="menu-item" onclick="playClick()">
+        <a href="{% url 'perfil_estudiante' %}" class="menu-item" onclick="playClick()">
           <img src="/static/icons/perfil.png" alt="Perfil" />
           <h5>Perfil</h5>
-        </div>
+        </a>
         {% comment %}
         <div class="menu-item" onclick="playClick()">
           <img src="/static/icons/reportes.png" alt="Reportes" />
