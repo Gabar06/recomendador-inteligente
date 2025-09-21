@@ -1,0 +1,119 @@
+{% extends './calendario_base.html' %}
+{% load static %}
+
+{% block title %}Calendario de Actividades{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
+<style>
+  .cal-wrap{display:grid;grid-template-columns: 420px 1fr; gap:18px; width:100%}
+
+/* Panel estilo tarjeta + tabla de 3 columnas */
+.side{border:1px solid #dae4f2;border-radius:10px;background:#fff;padding:12px;
+      box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.side-title{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.side-title h3{margin:0;font-weight:800}
+.side-date{font-weight:700;color:#2a5686;margin:6px 0 10px}
+
+.side-table{border:1px solid #e5ebf5;border-radius:8px;overflow:hidden}
+.side-table .head-row{display:grid;grid-template-columns: 1fr 120px 120px;
+                      background:#eff4fb;font-weight:800;color:#2a5686;border-bottom:1px solid #e5ebf5}
+.side-table .head-row .col{padding:10px 12px}
+.side-table .row{display:grid;grid-template-columns: 1fr 120px 120px;
+                 border-bottom:1px dashed #e9eef5; align-items:center}
+.side-table .row:last-child{border-bottom:0}
+.side-table .row .col{padding:10px 12px}
+.side-table .row.empty{padding:12px;color:#6b7485}
+.side-table .col.ev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-table .col.t{text-align:center}
+
+/* Calendar visual (igual que te pasé) */
+#calendar{background:#fff;border:1px solid #d9e3ef;border-radius:12px;padding:8px;
+          box-shadow:0 10px 28px rgba(0,0,0,.08)}
+.fc .fc-toolbar.fc-header-toolbar{
+  background:linear-gradient(180deg,#2f68a8,#2a5686);
+  color:#fff;border-radius:10px;padding:10px 16px;margin-bottom:8px
+}
+.fc .fc-toolbar-title{font-size:1.4rem;font-weight:800}
+.fc-daygrid-event{border:none;background:#2a5686;color:#fff;border-radius:999px;padding:2px 7px;
+                  font-weight:700;font-size:.75rem;display:inline-block}
+
+</style>
+
+<div class="cal-wrap">
+  <aside class="side">
+  <div class="side-title">
+    <span>👤</span>
+    <h3>Actividades del día</h3>
+  </div>
+  <div id="side-date" class="side-date">Seleccioná una fecha</div>
+  <div id="side-list" class="side-table">
+    <div class="row empty">—</div>
+  </div>
+</aside>
+
+
+  <div id="calendar"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const calEl   = document.getElementById('calendar');
+  const sideDate= document.getElementById('side-date');
+  const sideList= document.getElementById('side-list');
+
+  const calendar = new FullCalendar.Calendar(calEl, {
+    initialView: 'dayGridMonth',
+    locale: 'es',
+    firstDay: 0,
+    height: 'auto',
+    headerToolbar: { left: 'prev', center: 'title', right: 'next' },
+    events: '{% url "calendario_events" %}',
+    eventContent: (arg)=> ({ html: `<span class="badge">${arg.event.title}</span>` }),
+    dateClick: function(info){
+      // ✅ usar info.date (local) — evita el “día -1”
+      const d = info.date; // Date local
+      const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      // título con fecha en español usando el Date local
+      sideDate.textContent = d.toLocaleDateString('es-PY', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+      loadDay(iso);
+    }
+  });
+
+  calendar.render();
+
+  async function loadDay(isoDate){
+    sideList.innerHTML = '<div class="row empty">Cargando…</div>';
+    try{
+      const r = await fetch('{% url "calendario_detalle" %}?date='+isoDate);
+      const data = await r.json();
+      const items = data.items || [];
+
+      if (!items.length){
+        sideList.innerHTML = '<div class="row empty">Sin actividades registradas</div>';
+        return;
+      }
+
+      // cabecera (Evento | Inicio | Fin)
+      sideList.innerHTML = `
+        <div class="head-row">
+          <div class="col ev">Evento</div>
+          <div class="col t">Inicio</div>
+          <div class="col t">Fin</div>
+        </div>
+      ` + items.map(it => `
+        <div class="row">
+          <div class="col ev">${it.unidad}</div>
+          <div class="col t">${it.inicio}</div>
+          <div class="col t">${it.fin}</div>
+        </div>
+      `).join('');
+    }catch(e){
+      sideList.innerHTML = '<div class="row empty">Error al cargar</div>';
+    }
+  }
+});
+</script>
+
+{% endblock %}

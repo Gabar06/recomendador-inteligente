@@ -1,0 +1,23 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ejercicios de Acentuación{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- The exercise.js script attaches behaviour to the forms on each page. -->
+    <script src="{% static 'ejercicios/js/exercise.js' %}" defer></script>
+</head>
+<body>
+<header class="site-header">
+    <h1 class="site-title">Entrenador de Acentuación</h1>
+</header>
+<main class="site-main">
+    {% block content %}{% endblock %}
+</main>
+<footer class="site-footer">
+    <small>&copy; 2025 – Proyecto educativo de acentuación</small>
+</footer>
+</body>
+</html>

@@ -118,8 +118,10 @@ urlpatterns = [
     path("acento_1/resultados/", views.results_view, name="results"),
     
     path("evaluaciones/", views.evaluaciones, name="evaluaciones"),
-    path("evaluaciones/report/", views.evaluaciones_report, name="evaluaciones_report")
-   
-
+    path("evaluaciones/report/", views.evaluaciones_report, name="evaluaciones_report"),
     
+    path("calendario/", views.calendario, name="calendario"),
+    path("calendario/events/", views.calendario_events, name="calendario_events"),
+    path("calendario/detalle/", views.calendario_detalle, name="calendario_detalle"),
+
 ]

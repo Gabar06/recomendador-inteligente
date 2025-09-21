@@ -73,6 +73,12 @@ from reportlab.lib.colors import Color, black, white
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+#Calendario
+from collections import defaultdict
+from datetime import datetime, timedelta
+from django.utils import timezone
+from django.db.models import Min, Max, Count
+
 class LibroViewSet(viewsets.ModelViewSet):
     queryset = Libro.objects.all()
     serializer_class = LibroSerializer
@@ -1346,3 +1352,122 @@ def evaluaciones_report(request: HttpRequest) -> HttpResponse:
     resp = HttpResponse(pdf, content_type="application/pdf")
     resp["Content-Disposition"] = 'inline; filename="reporte_evaluaciones.pdf"'
     return resp
+
+
+
+
+###########################
+#Calendario
+###########################
+# Mapa de unidades -> ejercicios (ajusta a tus IDs reales)
+UNITS = [
+    {"key": "U1", "title": "Acentuación",             "exercises": [1, 2, 3]},
+    {"key": "U2", "title": "Puntuación",               "exercises": [4, 5]},
+    {"key": "U3", "title": "Mayúscula y Minúscula",    "exercises": [6, 7]},
+    {"key": "U4", "title": "Reglas de las Letras",     "exercises": [8]},
+]
+# Diccionario rápido: ejercicio -> nombre de unidad
+EX_TO_UNIT = {ex: u["title"] for u in UNITS for ex in u["exercises"]}
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def calendario(request):
+    """Render del calendario del alumno logueado."""
+    today = timezone.localdate()
+    return render(request, "calendario/calendario.html", {"today": today})
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def calendario_events(request):
+    """
+    Devuelve eventos agrupados por día:
+    - start: 'YYYY-MM-DD'
+    - title: cantidad (para pintar badge)
+    - extendedProps.units: lista única de unidades trabajadas ese día
+    """
+    # podés filtrar por rango si querés (start/end de FullCalendar):
+    # start = request.GET.get("start")  # 'YYYY-MM-DD'
+    # end   = request.GET.get("end")
+
+    attempts = (
+        ExerciseAttempt.objects
+        .filter(user=request.user)
+        .values("created_at", "exercise_number")
+    )
+
+    per_day = defaultdict(lambda: {"count": 0, "units": set()})
+    for a in attempts:
+        # ✅ usar fecha LOCAL (America/Asuncion) para agrupar
+        local_dt = timezone.localtime(a["created_at"])
+        day = local_dt.date()
+        per_day[day]["count"] += 1
+        per_day[day]["units"].add(EX_TO_UNIT.get(a["exercise_number"], "Unidad"))
+
+
+    events = []
+    for day, info in per_day.items():
+        events.append({
+            "id": str(day),
+            "start": day.isoformat(),
+            "title": str(info["count"]),            # badge
+            "allDay": True,
+            "extendedProps": {
+                "units": sorted(info["units"]),
+            },
+        })
+    return JsonResponse(events, safe=False)
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def calendario_detalle(request):
+    """Lista de actividades por unidad del día seleccionado (rango local [00:00, 24:00))."""
+    date_str = request.GET.get("date")
+    if not date_str:
+        return JsonResponse({"items": []})
+
+    try:
+        y, m, d = map(int, date_str.split("-"))
+    except Exception:
+        return JsonResponse({"items": []})
+
+    # --- Rango del día en zona LOCAL (America/Asuncion) ---
+    tz = timezone.get_current_timezone()
+    base_start = datetime(y, m, d, 0, 0, 0)              # naive
+    if settings.USE_TZ:
+        # 🟢 zoneinfo: usar make_aware (NO .localize)
+        start_local = timezone.make_aware(base_start, tz)
+    else:
+        start_local = base_start
+    end_local = start_local + timedelta(days=1)
+
+    qs = (
+        ExerciseAttempt.objects
+        .filter(
+            user=request.user,
+            created_at__gte=start_local,
+            created_at__lt=end_local,
+        )
+        .values("exercise_number")
+        .annotate(
+            start=Min("created_at"),
+            end=Max("created_at"),
+            total=Count("id"),
+        )
+        .order_by("start")
+    )
+
+    def fmt_local(dt):
+        if not dt:
+            return "—"
+        if settings.USE_TZ:
+            dt = timezone.localtime(dt, tz)   # a hora local
+        return dt.strftime("%I:%M:%S %p")
+
+    items = []
+    for row in qs:
+        unidad = EX_TO_UNIT.get(row["exercise_number"], "Unidad")
+        items.append({
+            "unidad": unidad,
+            "inicio": fmt_local(row["start"]),
+            "fin": fmt_local(row["end"]),
+            "total": row["total"],
+        })
+
+    return JsonResponse({"date": date_str, "items": items})
