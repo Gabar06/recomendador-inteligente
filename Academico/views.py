@@ -844,13 +844,12 @@ def _openai_explain(prompt: str) -> str:
         from openai import OpenAI  # type: ignore
         client = OpenAI(api_key=api_key)
         msg = client.chat.completions.create(
-            model="gpt-5-nano",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": "Eres un profesor de lengua conciso. Explica ortografía del español con ejemplos."},
                 {"role": "user", "content": prompt},
             ],
             max_tokens=220,
-            temperature=0.2,
         )
         return msg.choices[0].message.content or "No se obtuvo texto de la IA."
     except Exception:
@@ -889,7 +888,7 @@ def exercise1_submit(request: HttpRequest) -> JsonResponse:
     if is_correct:
         feedback = "¡Así se hace!"
     else:
-        feedback = "La palabra correcta es <b>rápido</b>"
+        feedback = "¡Incorecta!, La palabra correcta es <b>rápido</b>"
 
     return JsonResponse({
         "ok": True,
@@ -1517,7 +1516,7 @@ EXERCISE2_QUESTIONS: Dict[int, Dict[str, Any]] = {
         "correct": "b",
         "feedback_correct": "¡Así se hace!",
         # Se emplea este mensaje cuando la respuesta es errónea.
-        "feedback_incorrect": "La palabra correcta es huimos",
+        "feedback_incorrect": "¡Incorrecta!, la palabra correcta es <b>huimos</b>",
     },
     2: {
         "question": "Palabra correctamente tildada por hiato:",
@@ -1529,7 +1528,7 @@ EXERCISE2_QUESTIONS: Dict[int, Dict[str, Any]] = {
         },
         "correct": "b",
         "feedback_correct": "¡Bien hecho!",
-        "feedback_incorrect": "La palabra tildada correctamente por hiato es país",
+        "feedback_incorrect": "¡Incorrecta!, la palabra tildada correctamente por hiato es <b>país</b>",
     },
     3: {
         "question": "Completa: “___ vienes y ___ hermano también.”",
@@ -1541,7 +1540,7 @@ EXERCISE2_QUESTIONS: Dict[int, Dict[str, Any]] = {
         },
         "correct": "b",
         "feedback_correct": "¡Correcta!",
-        "feedback_incorrect": "¡Incorrecta!",
+        "feedback_incorrect": "¡Incorrecta!, la opción correcta es b, <b>Tú / tu</b>",
     },
 }
 
