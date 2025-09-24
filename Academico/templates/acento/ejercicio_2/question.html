@@ -1,0 +1,34 @@
+{% extends "./e2_base.html" %}
+{% load static %}
+
+{#
+  Plantilla para mostrar cada pregunta del ejercicio 2 de acentuación.
+  Reutiliza una única plantilla parametrizada mediante el contexto
+  proporcionado por las vistas.  Se ofrece un formulario con
+  radio-buttons para las opciones y se utiliza JavaScript para
+  enviar la respuesta mediante AJAX y mostrar la retroalimentación.
+#}
+
+{% block content %}
+<div class="exercise-container">
+  <h2 class="text-2xl font-bold mb-4 text-green-600">Ejercicio 2 de acentuación – Pregunta {{ num }}</h2>
+
+  <div class="question">{{ question }}</div>
+  <form id="exercise2-form" data-submit-url="{{ submit_url }}" data-explain-endpoint="{{ explain_endpoint }}">
+    {% csrf_token %}
+    {% for key, text in options.items %}
+    <label class="block mb-2 cursor-pointer">
+      <input type="radio" name="option" value="{{ key }}" class="mr-2 align-middle">
+      <span>{{ text }}</span>
+    </label>
+    {% endfor %}
+    <div class="actions">
+    <button type="submit" class="btn primary">
+      Enviar
+    </button>
+    </div>
+  </form>
+  <div id="feedback-box" class="feedback-box"></div>
+</div>
+<script src="{% static 'js/recomendador/acento_2.js' %}"></script>
+{% endblock %}

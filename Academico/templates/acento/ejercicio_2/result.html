@@ -1,0 +1,15 @@
+{% extends "./e2_base.html" %}
+{% block content %}
+<div class="exercise-container">
+  <h2 class="text-2xl font-bold mb-4 text-green-600">{{ headline }}</h2>
+  <p class="text-xl font-semibold mb-3">Tu puntaje: {{ percentage }}</p>
+  {% if recommendation %}
+  <p class="mb-6">{{ recommendation }}</p>
+  {% endif %}
+  <div class="button-group" style="text-align:center; margin-top:1.5rem;">
+  <a href="{% url 'guia_aprendizaje' %}" class="btn primary">
+    Continuar
+  </a>
+  </div>
+</div>
+{% endblock %}

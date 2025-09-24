@@ -65,6 +65,11 @@ from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.views.decorators.http import require_http_methods
 from .models import ExerciseAttempt, ExplanationRequest, ActionLog, ResultSummary
 
+#Ejercicio2 Acentuación
+from .models import Exercise2Attempt, Exercise2Result
+from django.views.decorators.http import require_POST
+from django.urls import reverse
+
 # === ReportLab (PDF) ===
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
@@ -1080,7 +1085,7 @@ def results_view(request: HttpRequest) -> HttpResponse:
         title = f"¡Felicidades acertaste el {int(round(percentage))}%!"
         rec = "Recomendación: Reforzar más en el capítulo de Acentuación del libro *Ortografía de la lengua española* (RAE)."
     else:
-        title = f"¡Uff, falta reforzar más, acertaste solo el {int(round(percentage))}%!"
+        title = f"¡Faltaría reforzar más, solo acertaste el {int(round(percentage))}%!"
         rec = "Recomendación: Reforzar el capítulo de Acentuación del libro *Ortografía de la lengua española* (RAE)."
 
     _log(request.user, run_id, 4, "visit", {"percentage": percentage})
@@ -1489,3 +1494,300 @@ def perfil_estudiante(request):
     # necesidades o calcula el valor real de manera dinámica.
     progreso = 100
     return render(request, "perfil/perfil.html", {"usuario": usuario, "progress": progreso})
+
+
+#####################
+#Ejercicio 2
+#####################
+
+# ---------- Constantes de configuración para el ejercicio ----------
+
+# Definición de preguntas y respuestas correctas.  Se utiliza un
+# diccionario para que sea fácil añadir más preguntas o cambiar las
+# existentes sin modificar la lógica de las vistas.
+EXERCISE2_QUESTIONS: Dict[int, Dict[str, Any]] = {
+    1: {
+        "question": "¿Cuál es la forma correcta?",
+        "options": {
+            "a": "huímos",
+            "b": "huimos",
+            "c": "huimós",
+            "d": "húimos",
+        },
+        "correct": "b",
+        "feedback_correct": "¡Así se hace!",
+        # Se emplea este mensaje cuando la respuesta es errónea.
+        "feedback_incorrect": "La palabra correcta es huimos",
+    },
+    2: {
+        "question": "Palabra correctamente tildada por hiato:",
+        "options": {
+            "a": "pais",
+            "b": "país",
+            "c": "raices",
+            "d": "héroe",
+        },
+        "correct": "b",
+        "feedback_correct": "¡Bien hecho!",
+        "feedback_incorrect": "La palabra tildada correctamente por hiato es país",
+    },
+    3: {
+        "question": "Completa: “___ vienes y ___ hermano también.”",
+        "options": {
+            "a": "Tu / tú",
+            "b": "Tú / tu",
+            "c": "Tú / tú",
+            "d": "Tu / tu",
+        },
+        "correct": "b",
+        "feedback_correct": "¡Correcta!",
+        "feedback_incorrect": "¡Incorrecta!",
+    },
+}
+
+
+def _get_question_context(question_number: int) -> Dict[str, Any]:
+    """Construye el contexto de una pregunta para pasar a la plantilla.
+
+    Parametros:
+        question_number: Número de la pregunta (1, 2 o 3).
+
+    Devuelve:
+        Un diccionario con la pregunta, las opciones y rutas para el envío
+        y explicación, así como el número de pregunta.
+    """
+    q = EXERCISE2_QUESTIONS[question_number]
+    context = {
+        "num": question_number,
+        "question": q["question"],
+        "options": q["options"],
+        # URL al que se enviará la respuesta mediante AJAX.  Se pasa el
+        # número de pregunta como parámetro para distinguir las tres vistas.
+        "submit_url": reverse("exercise2_question{}_submit".format(question_number)),
+        # Endpoint para explicar la respuesta.  El id del intento se
+        # añadirá desde el cliente tras recibir la respuesta del servidor.
+        "explain_endpoint": reverse("explain_attempt2"),
+    }
+    return context
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def exercise2_question1(request: HttpRequest) -> HttpResponse:
+    """Muestra la primera pregunta del ejercicio 2."""
+    context = _get_question_context(1)
+    return render(request, "acento/ejercicio_2/question.html", context)
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def exercise2_question2(request: HttpRequest) -> HttpResponse:
+    """Muestra la segunda pregunta del ejercicio 2."""
+    context = _get_question_context(2)
+    return render(request, "acento/ejercicio_2/question.html", context)
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def exercise2_question3(request: HttpRequest) -> HttpResponse:
+    """Muestra la tercera pregunta del ejercicio 2."""
+    context = _get_question_context(3)
+    return render(request, "acento/ejercicio_2/question.html", context)
+
+
+@require_POST
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def exercise2_question1_submit(request: HttpRequest) -> JsonResponse:
+    """Procesa la respuesta de la pregunta 1 y devuelve JSON con el resultado."""
+    return _process_submission(request, 1)
+
+
+@require_POST
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def exercise2_question2_submit(request: HttpRequest) -> JsonResponse:
+    """Procesa la respuesta de la pregunta 2 y devuelve JSON con el resultado."""
+    return _process_submission(request, 2)
+
+
+@require_POST
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def exercise2_question3_submit(request: HttpRequest) -> JsonResponse:
+    """Procesa la respuesta de la pregunta 3 y devuelve JSON con el resultado."""
+    return _process_submission(request, 3)
+
+
+def _process_submission(request: HttpRequest, question_number: int) -> JsonResponse:
+    """Función interna para manejar la lógica de respuesta y guardado.
+
+    Parametros:
+        request: Petición HTTP con los datos enviados desde el formulario.
+        question_number: Número de la pregunta que se está procesando.
+
+    Devuelve:
+        Un JsonResponse con campos:
+            - correct (bool): indica si el estudiante acertó.
+            - message (str): texto a mostrar de inmediato en pantalla.
+            - next_url (str): URL a la siguiente pregunta o a resultados.
+            - attempt_id (int): identificador del intento guardado en BD.
+    """
+    user = request.user
+    selected_option = request.POST.get("option")
+    if not selected_option:
+        return JsonResponse({"error": "No se recibió ninguna opción."}, status=400)
+
+    q_data = EXERCISE2_QUESTIONS[question_number]
+    correct_option = q_data["correct"]
+    is_correct = selected_option == correct_option
+
+    # Guardar el intento en la base de datos
+    attempt = Exercise2Attempt.objects.create(
+        user=user,
+        question_number=question_number,
+        selected_option=selected_option,
+        correct_option=correct_option,
+        is_correct=is_correct,
+    )
+
+    # Calcular la URL de la siguiente vista
+    if question_number < 3:
+        next_url = reverse(f"exercise2_question{question_number + 1}")
+    else:
+        next_url = reverse("results2")
+
+    message = q_data["feedback_correct"] if is_correct else q_data["feedback_incorrect"]
+
+    return JsonResponse(
+        {
+            "correct": is_correct,
+            "message": message,
+            "next_url": next_url,
+            "attempt_id": attempt.id,
+        }
+    )
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def explain_attempt2(request: HttpRequest) -> JsonResponse:
+    """Devuelve una explicación sobre la respuesta del estudiante.
+
+    Recibe mediante parámetros GET el `attempt_id` y opcionalmente el número
+    de pregunta.  Utiliza el modelo de lenguaje de OpenAI para generar
+    una explicación amigable y clara sobre por qué la opción escogida
+    es correcta o incorrecta.  Si no está disponible la integración con
+    OpenAI se genera un texto explicativo básico.
+    """
+    attempt_id = request.GET.get("attempt_id")
+    if not attempt_id:
+        return JsonResponse({"error": "Parámetro attempt_id ausente."}, status=400)
+    try:
+        attempt = Exercise2Attempt.objects.get(pk=attempt_id, user=request.user)
+    except Exercise2Attempt.DoesNotExist:
+        return JsonResponse({"error": "Intento no encontrado."}, status=404)
+
+    question_data = EXERCISE2_QUESTIONS[attempt.question_number]
+    selected_text = question_data["options"][attempt.selected_option]
+    correct_text = question_data["options"][question_data["correct"]]
+
+    # Construir el prompt para el modelo de lenguaje.  Intentamos dar un
+    # tono pedagógico y cercano, explicando las reglas de acentuación
+    # involucradas.
+    prompt = (
+        f"Explica al estudiante de forma concisa y amigable por qué la opción\n"
+        f"'{selected_text}' {'es correcta' if attempt.is_correct else 'es incorrecta'}\n"
+        f"en la pregunta: '{question_data['question']}'.\n"
+        f"También menciona cuál es la forma correcta y la regla de acentuación aplicada.\n"
+        f"Redacta en español sencillo y en un tono motivador."
+    )
+
+    explanation = None
+    if OpenAI is not None:
+        # Intentar generar la explicación utilizando la API de OpenAI si se
+        # encuentra instalada y se dispone de una clave.  En caso de
+        # cualquier error, se recurrirá a una explicación manual.
+        try:
+            api_key = getattr(settings, "OPENAI_API_KEY", None)
+            if api_key:
+                openai.api_key = api_key  # type: ignore[assignment]
+                completion = openai.ChatCompletion.create(  # type: ignore[attr-defined]
+                    model="gpt-5-mini",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=150,
+                )
+                explanation = completion.choices[0].message["content"].strip()  # type: ignore[index]
+        except Exception:
+            explanation = None
+
+    if not explanation:
+        # Explicación genérica si no hay acceso a la API.
+        if attempt.question_number == 1:
+            explanation = (
+                "En español, la forma correcta del pasado de 'huir' en primera persona del plural"
+                " es 'huimos' (sin tilde) porque la combinación 'ui' forma un diptongo y la "
+                "sílaba tónica recae en 'ui'. Es una palabra llana que termina en 's', por ello"
+                " no lleva tilde."
+            )
+        elif attempt.question_number == 2:
+            explanation = (
+                "La palabra 'país' lleva tilde en la 'í' para romper el diptongo 'ai' y formar"
+                " un hiato: se pronuncia pa-ís. En cambio, 'pais' no tiene hiato y por eso"
+                " sería incorrecto. 'Héroe' también es un hiato correctamente tildado, pero"
+                " la pregunta pedía escoger entre las opciones dadas la que corresponde a"
+                " un hiato simple de dos letras."
+            )
+        elif attempt.question_number == 3:
+            explanation = (
+                "En la frase, la primera forma debe ser 'tú' con tilde porque se trata del"
+                " pronombre personal ('you' en inglés). La segunda forma es 'tu' sin tilde"
+                " porque indica posesión (tu hermano). Recuerda: los pronombres personales"
+                " llevan tilde diacrítica para distinguirlos de los determinantes posesivos."
+            )
+        else:
+            explanation = "No se encontró una explicación para esta pregunta."
+
+    return JsonResponse({"explanation": explanation})
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def results_view2(request: HttpRequest) -> HttpResponse:
+    """Muestra al estudiante su puntaje final del ejercicio 2.
+
+    Calcula el porcentaje de respuestas correctas en función de los
+    intentos realizados y guarda dicho resultado.  A continuación,
+    selecciona el mensaje y la recomendación apropiada según el
+    porcentaje alcanzado.
+    """
+    user = request.user
+    attempts = Exercise2Attempt.objects.filter(user=user)
+    total_q = 3
+    correct_count = sum(1 for a in attempts if a.is_correct)
+    percentage = (correct_count / total_q) * 100
+
+    # Guardar el resultado final
+    Exercise2Result.objects.create(
+        user=user,
+        total_questions=total_q,
+        correct_answers=correct_count,
+        percentage=percentage,
+    )
+
+    # Determinar el mensaje y la recomendación según el porcentaje
+    if correct_count == total_q:
+        headline = "¡Completaste todos los ejercicios sin errores, sigue así!"
+        recommendation = None
+    elif percentage >= 60:
+        headline = f"¡Felicidades acertaste el {percentage:.0f}%!"
+        recommendation = (
+            "Recomendación: Reforzar más en el capítulo del libro sobre acentuación. "
+            "Consulta la 'Ortografía de la lengua española' de la RAE para profundizar."
+        )
+    else:
+        headline = f"¡Faltaría reforzar un poco más, acertaste solo el {percentage:.0f}%!"
+        recommendation = (
+            "Recomendación: Repasa el capítulo sobre acentuación de un buen libro "
+            "de ortografía, por ejemplo la 'Ortografía de la lengua española' editada "
+            "por la RAE."
+        )
+
+    context = {
+        "headline": headline,
+        "percentage": f"{percentage:.0f}%",
+        "recommendation": recommendation,
+    }
+    return render(request, "acento/ejercicio_2/result.html", context)

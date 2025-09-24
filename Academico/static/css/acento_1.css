@@ -81,6 +81,7 @@ form select {
 
 .btn {
     appearance: none;
+    text-decoration: none;
     border: none;
     padding: 0.6rem 1.2rem;
     font-size: 1rem;
@@ -102,6 +103,7 @@ form select {
 .btn:active {
     transform: translateY(0);
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    
 }
 
 .btn.explain-btn {

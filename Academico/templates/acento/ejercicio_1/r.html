@@ -2,13 +2,13 @@
 {% block title %}Resultados{% endblock %}
 {% block content %}
 <div class="exercise-container">
-  <h2>Resultados</h2>
-  <p class="final-title">{{ title|safe }}</p>
+  <h2  class="text-2xl font-bold mb-4 text-green-600">Resultados</h2>
+  <p class="text-xl font-semibold mb-3">{{ title|safe }}</p>
   {% if recommendation %}
     <p class="recommendation">{{ recommendation|safe }}</p>
   {% endif %}
-  <div class="button-group" style="text-align:center; margin-top:1.5rem;">
-    <a class="btn primary" href="{% url 'exercise1' %}">Volver a empezar</a>
+  <div class="button-group" style="text-align:center; margin-top:1.5rem; text-decoration: none;">
+    <a class="btn primary" href="{% url 'guia_aprendizaje' %}">Continuar</a>
   </div>
 </div>
 {% endblock %}

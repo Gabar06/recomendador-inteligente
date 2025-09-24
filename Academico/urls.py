@@ -117,6 +117,18 @@ urlpatterns = [
     path("acento_1/explicar/<int:attempt_id>/", views.explain_attempt, name="explain_attempt"),
     path("acento_1/resultados/", views.results_view, name="results"),
     
+    
+    #######################
+    # Ejercicio2 Acentuación
+    path("acento_2/1/", views.exercise2_question1, name="exercise2"),
+    path("acento_2/1/submit/", views.exercise2_question1_submit, name="exercise2_question1_submit"),
+    path("acento_2/2/", views.exercise2_question2, name="exercise2_question2"),
+    path("acento_2/2/submit/", views.exercise2_question2_submit, name="exercise2_question2_submit"),
+    path("acento_2/3/", views.exercise2_question3, name="exercise2_question3"),
+    path("acento_2/3/submit/", views.exercise2_question3_submit, name="exercise2_question3_submit"),
+    path("acento_2/explicar/", views.explain_attempt2, name="explain_attempt2"),
+    path("acento_2/resultados/", views.results_view2, name="results2"),
+    
     path("evaluaciones/", views.evaluaciones, name="evaluaciones"),
     path("evaluaciones/report/", views.evaluaciones_report, name="evaluaciones_report"),
     

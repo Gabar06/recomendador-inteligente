@@ -210,3 +210,48 @@ class ResultSummary(models.Model):
     percentage = models.DecimalField(max_digits=5, decimal_places=2)
     breakdown = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Exercise2Attempt(models.Model):
+    """Almacena un intento de una pregunta del ejercicio 2 de acentuación.
+
+    Cada vez que un estudiante responde a una pregunta se crea una
+    instancia de este modelo, guardando quién la respondió, el número
+    de la pregunta, la opción seleccionada, cuál era la opción
+    correcta y si la respuesta fue correcta o no.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    question_number = models.PositiveSmallIntegerField()
+    selected_option = models.CharField(max_length=10)
+    correct_option = models.CharField(max_length=10)
+    is_correct = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Intento de ejercicio 2"
+        verbose_name_plural = "Intentos de ejercicio 2"
+
+    def __str__(self) -> str:  # pragma: no cover - función de representación
+        return f"Ejercicio2Preg{self.question_number} ({'✓' if self.is_correct else '✗'})"
+
+
+class Exercise2Result(models.Model):
+    """Guarda el resultado final del ejercicio 2 para un estudiante.
+
+    Tras completar las tres preguntas del ejercicio 2, se almacena
+    cuántas respondió correctamente y el porcentaje obtenido.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    total_questions = models.PositiveSmallIntegerField(default=3)
+    correct_answers = models.PositiveSmallIntegerField()
+    percentage = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Resultado de ejercicio 2"
+        verbose_name_plural = "Resultados de ejercicio 2"
+
+    def __str__(self) -> str:  # pragma: no cover - función de representación
+        return f"Resultado Ej2 ({self.percentage:.1f}%)"
