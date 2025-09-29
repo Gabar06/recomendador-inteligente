@@ -1,0 +1,36 @@
+{% extends "./final_base.html" %}
+{% load static %}
+
+{#
+  Plantilla para el ejercicio interactivo de puntuación.  Muestra el texto
+  dividido en palabras y espacios clicables donde el estudiante debe
+  seleccionar la ubicación correcta para cada signo de puntuación.  Un
+  contador muestra el número de aciertos y un recuadro de
+  retroalimentación informa al usuario sobre cada intento.
+#}
+
+{% block content %}
+<div class="container mx-auto max-w-5xl mt-8 p-4">
+  <h2 class="text-3xl font-bold text-green-700 mb-4">Ejercicio de puntuación</h2>
+  <p class="mb-3 text-lg text-gray-700">Haz clic entre las palabras para colocar el signo de puntuación que falta (coma, punto o punto y coma). Al terminar, recibirás tu puntaje y una recomendación.</p>
+  <div id="exercise"
+       data-step="{{ step }}"
+       data-total="{{ total_steps }}"
+       data-score="{{ score }}"
+       data-submit-url="{{ submit_url }}"
+       data-explain-url="{{ explain_url }}">
+    <div id="text-container" class="leading-relaxed text-lg">
+      {% for word in words %}
+        <span class="word">{{ word }}</span>{% if not forloop.last %}<span class="space clickable" data-index="{{ forloop.counter0 }}">&nbsp;</span>{% endif %}
+      {% endfor %}
+    </div>
+    <div id="feedback-box" class="mt-4"></div>
+    <div class="mt-4">
+      <span id="score-display" class="py-2 px-4 rounded bg-green-500 text-white font-semibold">
+        Correctas {{ score }} de {{ total_steps }}
+      </span>
+    </div>
+  </div>
+</div>
+<script src="{% static 'js/recomendador/puntuacion.js' %}"></script>
+{% endblock %}

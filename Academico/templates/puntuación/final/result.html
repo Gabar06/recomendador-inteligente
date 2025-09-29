@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{#
+  Plantilla para mostrar los resultados del ejercicio de puntuación.  Se
+  presenta el puntaje obtenido, una breve recomendación y un recordatorio de
+  las reglas básicas de uso de los signos de puntuación.  También se ofrece
+  un enlace para regresar al menú principal o continuar con más ejercicios.
+#}
+
+{% block content %}
+<div class="container mx-auto max-w-3xl mt-10 p-6 bg-white shadow-md rounded-md">
+  <h2 class="text-2xl font-bold text-green-700 mb-4">{{ headline }}</h2>
+  <p class="text-xl mb-2">Aciertos: {{ score }} / {{ total_steps }} ({{ percentage }})</p>
+  <p class="mb-4">{{ recommendation }}</p>
+  <div class="p-4 bg-green-50 border-l-4 border-green-400 mb-4">
+    <h3 class="font-semibold text-green-700 mb-2">Recuerda</h3>
+    <p>{{ reminder }}</p>
+  </div>
+  <a href="{% url 'menu_estudiante' %}" class="bg-green-500 hover:bg-green-600 text-white py-2 px-6 rounded">Regresar al menú</a>
+</div>
+{% endblock %}

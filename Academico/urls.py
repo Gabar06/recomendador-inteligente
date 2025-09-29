@@ -129,6 +129,14 @@ urlpatterns = [
     path("acento_2/explicar/", views.explain_attempt2, name="explain_attempt2"),
     path("acento_2/resultados/", views.results_view2, name="results2"),
     
+    #######################
+    # Ejercicio final de puntuación
+    path("puntuacion/", views.punctuation_exercise, name="punctuation_final"),
+    path("puntuacion/submit/", views.punctuation_submit, name="punctuation_submit"),
+    path("puntuacion/explicar/", views.punctuation_explain, name="punctuation_explain"),
+    path("puntuacion/resultado/", views.punctuation_result, name="punctuation_result"),
+
+    
     path("evaluaciones/", views.evaluaciones, name="evaluaciones"),
     path("evaluaciones/report/", views.evaluaciones_report, name="evaluaciones_report"),
     

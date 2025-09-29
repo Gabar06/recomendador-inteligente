@@ -70,6 +70,10 @@ from .models import Exercise2Attempt, Exercise2Result
 from django.views.decorators.http import require_POST
 from django.urls import reverse
 
+#Puntuación Final
+from .models import PunctuationAttempt, PunctuationResult
+from typing import List, Dict, Any
+
 # === ReportLab (PDF) ===
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
@@ -1790,3 +1794,336 @@ def results_view2(request: HttpRequest) -> HttpResponse:
         "recommendation": recommendation,
     }
     return render(request, "acento/ejercicio_2/result.html", context)
+
+
+# -----------------------------------------------------------------------------
+##########################################################
+# Datos del ejercicio: texto sin signos de puntuación y posiciones correctas
+#
+# A continuación se define la lista de palabras que componen el texto y las
+# posiciones (índices) en las que el estudiante debe insertar un signo de
+# puntuación.  Cada posición se indica mediante el índice de la palabra
+# después de la cual debe aparecer el signo.  Por ejemplo, si el índice es 7,
+# significa que entre la palabra 7 y la palabra 8 se debe colocar la coma.
+
+# Texto original adaptado del artículo “Propulsor de la educación paraguaya”.
+TEXT_WORDS: List[str] = [
+    "El", "Congreso", "Nacional", "reunido", "en", "marzo", "de", "1841", "el", "gobierno",
+    "consular", "decretó", "el", "30", "de", "noviembre", "de", "1841", "el",
+    "establecimiento", "de", "la", "Academia", "Literaria", "El", "plan", "de",
+    "estudios", "comprendía", "Latinidad", "Idioma", "Castellano", "y", "Bellas", "Letras",
+    "Filosofía", "Racional", "Teología", "Dogmática", "Historia", "Eclesiástica", "y",
+    "Oratoria", "Sagrada", "solo", "se", "proveyó", "de", "las", "dos", "primeras",
+    "cátedras", "mencionadas", "que", "se", "confiaron", "a", "los", "P", "P", "Marco",
+    "Antonio", "Maíz", "simultáneamente", "director", "del", "instituto", "y", "José",
+    "Joaquín", "Palacios", "Don", "Carlos", "Antonio", "López", "fue", "el", "primer",
+    "presidente", "Constitucional", "del", "Paraguay", "y", "gran", "visionario", "en",
+    "temas", "de", "educación", "pues", "comprendía", "que", "la", "formación",
+    "académica", "era", "clave", "para", "el", "desarrollo", "de", "una", "Nación", "Una",
+    "de", "las", "prácticas", "más", "reconocidas", "fue", "el", "otorgamiento", "de",
+    "becas", "a", "un", "grupo", "de", "jóvenes", "destacados", "para", "que", "pudieran",
+    "estudiar", "en", "el", "exterior", "una", "vez", "que", "se", "comprometían", "a",
+    "retornar", "a", "la", "patria", "el", "gobierno", "les", "garantizaba", "el",
+    "empleo", "se", "los", "enviaba", "para", "que", "completaran", "su", "preparación",
+    "y", "al", "regresar", "podían", "ayudar", "a", "resolver", "los", "problemas",
+    "del", "país", "En", "1858", "varios", "compatriotas", "dejaron", "Paraguay", "con",
+    "el", "compromiso", "de", "que", "a", "su", "regreso", "desarrollarían", "e",
+    "implementarían", "lo", "aprendido", "en", "beneficio", "del", "país", "así",
+    "los", "Becarios", "de", "López", "serían", "los", "principales", "motores", "del",
+    "proceso", "de", "modernización", "del", "país", "Los", "primeros", "becarios",
+    "fueron", "a", "Gran", "Bretaña", "los", "mismos", "fueron", "seleccionados", "del",
+    "Aula", "de", "Filosofía", "y", "asumieron", "el", "compromiso", "de", "ir", "a",
+    "prepararse", "para", "la", "carrera", "de", "constructores", "entre", "ellos",
+    "Juan", "Cristóstomo", "Centurión", "Gerónimo", "Pérez", "Cándido", "Bareiro",
+    "Andrés", "Maíz", "y", "Gaspar", "López", "los", "jóvenes", "habían", "estudiado",
+    "en", "Asunción", "y", "tenían", "una", "excelente", "formación", "jurídica",
+    "Durante", "años", "Centurión", "presidió", "la", "República", "en", "el", "año",
+    "1878", "y", "publicó", "cuatro", "volúmenes", "de", "Memorias", "de",
+    "extraordinaria", "importancia", "en", "la", "historiografía", "paraguaya",
+    "una", "novela", "y", "diversos", "artículos", "estudios", "y", "ensayos",
+]
+
+# Definición de los pasos esperados: índice de palabra después de la cual se
+# debe insertar el signo y el signo correspondiente.  Se utiliza un
+# diccionario para cada entrada para mayor claridad.
+PUNCTUATION_STEPS: List[Dict[str, Any]] = [
+    {"index": 7, "punctuation": ","},    # El Congreso ... marzo de 1841,
+    {"index": 17, "punctuation": ","},   # ... noviembre de 1841,
+    {"index": 23, "punctuation": "."},   # ... Academia Literaria.
+    {"index": 43, "punctuation": ","},   # ... Oratoria Sagrada,
+    {"index": 70, "punctuation": "."},   # ... Joaquín Palacios.
+    {"index": 81, "punctuation": ","},   # ... del Paraguay,
+    {"index": 126, "punctuation": ";"},  # ... el exterior; una vez
+    {"index": 142, "punctuation": ";"},  # ... el empleo; se los enviaba
+]
+
+
+def _compute_current_progress(user) -> Dict[str, int]:
+    """Calcula el número de respuestas correctas y el paso actual para un usuario.
+
+    Busca en la base de datos los intentos ya realizados por el usuario.  El
+    paso actual se determina por la cantidad de intentos almacenados; el
+    siguiente signo a colocar corresponde a la entrada con ese índice en
+    `PUNCTUATION_STEPS`.  También se calcula el número de respuestas correctas.
+
+    Retorna un diccionario con claves `step` y `score`.
+    """
+    attempts = PunctuationAttempt.objects.filter(user=user).order_by('step_number')
+    step = attempts.count()
+    score = attempts.filter(is_correct=True).count()
+    return {"step": step, "score": score}
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def punctuation_exercise(request: HttpRequest) -> HttpResponse:
+    """Muestra la actividad interactiva de puntuación.
+
+    Cada vez que el usuario entra en la vista, se eliminan los intentos
+    anteriores para permitir que repita el ejercicio desde cero.  Luego se
+    prepara el contexto con las palabras del texto, el número total de pasos y
+    el progreso actual (si se utilizaran sesiones persistentes, aquí podría
+    continuarse).  La plantilla generará los espacios clicables entre
+    palabras y mostrará el contador de aciertos.
+    """
+    user = request.user
+    # Reiniciar cualquier intento previo para comenzar de cero.
+    PunctuationAttempt.objects.filter(user=user).delete()
+    PunctuationResult.objects.filter(user=user).delete()
+
+    progress = _compute_current_progress(user)
+
+    context = {
+        "words": TEXT_WORDS,
+        "total_steps": len(PUNCTUATION_STEPS),
+        "step": progress["step"],
+        "score": progress["score"],
+        "submit_url": reverse("punctuation_submit"),
+        "explain_url": reverse("punctuation_explain"),
+    }
+    return render(request, "puntuación/final/exercise.html", context)
+
+
+@require_POST
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def punctuation_submit(request: HttpRequest) -> JsonResponse:
+    """Procesa un clic del estudiante entre dos palabras.
+
+    El cuerpo de la petición debe incluir `index` (el índice seleccionado) y
+    `step` (el paso en que se encuentra el estudiante).  La vista compara
+    este índice con el índice correcto para el paso indicado en
+    `PUNCTUATION_STEPS`.  Se registra un `PunctuationAttempt` y se
+    devuelve un JSON con información sobre si la respuesta fue correcta,
+    qué signo debía colocarse, cuál es el índice correcto, el número de
+    aciertos acumulados y si el ejercicio ha finalizado.
+    """
+    user = request.user
+    try:
+        index = int(request.POST.get("index", "-1"))
+        step = int(request.POST.get("step", "0"))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Parámetros inválidos"}, status=400)
+
+    # Verificar que el paso esté dentro de los límites
+    total_steps = len(PUNCTUATION_STEPS)
+    if step < 0 or step >= total_steps:
+        return JsonResponse({"error": "Paso fuera de rango"}, status=400)
+
+    correct_entry = PUNCTUATION_STEPS[step]
+    correct_index = correct_entry["index"]
+    expected_punct = correct_entry["punctuation"]
+    is_correct = index == correct_index
+
+    # Guardar el intento en la base de datos
+    attempt = PunctuationAttempt.objects.create(
+        user=user,
+        step_number=step,
+        selected_index=index,
+        correct_index=correct_index,
+        expected_punctuation=expected_punct,
+        is_correct=is_correct,
+    )
+
+    # Calcular la puntuación acumulada y el siguiente paso
+    progress = _compute_current_progress(user)
+    next_step = progress["step"] + 1 if is_correct else progress["step"] + 1  # siempre avanzamos al siguiente
+
+    # Mensajes de retroalimentación
+    if is_correct:
+        message = "¡Correcto!"
+    else:
+        message = f"Incorrecto, debía ir '{expected_punct}' después de la palabra seleccionada."
+
+    response_data: Dict[str, Any] = {
+        "is_correct": is_correct,
+        "message": message,
+        "correct_index": correct_index,
+        "expected_punctuation": expected_punct,
+        "attempt_id": attempt.id,
+        "score": progress["score"] + (1 if is_correct else 0),
+        "next_step": next_step,
+        "total_steps": total_steps,
+    }
+
+    if next_step >= total_steps:
+        # Se ha completado el ejercicio
+        response_data["finished"] = True
+        response_data["result_url"] = reverse("punctuation_result")
+    else:
+        response_data["finished"] = False
+    return JsonResponse(response_data)
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def punctuation_explain(request: HttpRequest) -> JsonResponse:
+    """Devuelve una explicación personalizada sobre un intento de puntuación.
+
+    Se espera recibir el parámetro `attempt_id` en la cadena de consulta.  La
+    explicación se genera utilizando la API de OpenAI cuando está disponible.
+    Si la integración no se encuentra disponible, se proporcionan
+    explicaciones predefinidas según el signo de puntuación que corresponda.
+    Además de explicar por qué el signo es correcto o incorrecto, se
+    recomienda consultar el capítulo de la OLE (Ortografía de la lengua
+    española) relacionado con los signos ortográficos.
+    """
+    attempt_id = request.GET.get("attempt_id")
+    if not attempt_id:
+        return JsonResponse({"error": "Falta attempt_id"}, status=400)
+    try:
+        attempt = PunctuationAttempt.objects.get(pk=attempt_id, user=request.user)
+    except PunctuationAttempt.DoesNotExist:
+        return JsonResponse({"error": "Intento no encontrado"}, status=404)
+
+    # Determinar la explicación genérica en caso de no tener acceso a OpenAI
+    if attempt.expected_punctuation == ".":
+        generic_explanation = (
+            "El punto indica una pausa que da fin a un enunciado y siempre se escribe "
+            "mayúscula la palabra siguiente"  # sin tilde
+        )
+    elif attempt.expected_punctuation == ",":
+        generic_explanation = (
+            "La coma marca una pausa breve dentro del enunciado. Se usa para separar "
+            "miembros de una enumeración o para aislar incisos y vocativos"
+        )
+    elif attempt.expected_punctuation == ";":
+        generic_explanation = (
+            "El punto y coma se emplea para separar oraciones largas que ya contienen "
+            "comas o para separar elementos complejos de una enumeración"
+        )
+    else:
+        generic_explanation = "Este signo no está contemplado en las reglas de este ejercicio."
+
+    explanation = None
+    if OpenAI is not None:
+        try:
+            api_key = getattr(settings, "OPENAI_API_KEY", None)
+            if api_key:
+                openai.api_key = api_key  # type: ignore[assignment]
+                # Construir el prompt para OpenAI
+                correctness = "correcta" if attempt.is_correct else "incorrecta"
+                selected = TEXT_WORDS[attempt.selected_index]
+                expected_desc = {
+                    ",": "una coma",
+                    ".": "un punto",
+                    ";": "un punto y coma",
+                }[attempt.expected_punctuation]
+                prompt = (
+                    f"El estudiante seleccionó la posición después de la palabra '{selected}', pero la respuesta fue {correctness}. "
+                    f"Explícale de manera breve y amigable por qué {('se debía colocar ' + expected_desc) if not attempt.is_correct else 'esa posición es la adecuada'} "
+                    f"y menciona la regla principal de uso de {expected_desc}. Finaliza recomendando revisar el capítulo III sobre el uso de los signos ortográficos en la 'Ortografía de la lengua española' de la RAE."
+                )
+                completion = openai.ChatCompletion.create(  # type: ignore[attr-defined]
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=150,
+                    temperature=0.5,
+                )
+                explanation = completion.choices[0].message["content"].strip()  # type: ignore[index]
+        except Exception:
+            explanation = None
+
+    if not explanation:
+        explanation = (
+            f"{generic_explanation}. Para más información, consulta el capítulo III "
+            "de la 'Ortografía de la lengua española' de la Real Academia Española."
+        )
+
+    return JsonResponse({"explanation": explanation})
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def punctuation_result(request: HttpRequest) -> HttpResponse:
+    """Muestra el resultado final del ejercicio de puntuación.
+
+    Calcula el número total de aciertos del usuario, determina un porcentaje
+    y genera una recomendación de lectura mediante OpenAI (si está
+    disponible).  Guarda el resultado en la base de datos y muestra
+    asimismo un recordatorio de las reglas básicas de puntuación.
+    """
+    user = request.user
+    attempts = PunctuationAttempt.objects.filter(user=user).order_by('step_number')
+    total_steps = len(PUNCTUATION_STEPS)
+    correct_steps = sum(1 for a in attempts if a.is_correct)
+    percentage = (correct_steps / total_steps) * 100 if total_steps else 0
+
+    # Generar recomendación mediante OpenAI
+    recommendation = None
+    if OpenAI is not None:
+        try:
+            api_key = getattr(settings, "OPENAI_API_KEY", None)
+            if api_key:
+                openai.api_key = api_key  # type: ignore[assignment]
+                prompt = (
+                    f"Un estudiante obtuvo un {percentage:.0f}% de aciertos en un ejercicio de puntuación. "
+                    "Recomienda de manera amigable qué capítulo de un libro de ortografía debería estudiar "
+                    "para mejorar su dominio de las reglas de los puntos, comas y puntos y coma, y motívalo a seguir practicando."
+                )
+                completion = openai.ChatCompletion.create(  # type: ignore[attr-defined]
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=120,
+                    temperature=0.5,
+                )
+                recommendation = completion.choices[0].message["content"].strip()  # type: ignore[index]
+        except Exception:
+            recommendation = None
+    if not recommendation:
+        recommendation = (
+            "Te sugerimos estudiar el capítulo III, 'El uso de los signos ortográficos', de la "
+            "Ortografía de la lengua española de la RAE, que aborda con detalle el uso del punto, "
+            "la coma y el punto y coma."
+        )
+
+    # Guardar el resultado en la base de datos
+    PunctuationResult.objects.create(
+        user=user,
+        total_steps=total_steps,
+        correct_steps=correct_steps,
+        percentage=percentage,
+        recommendation=recommendation,
+    )
+
+    # Mensaje principal según el desempeño
+    if correct_steps == total_steps:
+        headline = "¡Excelente! Completaste todos los signos correctamente."
+    elif percentage >= 60:
+        headline = f"¡Buen trabajo! Asertaste el {percentage:.0f}% de los signos."
+    else:
+        headline = f"¡A practicar! Tu porcentaje de aciertos fue del {percentage:.0f}%."
+
+    # Reglas breves de recordatorio (basadas en la fuente citada)
+    reminder = (
+        "Recuerda que el punto indica el fin de un enunciado y siempre se escribe mayúscula la palabra siguiente; "
+        "la coma señala una pausa breve y se usa para separar elementos de una enumeración y para aislar incisos; "
+        "y el punto y coma marca una pausa superior a la de la coma e inferior a la del punto, separando oraciones largas "
+        "o elementos complejos de una lista"
+    )
+
+    context = {
+        "headline": headline,
+        "score": correct_steps,
+        "total_steps": total_steps,
+        "percentage": f"{percentage:.0f}%",
+        "recommendation": recommendation,
+        "reminder": reminder,
+    }
+    return render(request, "puntuación/final/result.html", context)

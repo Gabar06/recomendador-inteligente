@@ -255,3 +255,58 @@ class Exercise2Result(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - función de representación
         return f"Resultado Ej2 ({self.percentage:.1f}%)"
+    
+    
+# -----------------------------------------------------------------------------
+# Modelos para el ejercicio final de puntuación
+#
+# Se definen modelos adicionales para almacenar las interacciones de los
+# estudiantes con el ejercicio de puntuación. Cada clic que realiza el
+# estudiante para colocar un signo de puntuación se registra en
+# PunctuationAttempt, mientras que el resultado global del ejercicio se
+# almacena en PunctuationResult.
+
+class PunctuationAttempt(models.Model):
+    """Representa un intento en el ejercicio de puntuación.
+
+    Un intento guarda el paso (orden en el cual se realiza dentro del
+    ejercicio), la posición (índice de espacio entre palabras) donde el
+    estudiante hizo clic, el índice correcto esperado para ese paso, qué
+    signo de puntuación se esperaba y si la respuesta fue correcta.  Se
+    asocia a un usuario mediante la clave foránea `user`.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    step_number = models.PositiveSmallIntegerField()
+    selected_index = models.PositiveIntegerField()
+    correct_index = models.PositiveIntegerField()
+    expected_punctuation = models.CharField(max_length=10)
+    is_correct = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Intento de puntuación"
+        verbose_name_plural = "Intentos de puntuación"
+
+    def __str__(self) -> str:  # pragma: no cover
+        status = "✓" if self.is_correct else "✗"
+        return f"Paso {self.step_number} ({status})"
+
+
+class PunctuationResult(models.Model):
+    """Almacena el resultado final del ejercicio de puntuación para un usuario."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    total_steps = models.PositiveIntegerField(default=8)
+    correct_steps = models.PositiveIntegerField()
+    percentage = models.FloatField()
+    recommendation = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Resultado de puntuación"
+        verbose_name_plural = "Resultados de puntuación"
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Resultado Puntuación ({self.percentage:.0f}%)"
+
