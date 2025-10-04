@@ -145,5 +145,14 @@ urlpatterns = [
     path("calendario/detalle/", views.calendario_detalle, name="calendario_detalle"),
     
     path("perfil_estudiante/", views.perfil_estudiante, name="perfil_estudiante"),
+    
+    #######################
+    # Ejercicios de opción múltiple genéricos (puntuación, mayúsculas y letras)
+    # Se utilizan rutas dinámicas basadas en el identificador del ejercicio
+    # (p.ej. 'puntuacion1', 'mayus2', 'letras1') y el número de pregunta.
+    path("mc/<slug:slug>/<int:qnum>/", views.mc_question_view, name="mc_question"),
+    path("mc/<slug:slug>/<int:qnum>/submit/", views.mc_submit_view, name="mc_submit"),
+    path("mc/explain/", views.mc_explain, name="mc_explain"),
+    path("mc/<slug:slug>/result/", views.mc_result_view, name="mc_result"),
 
 ]

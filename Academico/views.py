@@ -2078,10 +2078,9 @@ def punctuation_result(request: HttpRequest) -> HttpResponse:
                     "para mejorar su dominio de las reglas de los puntos, comas y puntos y coma, y motívalo a seguir practicando."
                 )
                 completion = openai.ChatCompletion.create(  # type: ignore[attr-defined]
-                    model="gpt-3.5-turbo",
+                    model="gpt-5-mini",
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=120,
-                    temperature=0.5,
+
                 )
                 recommendation = completion.choices[0].message["content"].strip()  # type: ignore[index]
         except Exception:
@@ -2127,3 +2126,528 @@ def punctuation_result(request: HttpRequest) -> HttpResponse:
         "reminder": reminder,
     }
     return render(request, "puntuación/final/result.html", context)
+
+###########################
+#SELECCIÓN MÚLTIPLE
+############################
+
+"""
+Vistas genéricas para ejercicios de opción múltiple.
+
+Este módulo implementa seis ejercicios de selección múltiple: dos de
+puntuación, dos de uso de mayúsculas y minúsculas y dos de reglas
+ortográficas de las letras.  Cada ejercicio consta de tres preguntas
+y una pantalla final de resultados.  El flujo es similar al del
+ejercicio de acentuación: el estudiante responde una pregunta,
+recibe retroalimentación inmediata, puede solicitar una explicación
+mediante la API de OpenAI y continúa a la siguiente pregunta.  Al
+terminar se almacena el puntaje y se muestra un mensaje con una
+recomendación de estudio.
+
+Las rutas para estos ejercicios se definen de forma dinámica a
+través del parámetro ``exercise_slug`` (por ejemplo, 'puntuacion1',
+'mayus2', etc.) y ``question_number`` (1, 2 o 3).  La vista de
+resultado utiliza únicamente el ``exercise_slug``.  Para simplificar
+la configuración, todas las preguntas usan la misma plantilla y
+script JavaScript.
+"""
+
+
+import json
+from typing import Dict, Any
+
+from django.shortcuts import render
+from django.urls import reverse
+from django.views.decorators.http import require_POST
+
+
+from .models import MultipleChoiceAttempt, MultipleChoiceResult
+
+
+###########################
+#Todos los ejercicios de opción múltiple
+# -----------------------------------------------------------------------------
+# Definición de las preguntas para cada ejercicio
+#
+# Cada entrada contiene un diccionario con las claves:
+#   "question": enunciado de la pregunta
+#   "options": mapa de clave de opción (a, b, c, d) a texto de la opción
+#   "correct": clave de la opción correcta
+#   "feedback_correct": mensaje a mostrar cuando el estudiante acierta
+#   "feedback_incorrect": mensaje a mostrar cuando el estudiante falla.  Se
+#       permiten etiquetas HTML (por ejemplo, <strong>) para destacar la
+#       respuesta correcta.  El script JavaScript interpreta este campo
+#       como HTML seguro.
+
+MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
+    # Ejercicio 1 de puntuación
+    "puntuacion1": {
+        1: {
+            "question": "Colocación correcta de comas con “sin embargo”:",
+            "options": {
+                "a": "Llegó tarde sin embargo aprobó.",
+                "b": "Llegó tarde, sin embargo aprobó.",
+                "c": "Llegó tarde sin embargo, aprobó.",
+                "d": "Llegó tarde, sin embargo, aprobó.",
+            },
+            "correct": "d",
+            "feedback_correct": "¡Bien hecho!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Llegó tarde, sin embargo, aprobó.</strong>",
+        },
+        2: {
+            "question": "Punto y coma para separar elementos con comas internas:",
+            "options": {
+                "a": "Llevé frutas: manzanas, verdes; peras, maduras; y plátanos, pequeños.",
+                "b": "Llevé frutas: manzanas, verdes, peras, maduras; y plátanos, pequeños.",
+                "c": "Llevé frutas; manzanas, verdes; peras, maduras; y plátanos, pequeños.",
+                "d": "Llevé frutas: manzanas verdes; peras maduras; y plátanos pequeños.",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Llevé frutas: manzanas, verdes; peras, maduras; y plátanos, pequeños.</strong>",
+        },
+        3: {
+            "question": "Comillas recomendadas en español para cita breve:",
+            "options": {
+                "a": "“Mañana hay examen”.",
+                "b": "«Mañana hay examen».",
+                "c": "(Mañana hay examen).",
+                "d": "“Mañana hay examen».",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Así se hace!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>«Mañana hay examen».</strong>",
+        },
+    },
+    # Ejercicio 2 de puntuación
+    "puntuacion2": {
+        1: {
+            "question": "Aposición explicativa (comas bien colocadas):",
+            "options": {
+                "a": "Mi hermana que vive en Villarrica, vendrá.",
+                "b": "Mi hermana, que vive en Villarrica vendrá.",
+                "c": "Mi hermana, que vive en Villarrica, vendrá.",
+                "d": "Mi hermana que vive en Villarrica vendrá.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Mi hermana, que vive en Villarrica, vendrá.</strong>",
+        },
+        2: {
+            "question": "¿Cuál de las siguientes oraciones utiliza correctamente la puntuación en una enumeración compleja?",
+            "options": {
+                "a": "Los países visitados fueron: España, con sus ciudades históricas; Francia, famosa por su gastronomía, e Italia, conocida por su arte.",
+                "b": "Los países visitados fueron: España, con sus ciudades históricas; Francia, famosa por su gastronomía; e Italia, conocida por su arte.",
+                "c": "Los países visitados fueron: España con sus ciudades históricas, Francia famosa por su gastronomía e Italia conocida por su arte.",
+                "d": "Los países visitados fueron: España, con sus ciudades históricas, Francia, famosa por su gastronomía, e Italia, conocida por su arte.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>segunda oración</strong> es la correcta.",
+        },
+        3: {
+            "question": "Elige la opción correctamente puntuada.",
+            "options": {
+                "a": "Quiero ir al cine pero, si empieza tarde me quedo en casa.",
+                "b": "Quiero ir al cine pero si empieza tarde me quedo en casa.",
+                "c": "Quiero ir al cine, pero si empieza tarde, me quedo en casa.",
+                "d": "Quiero ir al cine; pero si empieza tarde me quedo en casa.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Quiero ir al cine, pero si empieza tarde, me quedo en casa.</strong>",
+        },
+    },
+    # Ejercicio 1 de mayúsculas y minúsculas
+    "mayus1": {
+        1: {
+            "question": "El uso correcto de la mayúscula es:",
+            "options": {
+                "a": "La Ley de Educación Superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
+                "b": "La ley de Educación Superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
+                "c": "La Ley de educación superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
+                "d": "La Ley de Educación Superior tiene por objeto la formación Personal, Académica y Profesional de los estudiantes",
+            },
+            # Según el enunciado proporcionado por el usuario, la segunda oración es la correcta.
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>segunda oración</strong> es la correcta.",
+        },
+        2: {
+            "question": "Elige la opción con uso correcto de mayúsculas",
+            "options": {
+                "a": "El Lunes 3 de Abril vamos a viajar a asunción.",
+                "b": "El lunes 3 de abril vamos a viajar a Asunción.",
+                "c": "el lunes 3 de Abril vamos a viajar a Asunción.",
+                "d": "El lunes 3 de Abril vamos a viajar a asunción.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>El lunes 3 de abril vamos a viajar a Asunción.</strong>",
+        },
+        3: {
+            "question": "Elige la opción con uso correcto de mayúsculas",
+            "options": {
+                "a": "Estudio Español y Literatura Paraguaya, pero nací en paraguay.",
+                "b": "Estudio español y literatura paraguaya, pero nací en Paraguay.",
+                "c": "Estudio español y Literatura paraguaya, pero nací en Paraguay.",
+                "d": "Estudio Español y literatura paraguaya, pero nací en Paraguay.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Estudio español y literatura paraguaya, pero nací en Paraguay.</strong>",
+        },
+    },
+    # Ejercicio 2 de mayúsculas y minúsculas
+    "mayus2": {
+        1: {
+            "question": "Elige la opción con uso correcto de mayúsculas",
+            "options": {
+                "a": "Mañana rindo en la universidad nacional de asunción; la Universidad cierra temprano.",
+                "b": "Mañana rindo en la Universidad Nacional de Asunción; la Universidad cierra temprano.",
+                "c": "Mañana rindo en la Universidad Nacional de Asunción; la universidad cierra temprano.",
+                "d": "Mañana rindo en la Universidad nacional de Asunción; la universidad cierra temprano.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>tercera oración</strong> es la correcta.",
+        },
+        2: {
+            "question": "Elige la opción con uso correcto de mayúsculas",
+            "options": {
+                "a": "Aviso: Mañana no hay clases.",
+                "b": "Aviso: mañana no hay clases.",
+                "c": "Aviso: Mañana No Hay Clases.",
+                "d": "Aviso: mañana No hay clases.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Aviso: mañana no hay clases.</strong>",
+        },
+        3: {
+            "question": "Elige la opción con uso correcto de mayúsculas",
+            "options": {
+                "a": "El Artículo 5 de la Constitución nacional establece derechos básicos.",
+                "b": "El Artículo 5 de la Constitución Nacional establece Derechos Básicos.",
+                "c": "El artículo 5 de la constitución nacional establece derechos básicos.",
+                "d": "El artículo 5 de la Constitución Nacional establece derechos básicos.",
+            },
+            "correct": "d",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>El artículo 5 de la Constitución Nacional establece derechos básicos.</strong>",
+        },
+    },
+    # Ejercicio 1 de reglas de las letras
+    "letras1": {
+        1: {
+            "question": "La oración con el uso de g/j correctamente escrita es:",
+            "options": {
+                "a": "Las personas que admiten y tratan de correjir sus fallos son las mejores.",
+                "b": "Los ropages del pasado hoy nadie los usaría.",
+                "c": "La remera, que se quedó afuera secando, se quedó hecha jirones tras el tornado.",
+                "d": "La ajilidad de los gatos me sorprenden.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>La remera, que se quedó afuera secando, se quedó hecha jirones tras el tornado.</strong>",
+        },
+        2: {
+            "question": "La oración de uso correcto de s/c/z",
+            "options": {
+                "a": "En tiempos pasados, se exigía a los siervos sumición total.",
+                "b": "La decisión de mi compañero asombró a todos.",
+                "c": "Todas sus dotes de persuazión chocaron con un muro de indiferencia.",
+                "d": "Aprovechó la ocación de disfrutar de la naturaleza.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>La decisión de mi compañero asombró a todos.</strong>",
+        },
+        3: {
+            "question": "La oración cuyo vocablo subrayado está correctamente empleado con b/v es:",
+            "options": {
+                "a": "Balido mis documentos a tiempo porque se acerca el concurso.",
+                "b": "Es imposible no localizar tan basta propiedad.",
+                "c": "Me está costando mucho havlandar esta carne.",
+                "d": "Esta mañana, mi amigo me reveló lo que vivió en su juventud.",
+            },
+            "correct": "d",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Esta mañana, mi amigo me reveló lo que vivió en su juventud.</strong>",
+        },
+    },
+    # Ejercicio 2 de reglas de las letras
+    "letras2": {
+        1: {
+            "question": "La oración incorrecta con el uso de la h está en la opción",
+            "options": {
+                "a": "La suerte me ha sido adversa",
+                "b": "Todos anhelamos en vivir en democracia",
+                "c": "¿Consideras que aún hay solución para los daños ocasionados?",
+                "d": "Las alajas fueron echos por antiguos y experimentados orfebres",
+            },
+            # La respuesta correcta es la opción d (oración incorrecta)
+            "correct": "d",
+            "feedback_correct": "¡Así es!",
+            "feedback_incorrect": "¡Incorrecto!, la oración incorrecta es <strong>Las alajas fueron echos por antiguos y experimentados orfebres.</strong>",
+        },
+        2: {
+            "question": "El auto guardé en el _________ ",
+            "options": {
+                "a": "garage",
+                "b": "garaje",
+                "c": "garache",
+                "d": "garague",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>garaje</strong>.",
+        },
+        3: {
+            "question": "¿Estás __________ de los daños que el ser humano causa al planeta?",
+            "options": {
+                "a": "cosciente",
+                "b": "conciente",
+                "c": "consciente",
+                "d": "consiente",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>consciente</strong>.",
+        },
+    },
+}
+
+
+# Títulos descriptivos para cada ejercicio.  Se muestran en la cabecera de
+# las páginas de pregunta y en la página de resultados.
+EXERCISE_TITLES: Dict[str, str] = {
+    "puntuacion1": "Ejercicio 1 de puntuación",
+    "puntuacion2": "Ejercicio 2 de puntuación",
+    "mayus1": "Ejercicio 1 de mayúsculas y minúsculas",
+    "mayus2": "Ejercicio 2 de mayúsculas y minúsculas",
+    "letras1": "Ejercicio 1 de reglas ortográficas",
+    "letras2": "Ejercicio 2 de reglas ortográficas",
+}
+
+# Recomendaciones por ejercicio para mostrar al final en caso de no obtener
+# el 100 %.  Se pueden personalizar con referencias a libros o capítulos.
+EXERCISE_RECOMMENDATIONS: Dict[str, str] = {
+    "puntuacion1": (
+        "Recomendación: repasa el capítulo dedicado a los signos de puntuación en un buen libro de ortografía, "
+        "por ejemplo en la 'Ortografía de la lengua española' de la Real Academia Española."
+    ),
+    "puntuacion2": (
+        "Recomendación: estudia con atención las reglas de uso de comas, puntos y puntos y coma. "
+        "El capítulo sobre puntuación de la 'Ortografía de la lengua española' te será de gran ayuda."
+    ),
+    "mayus1": (
+        "Recomendación: revisa el capítulo sobre uso de mayúsculas y minúsculas en tu libro de ortografía. "
+        "Recuerda que solo los nombres propios y títulos oficiales llevan mayúscula inicial."
+    ),
+    "mayus2": (
+        "Recomendación: consulta la sección dedicada al uso de mayúsculas en nombres propios y entidades. "
+        "También ten presente que, tras dos puntos, la palabra puede ir en minúscula si no inicia un enunciado independiente."
+    ),
+    "letras1": (
+        "Recomendación: repasa las reglas ortográficas de g, j, s, c, z, b y v. "
+        "Un buen recurso es el capítulo sobre reglas de las letras en la 'Ortografía de la lengua española'."
+    ),
+    "letras2": (
+        "Recomendación: profundiza en las normas sobre el uso de la h, así como la escritura de algunas palabras "
+        "de origen extranjero (como garaje) y concéntrate en las reglas de uso de consonantes en términos derivados."
+    ),
+}
+
+
+def _get_mc_question_context(slug: str, number: int) -> Dict[str, Any]:
+    """Construye el contexto para una pregunta de un ejercicio de opción múltiple.
+
+    Parámetros:
+        slug: Identificador del ejercicio (puntuacion1, mayus2, etc.).
+        number: Número de la pregunta (1, 2 o 3).
+
+    Devuelve:
+        Un diccionario con los datos para rellenar la plantilla de pregunta.
+    """
+    q_data = MC_QUESTIONS.get(slug, {}).get(number)
+    if not q_data:
+        raise ValueError(f"Pregunta no encontrada: {slug} #{number}")
+    context = {
+        "exercise_slug": slug,
+        "exercise_title": EXERCISE_TITLES.get(slug, slug),
+        "num": number,
+        "question": q_data["question"],
+        "options": q_data["options"],
+        "submit_url": reverse("mc_submit", args=(slug, number)),
+        "explain_endpoint": reverse("mc_explain"),
+    }
+    return context
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def mc_question_view(request: HttpRequest, slug: str, qnum: int) -> HttpResponse:
+    """Muestra una de las preguntas de un ejercicio de opción múltiple.
+
+    Si se accede a la primera pregunta de un ejercicio, se reinician
+    previamente los intentos y resultados almacenados para ese usuario y
+    ejercicio, de modo que pueda comenzar de nuevo sin interferencia de
+    respuestas anteriores.
+    """
+    # Validar que el ejercicio y la pregunta existan
+    if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
+        return HttpResponse("Ejercicio o pregunta no encontrada", status=404)
+    # Reiniciar intentos y resultados al comenzar el ejercicio
+    if qnum == 1:
+        MultipleChoiceAttempt.objects.filter(user=request.user, exercise_slug=slug).delete()
+        MultipleChoiceResult.objects.filter(user=request.user, exercise_slug=slug).delete()
+    context = _get_mc_question_context(slug, qnum)
+    return render(request, "mc/question.html", context)
+
+
+@require_POST
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def mc_submit_view(request: HttpRequest, slug: str, qnum: int) -> JsonResponse:
+    """Procesa la respuesta de una pregunta de un ejercicio de opción múltiple.
+
+    Recibe la opción seleccionada y registra el intento.  Devuelve un
+    JSON con información sobre si la respuesta fue correcta, un mensaje
+    de retroalimentación, la URL de la siguiente vista y el ID del
+    intento guardado.
+    """
+    # Validar que el ejercicio y la pregunta existan
+    if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
+        return JsonResponse({"error": "Ejercicio o pregunta no encontrada."}, status=404)
+    selected_option = request.POST.get("option")
+    if not selected_option:
+        return JsonResponse({"error": "No se recibió ninguna opción."}, status=400)
+    q_data = MC_QUESTIONS[slug][qnum]
+    correct_option = q_data["correct"]
+    is_correct = (selected_option == correct_option)
+    # Guardar el intento
+    attempt = MultipleChoiceAttempt.objects.create(
+        user=request.user,
+        exercise_slug=slug,
+        question_number=qnum,
+        selected_option=selected_option,
+        correct_option=correct_option,
+        is_correct=is_correct,
+    )
+    # Calcular la URL siguiente
+    if qnum < 3:
+        next_url = reverse("mc_question", args=(slug, qnum + 1))
+    else:
+        next_url = reverse("mc_result", args=(slug,))
+    # Seleccionar el mensaje apropiado
+    message = q_data["feedback_correct"] if is_correct else q_data["feedback_incorrect"]
+    return JsonResponse({
+        "correct": is_correct,
+        "message": message,
+        "next_url": next_url,
+        "attempt_id": attempt.id,
+    })
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def mc_explain(request: HttpRequest) -> JsonResponse:
+    """Devuelve una explicación para un intento de un ejercicio de opción múltiple.
+
+    Utiliza la API de OpenAI para generar una explicación personalizada.
+    Si no se dispone de la API, se devuelve una explicación genérica.
+    """
+    attempt_id = request.GET.get("attempt_id")
+    if not attempt_id:
+        return JsonResponse({"error": "Falta attempt_id"}, status=400)
+    try:
+        attempt = MultipleChoiceAttempt.objects.get(pk=attempt_id, user=request.user)
+    except MultipleChoiceAttempt.DoesNotExist:
+        return JsonResponse({"error": "Intento no encontrado"}, status=404)
+    # Obtener datos de la pregunta y las opciones
+    slug = attempt.exercise_slug
+    qnum = attempt.question_number
+    q_data = MC_QUESTIONS.get(slug, {}).get(qnum)
+    if not q_data:
+        return JsonResponse({"error": "Pregunta no encontrada"}, status=404)
+    selected_text = q_data["options"].get(attempt.selected_option, "")
+    correct_text = q_data["options"].get(q_data["correct"], "")
+
+    # Construir prompt genérico para OpenAI
+    prompt = (
+        f"Explica al estudiante por qué la opción '{selected_text}' "
+        f"{'es correcta' if attempt.is_correct else 'es incorrecta'} en la pregunta: "
+        f"'{q_data['question']}'. Indica cuál es la forma correcta ('{correct_text}') "
+        f"y menciona la regla ortográfica relevante. Usa un tono amigable y motivador "
+        f"y redacta en español."
+    )
+    explanation = None
+    if OpenAI is not None:
+        try:
+            api_key = getattr(settings, "OPENAI_API_KEY", None)
+            if api_key:
+                openai.api_key = api_key  # type: ignore[assignment]
+                completion = openai.ChatCompletion.create(  # type: ignore[attr-defined]
+                    model="gpt-5-mini",
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                explanation = completion.choices[0].message["content"].strip()  # type: ignore[index]
+        except Exception:
+            explanation = None
+    if not explanation:
+        # Explicación genérica en caso de no disponer de API
+        if attempt.is_correct:
+            explanation = (
+                f"Tu respuesta es correcta. La opción '{selected_text}' se ajusta a la regla "
+                f"indicada para esta pregunta. Sigue practicando para reforzar tus conocimientos."
+            )
+        else:
+            explanation = (
+                f"La opción que seleccionaste no cumple con la regla correspondiente. "
+                f"La forma correcta es '{correct_text}'. Revisa las normas ortográficas y "
+                f"trata de identificar por qué esta opción es la adecuada."
+            )
+    return JsonResponse({"explanation": explanation})
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
+    """Muestra la pantalla de resultados de un ejercicio de opción múltiple.
+
+    Calcula el número de aciertos y el porcentaje obtenido por el usuario
+    en el ejercicio indicado.  Se genera y guarda un objeto
+    ``MultipleChoiceResult``.  Se determina un titular y una
+    recomendación según el desempeño.
+    """
+    # Validar ejercicio
+    if slug not in MC_QUESTIONS:
+        return HttpResponse("Ejercicio no encontrado", status=404)
+    user = request.user
+    attempts = MultipleChoiceAttempt.objects.filter(user=user, exercise_slug=slug)
+    total_questions = 3
+    correct_answers = sum(1 for a in attempts if a.is_correct)
+    percentage = (correct_answers / total_questions) * 100 if total_questions else 0
+    # Guardar resultado
+    MultipleChoiceResult.objects.create(
+        user=user,
+        exercise_slug=slug,
+        total_questions=total_questions,
+        correct_answers=correct_answers,
+        percentage=percentage,
+        recommendation="",  # se asignará más abajo si corresponde
+    )
+    # Determinar el mensaje principal y la recomendación
+    if correct_answers == total_questions:
+        headline = "¡Completaste todos los ejercicios sin errores, sigue así!"
+        recommendation = None
+    elif percentage >= 60:
+        headline = f"¡Felicidades acertaste el {percentage:.0f}%!"
+        recommendation = EXERCISE_RECOMMENDATIONS.get(slug)
+    else:
+        headline = f"¡Faltaría reforzar un poco más, acertaste solo el {percentage:.0f}%!"
+        recommendation = EXERCISE_RECOMMENDATIONS.get(slug)
+    context = {
+        "exercise_title": EXERCISE_TITLES.get(slug, slug),
+        "headline": headline,
+        "percentage": f"{percentage:.0f}%",
+        "recommendation": recommendation,
+    }
+    return render(request, "mc/result.html", context)

@@ -310,3 +310,67 @@ class PunctuationResult(models.Model):
     def __str__(self) -> str:  # pragma: no cover
         return f"Resultado Puntuación ({self.percentage:.0f}%)"
 
+# -----------------------------------------------------------------------------
+# Modelos para ejercicios de selección múltiple (puntuación, mayúsculas y
+# reglas ortográficas)
+#
+# Estas clases generalizan el almacenamiento de respuestas y resultados para
+# cualquier ejercicio de opción múltiple de tres preguntas.  Cada intento
+# registra el usuario, el ejercicio al que pertenece (p.ej. 'puntuacion1',
+# 'mayus1', 'letras2'), el número de la pregunta, la opción seleccionada, la
+# opción correcta y si la respuesta fue correcta.  Al finalizar las tres
+# preguntas se almacena un resultado con el total de aciertos y el
+# porcentaje obtenido, junto con una recomendación opcional.
+
+class MultipleChoiceAttempt(models.Model):
+    """Almacena una respuesta a una pregunta de un ejercicio de opción múltiple.
+
+    Cada vez que un estudiante responde a una pregunta de un ejercicio
+    (puntuación, mayúsculas o reglas ortográficas) se crea un registro
+    indicando la identificación del ejercicio mediante `exercise_slug`, el
+    número de pregunta, la opción seleccionada, la correcta y si la
+    respuesta fue correcta.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    exercise_slug = models.CharField(max_length=50)
+    question_number = models.PositiveSmallIntegerField()
+    selected_option = models.CharField(max_length=10)
+    correct_option = models.CharField(max_length=10)
+    is_correct = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Intento de ejercicio de opción múltiple"
+        verbose_name_plural = "Intentos de ejercicios de opción múltiple"
+
+    def __str__(self) -> str:  # pragma: no cover
+        status = "✓" if self.is_correct else "✗"
+        return f"{self.exercise_slug} Q{self.question_number} ({status})"
+
+
+class MultipleChoiceResult(models.Model):
+    """Guarda el resultado final de un ejercicio de opción múltiple.
+
+    Una vez que el estudiante responde las tres preguntas de un ejercicio,
+    se almacena la cantidad de aciertos y el porcentaje correspondiente.
+    El campo `exercise_slug` identifica a qué ejercicio pertenecen estos
+    resultados (por ejemplo, 'puntuacion1' o 'letras2').  Se puede
+    incluir una recomendación opcional para orientar al estudiante en
+    próximos estudios.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    exercise_slug = models.CharField(max_length=50)
+    total_questions = models.PositiveSmallIntegerField(default=3)
+    correct_answers = models.PositiveSmallIntegerField()
+    percentage = models.FloatField()
+    recommendation = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Resultado de ejercicio de opción múltiple"
+        verbose_name_plural = "Resultados de ejercicios de opción múltiple"
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Resultado {self.exercise_slug} ({self.percentage:.0f}%)"

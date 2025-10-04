@@ -1,0 +1,32 @@
+{% extends "./mc_base.html" %}
+{% load static %}
+
+{#
+  Plantilla genérica para las preguntas de los ejercicios de opción múltiple.
+  Se reutiliza para los ejercicios de puntuación, mayúsculas y reglas de
+  las letras.  El título del ejercicio y el número de la pregunta se
+  muestran en la cabecera.  El formulario envía los datos mediante
+  JavaScript (mc.js) para mostrar la retroalimentación sin recargar la
+  página.
+#}
+
+{% block content %}
+<div class="exercise-container">
+  <h2 class="text-2xl font-bold mb-4 text-green-600">{{ exercise_title }} – Pregunta {{ num }}</h2>
+  <p class="question">{{ question }}</p>
+  <form id="mc-form" data-submit-url="{{ submit_url }}" data-explain-endpoint="{{ explain_endpoint }}">
+    {% csrf_token %}
+    {% for key, text in options.items %}
+    <label class="block mb-2 cursor-pointer">
+      <input type="radio" name="option" value="{{ key }}" class="mr-2 align-middle">
+      <span>{{ text }}</span>
+    </label>
+    {% endfor %}
+    <button type="submit" class="btn primary">
+      Enviar
+    </button>
+  </form>
+  <div id="feedback-box" class="feedback-box"></div>
+</div>
+<script src="{% static 'js/recomendador/mc.js' %}"></script>
+{% endblock %}
