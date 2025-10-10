@@ -2337,6 +2337,47 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
             "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>El artículo 5 de la Constitución Nacional establece derechos básicos.</strong>",
         },
     },
+    
+    # Ejercicio Final de mayúsculas y minúsculas
+    "mayus3": {
+        1: {
+            "question": "Elige la opción con mayúsculas correctas en cargo y nombre oficial:",
+            "options": {
+                "a": "El Presidente de la República del Paraguay, Santiago Peña, habló.",
+                "b": "El presidente de la república del Paraguay, Santiago Peña, habló.",
+                "c": "El presidente de la República del Paraguay, Santiago Peña, habló.",
+                "d": "El Presidente de la República Del Paraguay, Santiago Peña, habló.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>tercera oración</strong> es la correcta.",
+        },
+        2: {
+            "question": "Elige la opción con uso correcto de mayúsculas",
+            "options": {
+                "a": "Se presentó un informe en la facultad de Arquitectura, Diseño y Arte de la Universidad Nacional de Asunción; posteriormente, el Decano se reunió con el departamento de Matemática.",
+                "b": "Se presentó un informe en la Facultad de Arquitectura, Diseño y Arte de la Universidad Nacional de Asunción; posteriormente, el decano se reunió con el Departamento de Matemática.",
+                "c": "Se presentó un informe en la Facultad de arquitectura, diseño y arte de la Universidad nacional de Asunción; posteriormente, el Decano se reunió con el Departamento De Matemática.",
+                "d": "Se presentó un informe en la Facultad de Arquitectura, Diseño y Arte de la universidad nacional de asunción; posteriormente, el decano se reunió con el Departamento de matemática.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es la <strong>segunda oración</strong>",
+        },
+        3: {
+            "question": "Elige la opción con uso correcto de mayúsculas",
+            "options": {
+                "a": "El Presidente presentó el Plan Nacional de Desarrollo 2030; la OMS alertó sobre la COVID-19 y el Estado adoptó medidas con el Ministerio De Hacienda y la Universidad nacional de Asunción.",
+                "b": "El presidente presentó el Plan Nacional de Desarrollo 2030; la OMS alertó sobre la covid-19 y el Estado adoptó medidas en coordinación con el Ministerio de Hacienda y la Universidad Nacional de Asunción.",
+                "c": "El Presidente presentó el plan nacional de desarrollo 2030; la Oms alertó sobre la covid-19 y el estado adoptó medidas en coordinación con el ministerio de Hacienda y la Universidad Nacional De Asunción.",
+                "d": "El presidente presentó el Plan nacional de desarrollo 2030; la OMS alertó sobre la Covid-19 y el Estado adoptó medidas en coordinación con el Ministerio de hacienda y la universidad Nacional de Asunción.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es la <strong>segunda oración</strong>",
+        },
+    },
+    
     # Ejercicio 1 de reglas de las letras
     "letras1": {
         1: {
@@ -2416,6 +2457,45 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
             "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>consciente</strong>.",
         },
     },
+    # Ejercicio Final de reglas de las letras
+    "letras3": {
+        1: {
+            "question": "Selecciona la opción bien escrita:",
+            "options": {
+                "a": "Si el comité exije que el laboratorio proteja los datos y el editor corrige los errores, entonces el archivo es legible.",
+                "b": "Si el comité exige que el laboratorio proteja los datos y el editor corrige los errores, entonces el archivo es legible.",
+                "c": "Si el comité exije que el laboratorio proteja los datos y el editor corrije los errores, entonces el archivo es lejible.",
+                "d": "Si el comité exige que el laboratorio protega los datos y el editor corrige los errores, entonces el archivo es legible.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>segunda oración</strong> es la correcta.",
+        },
+        2: {
+            "question": "Elige la redacción correcta:",
+            "options": {
+                "a": "Se requieren precisión y expresión en los informes; conozco el proceso y los peces del estanque; las luces del pasillo fallan a veces.",
+                "b": "Se requieren precición y expresion en los informes; conosco el proceso y los peces del estanque; las luces del pasillo fallan a veses.",
+                "c": "Se requieren precisión y expresión en los informes; conozco el proceso y los peces del estanque; las luses del pasillo fallan a veces.",
+                "d": "Se requieren presición y espresión en los informes; conozco el procezo y los peces del estanque; las luces del pasillo fallan a veces.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>primera oración</strong>",
+        },
+        3: {
+            "question": "Marca la opción correcta:",
+            "options": {
+                "a": "Si te has hecho cargo del proyecto, halla la causa; hasta ahí hay avances, y no eches en saco roto las alertas.",
+                "b": "Si te has echo cargo del proyecto, haya la causa; asta ahí ay avances, y no heches en saco roto las alertas.",
+                "c": "Si te has hecho cargo del proyecto, haya la causa; hasta ahí hay abances, y no eches en saco roto las alertas.",
+                "d": "Si te haz hecho cargo del proyecto, halla la causa; asta ahí hay avances, y no heches en saco roto las alertas.",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>primera oración</strong>",
+        },
+    },
 }
 
 
@@ -2426,8 +2506,10 @@ EXERCISE_TITLES: Dict[str, str] = {
     "puntuacion2": "Ejercicio 2 de puntuación",
     "mayus1": "Ejercicio 1 de mayúsculas y minúsculas",
     "mayus2": "Ejercicio 2 de mayúsculas y minúsculas",
+    "mayus3": "Ejercicio Final de mayúsculas y minúsculas",
     "letras1": "Ejercicio 1 de reglas ortográficas",
     "letras2": "Ejercicio 2 de reglas ortográficas",
+    "letras3": "Ejercicio Final de reglas ortográficas",
 }
 
 # Recomendaciones por ejercicio para mostrar al final en caso de no obtener
@@ -2449,6 +2531,10 @@ EXERCISE_RECOMMENDATIONS: Dict[str, str] = {
         "Recomendación: consulta la sección dedicada al uso de mayúsculas en nombres propios y entidades. "
         "También ten presente que, tras dos puntos, la palabra puede ir en minúscula si no inicia un enunciado independiente."
     ),
+    "mayus3": (
+        "Recomendación: consulta la sección dedicada al uso de mayúsculas en nombres propios y entidades. "
+        "También ten presente que, tras dos puntos, la palabra puede ir en minúscula si no inicia un enunciado independiente."
+    ),
     "letras1": (
         "Recomendación: repasa las reglas ortográficas de g, j, s, c, z, b y v. "
         "Un buen recurso es el capítulo sobre reglas de las letras en la 'Ortografía de la lengua española'."
@@ -2456,6 +2542,10 @@ EXERCISE_RECOMMENDATIONS: Dict[str, str] = {
     "letras2": (
         "Recomendación: profundiza en las normas sobre el uso de la h, así como la escritura de algunas palabras "
         "de origen extranjero (como garaje) y concéntrate en las reglas de uso de consonantes en términos derivados."
+    ),
+    "letras3": (
+        "Recomendación: repasa las reglas ortográficas de g, j, s, c, z, b y v. "
+        "Un buen recurso es el capítulo sobre reglas de las letras en la 'Ortografía de la lengua española'."
     ),
 }
 
