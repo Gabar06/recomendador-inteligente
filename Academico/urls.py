@@ -3,6 +3,7 @@ from . import views
 from django.contrib.auth import views as auth_views
 from rest_framework import routers
 from .views import LibroViewSet
+from . import views_evaluaciones
 
 router = routers.DefaultRouter()
 router.register(r'libros', LibroViewSet)
@@ -137,8 +138,12 @@ urlpatterns = [
     path("puntuacion/resultado/", views.punctuation_result, name="punctuation_result"),
 
     
-    path("evaluaciones/", views.evaluaciones, name="evaluaciones"),
-    path("evaluaciones/report/", views.evaluaciones_report, name="evaluaciones_report"),
+    #path("evaluaciones/", views.evaluaciones, name="evaluaciones"),
+    #path("evaluaciones/report/", views.evaluaciones_report, name="evaluaciones_report"),
+    
+    # Reporte de evaluaciones: se utiliza la vista genérica de reportes
+    path("evaluaciones/", views_evaluaciones.evaluaciones_view, name="evaluaciones"),
+    path("evaluaciones/report/", views_evaluaciones.evaluaciones_report, name="evaluaciones_report"),
     
     path("calendario/", views.calendario, name="calendario"),
     path("calendario/events/", views.calendario_events, name="calendario_events"),

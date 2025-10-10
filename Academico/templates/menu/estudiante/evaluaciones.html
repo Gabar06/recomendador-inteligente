@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Evaluaciones</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .report-container {
+            background-color: #ffffff;
+            border: 4px solid #7CC300;
+            border-radius: 15px;
+            margin: 30px auto;
+            padding: 30px;
+            width: 80%;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        .report-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #00471b;
+            border: 2px solid #7CC300;
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+        }
+        .report-info {
+            margin-bottom: 1.5rem;
+        }
+        .report-info strong {
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #7CC300;
+            text-align: center;
+        }
+        th {
+            background-color: #7CC300;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background-color: #f5fdf0;
+        }
+        .btn {
+            background: linear-gradient(180deg, #92d050, #7cc300);
+            color: #fff;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <h2 class="report-title">Reporte de Evaluaciones</h2>
+    <div class="report-info">
+        <p><strong>Información del Educando</strong></p>
+        <p>Nombre: {{ user_name }}</p>
+        <p>Cédula: {{ user_id }}</p>
+    </div>
+    <div id="report">
+        <table>
+            <thead>
+                <tr>
+                    <th>Unidad</th>
+                    <th>Puntuación</th>
+                    <th>Dominio</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Acentuación</td>
+                    <td>{{ results.acentuacion.0 }}</td>
+                    <td>{{ results.acentuacion.1 }}</td>
+                </tr>
+                <tr>
+                    <td>Puntuación</td>
+                    <td>{{ results.puntuacion.0 }}</td>
+                    <td>{{ results.puntuacion.1 }}</td>
+                </tr>
+                <tr>
+                    <td>Mayúscula y Minúscula</td>
+                    <td>{{ results.mayusculas.0 }}</td>
+                    <td>{{ results.mayusculas.1 }}</td>
+                </tr>
+                <tr>
+                    <td>Reglas de las Letras</td>
+                    <td>{{ results.letras.0 }}</td>
+                    <td>{{ results.letras.1 }}</td>
+                </tr>
+            </tbody>
+        </table>
+     </div>
+    <!-- El enlace descarga el informe PDF generado en el servidor -->
+    <a class="btn" href="{% url 'evaluaciones_report' %}">Generar PDF</a>
+</div>
+
+
+</body>
+</html>
+
+{% endblock %}
