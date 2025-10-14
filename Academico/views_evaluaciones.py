@@ -285,7 +285,7 @@ def evaluaciones_report(request):
         info_y -= 20
         c.setFont("Helvetica", 12)
         c.setFillColor(colors.black)
-        c.drawString(margin_x, info_y, f"Nombre: {user.nombre + " " + user.apellido or ""}")
+        c.drawString(margin_x, info_y, f"Nombre: {user.nombre + ' ' + (user.apellido if user.apellido else '')}")
         info_y -= 18
         user_id_val = getattr(user, 'cedula', '')
         c.drawString(margin_x, info_y, f"Cédula: {user_id_val}")
