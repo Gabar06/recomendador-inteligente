@@ -2497,6 +2497,339 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
             "feedback_incorrect": "¡Incorrecto!, la <strong>primera oración</strong>",
         },
     },
+    # Evaluación final con 25 preguntas combinadas de acentuación, puntuación,
+    # mayúsculas/minúsculas y reglas ortográficas.  Esta evaluación
+    # utiliza el mismo mecanismo de opción múltiple pero incluye un
+    # conjunto de preguntas más extenso.  Cada entrada se identifica
+    # por un número consecutivo.  Se sugiere acceder a esta prueba
+    # mediante la ruta ``/mc/evaluacionfinal/1/``.
+    "evaluacionfinal": {
+        # 1. Concepto de la ortografía
+        1: {
+            "question": "Concepto de la ortografía",
+            "options": {
+                "a": "Normativas de la escritura correcta",
+                "b": "Reglas de comportamientos",
+                "c": "Escritura errónea de las palabras",
+                "d": "Dificultad de la comprensión escrita",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la respuesta correcta es <strong>Normativas de la escritura correcta</strong>.",
+        },
+        # 2. Definición de palabras llanas o graves
+        2: {
+            "question": "La siguiente definición: “Llevan tilde en la penúltima sílaba cuando no terminan en vocales y consonantes n y s” y corresponde según su acentuación a la palabra",
+            "options": {
+                "a": "Aguda",
+                "b": "Llana o grave",
+                "c": "Esdrújula",
+                "d": "Sobreesdrújula",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la respuesta correcta es <strong>Llana o grave</strong>.",
+        },
+        # 3. Definición de palabras esdrújulas
+        3: {
+            "question": "Llevan tilde en la antepenúltima sílaba y a todas las palabras se les marca la tilde, esta regla equivale a la palabra",
+            "options": {
+                "a": "Aguda",
+                "b": "Llana o grave",
+                "c": "Esdrújula",
+                "d": "Sobreesdrújula",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la respuesta correcta es <strong>Esdrújula</strong>.",
+        },
+        # 4. Definición de palabras agudas
+        4: {
+            "question": "La normativa: Las palabras llevan tilde en la última sílaba cuando terminan en vocales y consonantes n y s” y corresponde según su acentuación a la palabra",
+            "options": {
+                "a": "Aguda",
+                "b": "Llana o grave",
+                "c": "Esdrújula",
+                "d": "Sobreesdrújula",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la respuesta correcta es <strong>Aguda</strong>.",
+        },
+        # 5. Definición de palabras sobreesdrújulas
+        5: {
+            "question": "Cuando siempre llevan la tilde en la anterior antepenúltima sílaba se está refiriendo a la palabra",
+            "options": {
+                "a": "Aguda",
+                "b": "Llana o grave",
+                "c": "Esdrújula",
+                "d": "Sobreesdrújula",
+            },
+            "correct": "d",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la respuesta correcta es <strong>Sobreesdrújula</strong>.",
+        },
+        # 6. Interrogativos bien acentuados
+        6: {
+            "question": "Señala la oración con signos interrogativos bien acentuados:",
+            "options": {
+                "a": "Como te llamas? Donde vives?",
+                "b": "¿Cómo te llamas? ¿Dónde vives?",
+                "c": "¿Como te llamas? ¿Donde vives?",
+                "d": "¿Cómo te llamas? ¿Donde vives?",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>¿Cómo te llamas? ¿Dónde vives?</strong>.",
+        },
+        # 7. Uso correcto de la mayúscula
+        7: {
+            "question": "El uso correcto de la mayúscula es:",
+            "options": {
+                "a": "La Ley de Educación Superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
+                "b": "La ley de Educación Superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
+                "c": "La Ley de educación superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
+                "d": "La Ley de Educación Superior tiene por objeto la formación Personal, Académica y Profesional de los estudiantes",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la respuesta correcta es <strong>La ley de Educación Superior tiene por objeto la formación personal, académica y profesional de los estudiantes.</strong>",
+        },
+        # 8. Oración correctamente puntuada
+        8: {
+            "question": "La oración correctamente puntuada es:",
+            "options": {
+                "a": "Cristo dijo: “Quien esté libre de pecado que lance la primera piedra”.",
+                "b": "Esfuerzo y constancia; Éstas son las armas para triunfar",
+                "c": "Se llama borrego al cordero de pocos meses, que aún sigue, dócilmente, a su madre, la oveja.",
+                "d": "Sonó la alarma lo pillaron in fraganti.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Se llama borrego al cordero de pocos meses, que aún sigue, dócilmente, a su madre, la oveja.</strong>",
+        },
+        # 9. Uso correcto de g/j
+        9: {
+            "question": "La oración con el uso de g/j correctamente escrita es:",
+            "options": {
+                "a": "Las personas que admiten y tratan de correjir sus fallos son las mejores.",
+                "b": "Los ropages del pasado hoy nadie los usaría.",
+                "c": "La remera, que se quedó afuera secando, se quedó hecha jirones tras el tornado.",
+                "d": "La ajilidad de los gatos me sorprenden.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>La remera, que se quedó afuera secando, se quedó hecha jirones tras el tornado.</strong>",
+        },
+        # 10. Uso correcto de s/c/z
+        10: {
+            "question": "La oración de uso correcto de s/c/z es:",
+            "options": {
+                "a": "En tiempos pasados, se exigía a los siervos sumición total",
+                "b": "La decisión de mi compañero asombró a todos",
+                "c": "Todas sus dotes de persuazión chocaron con un muro de indiferencia",
+                "d": "Aprovechó la ocación de disfrutar de la naturaleza.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>La decisión de mi compañero asombró a todos.</strong>",
+        },
+        # 11. Uso correcto de b/v
+        11: {
+            "question": "La oración cuyo vocablo subrayado está correctamente empleado con b/v es:",
+            "options": {
+                "a": "Balido mis documentos a tiempo porque se acerca el concurso.",
+                "b": "Es imposible no localizar tan basta propiedad",
+                "c": "Me está costando mucho havlandar esta carne",
+                "d": "Esta mañana, mi amigo me reveló lo que vivió en su juventud.",
+            },
+            "correct": "d",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Esta mañana, mi amigo me reveló lo que vivió en su juventud.</strong>",
+        },
+        # 12. Uso incorrecto de h
+        12: {
+            "question": "La oración incorrecta con el uso de la h está en la opción:",
+            "options": {
+                "a": "La suerte me ha sido adversa",
+                "b": "Todos anhelamos en vivir en democracia",
+                "c": "¿Consideras que aún hay solución para los daños ocasionados?",
+                "d": "Las alajas fueron echos por antiguos y experimentados orfebres",
+            },
+            "correct": "d",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración incorrecta es <strong>Las alajas fueron echos por antiguos y experimentados orfebres.</strong>",
+        },
+        # 13. Uso correcto de “etc.” en lista
+        13: {
+            "question": "Uso correcto de “etc.” en lista:",
+            "options": {
+                "a": "Trae papel, lápiz, cuaderno, etc.",
+                "b": "Trae papel, lápiz, cuaderno etc.",
+                "c": "Trae papel, lápiz, cuaderno; etc.",
+                "d": "Trae papel, lápiz, cuaderno: etc.",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la respuesta correcta es <strong>Trae papel, lápiz, cuaderno, etc.</strong>.",
+        },
+        # 14. Palabra esdrújula bien acentuada
+        14: {
+            "question": "¿Cuál es esdrújula y está bien acentuada?",
+            "options": {
+                "a": "telefono",
+                "b": "teléfono",
+                "c": "cafe",
+                "d": "pared",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la respuesta correcta es <strong>teléfono</strong>.",
+        },
+        # 15. Oración incorrecta
+        15: {
+            "question": "La oración incorrecta es:",
+            "options": {
+                "a": "El león rugía tras las rejas de su jaula",
+                "b": "La enbarcación crujía con el fuerte oleaje.",
+                "c": "Asistió a la reunión acompañado de su cónyuge",
+                "d": "No transigiré en mis decisiones",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración incorrecta es <strong>La enbarcación crujía con el fuerte oleaje.</strong>",
+        },
+        # 16. Completar con vello/bello
+        16: {
+            "question": "Completa: El ………… sale en los brazos y piernas.",
+            "options": {
+                "a": "vello",
+                "b": "bello",
+                "c": "valla",
+                "d": "baya",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>vello</strong>.",
+        },
+        # 17. Completar con honda/onda
+        17: {
+            "question": "Completa: Esa alberca no es muy ………………..",
+            "options": {
+                "a": "onda",
+                "b": "honda",
+                "c": "hondo",
+                "d": "honra",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>honda</strong>.",
+        },
+        # 18. Completar con asta/hasta
+        18: {
+            "question": "Completa: Llegaremos ……………………. tu casa.",
+            "options": {
+                "a": "asta",
+                "b": "hasta",
+                "c": "hacia",
+                "d": "hazta",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>hasta</strong>.",
+        },
+        # 19. Completar con hierba/hierva
+        19: {
+            "question": "Completa: Jugaremos en la …………………………..",
+            "options": {
+                "a": "hierva",
+                "b": "hierba",
+                "c": "hierro",
+                "d": "yerba",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>hierba</strong>.",
+        },
+        # 20. Completar con ojeada/hojeada
+        20: {
+            "question": "Completa: De una …………., el profesor pudo saber cuántos alumnos había.",
+            "options": {
+                "a": "ojeada",
+                "b": "hojeada",
+                "c": "ojea",
+                "d": "hojea",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>ojeada</strong>.",
+        },
+        # 21. Completar con tubo/tuvo
+        21: {
+            "question": "Completa la oración con las palabras adecuadas (tubo/tuvo): El …… se rompió, por eso se ………… que comprar otro.",
+            "options": {
+                "a": "El tubo se rompió, por eso se tuvo que comprar otro.",
+                "b": "El tuvo se rompió, por eso se tubo que comprar otro.",
+                "c": "El tubo se rompió, por eso se tubo que comprar otro.",
+                "d": "El tuvo se rompió, por eso se tuvo que comprar otro.",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>El tubo se rompió, por eso se tuvo que comprar otro.</strong>",
+        },
+        # 22. Completar con ay/hay
+        22: {
+            "question": "Completa: ¡____! ¡Cómo pudiste revelar nuestro más grande secreto!",
+            "options": {
+                "a": "ay",
+                "b": "hay",
+                "c": "ahí",
+                "d": "ahy",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>ay</strong>.",
+        },
+        # 23. Completar con cayó/calló
+        23: {
+            "question": "Completa: El vaso ……………….. al suelo.",
+            "options": {
+                "a": "calló",
+                "b": "cayó",
+                "c": "callo",
+                "d": "cayo",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>cayó</strong>.",
+        },
+        # 24. Completar con término/terminó
+        24: {
+            "question": "Completa: El ……………… del texto fue difícil de pronunciar.",
+            "options": {
+                "a": "termino",
+                "b": "término",
+                "c": "terminó",
+                "d": "ternero",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>término</strong>.",
+        },
+        # 25. Completar con sé/se
+        25: {
+            "question": "Completa: Yo …………… las reglas ortográficas.",
+            "options": {
+                "a": "se",
+                "b": "sé",
+                "c": "sè",
+                "d": "séé",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>sé</strong>.",
+        },
+    },
 }
 
 
@@ -2511,6 +2844,8 @@ EXERCISE_TITLES: Dict[str, str] = {
     "letras1": "Ejercicio 1 de reglas ortográficas",
     "letras2": "Ejercicio 2 de reglas ortográficas",
     "letras3": "Ejercicio Final de reglas ortográficas",
+    # Evaluación final abarca todos los temas
+    "evaluacionfinal": "Evaluación final",
 }
 
 # Recomendaciones por ejercicio para mostrar al final en caso de no obtener
@@ -2547,6 +2882,12 @@ EXERCISE_RECOMMENDATIONS: Dict[str, str] = {
     "letras3": (
         "Recomendación: repasa las reglas ortográficas de g, j, s, c, z, b y v. "
         "Un buen recurso es el capítulo sobre reglas de las letras en la 'Ortografía de la lengua española'."
+    ),
+    # Recomendación general para la evaluación final
+    "evaluacionfinal": (
+        "Recomendación: repasa todos los contenidos de ortografía estudiados durante el curso, incluyendo acentuación, "
+        "puntuación, uso de mayúsculas y minúsculas, y reglas ortográficas de las letras. Practica con ejercicios "
+        "adicionales y consulta tus apuntes para reforzar las áreas en las que hayas tenido dudas."
     ),
 }
 
