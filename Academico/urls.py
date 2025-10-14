@@ -163,5 +163,11 @@ urlpatterns = [
     #Instrucciones para los ejercicios de opción múltiple
     path('instruccion/<slug:unit_slug>/',views.instruccion_view, name='instruccion'),
     
+    #######################
+    # Rutas para la encuesta de opinión
+    path("encuesta/<int:qnum>/", views.survey_question_view, name="survey_question"),
+    path("encuesta/<int:qnum>/submit/", views.survey_submit_view, name="survey_submit"),
+    path("encuesta/result/", views.survey_result_view, name="survey_result"),
+    
 
 ]

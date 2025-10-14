@@ -89,6 +89,9 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Min, Max, Count
 
+#Ecuesta
+from .models import SurveyAttempt, SurveyResult
+
 class LibroViewSet(viewsets.ModelViewSet):
     queryset = Libro.objects.all()
     serializer_class = LibroSerializer
@@ -3128,3 +3131,259 @@ def instruccion_view(request: HttpRequest, unit_slug: str) -> HttpResponse:
         "pdf_path": pdf_relative_path,
     }
     return render(request, "instruccion/unidad.html", context)
+
+###############################
+# ----------------------------------------------------------------------------
+# Definición de las preguntas de la encuesta
+#
+# Cada entrada del diccionario SURVEY_QUESTIONS representa una
+# pregunta de la encuesta.  Las claves son números consecutivos
+# empezando en 1.  Cada pregunta contiene el enunciado y un mapa de
+# opciones (a, b, c, etc.) a sus textos.  No se incluye un campo
+# "correct" porque no existen respuestas correctas o incorrectas.
+
+SURVEY_QUESTIONS: Dict[int, Dict[str, Any]] = {
+    1: {
+        "question": "¿Qué edad tiene?",
+        "options": {
+            "a": "Menos de 15 años",
+            "b": "16 años",
+            "c": "17 años",
+            "d": "18 años",
+            "e": "Más de 18 años",
+        },
+    },
+    2: {
+        "question": "¿Cuál es su sexo?",
+        "options": {
+            "a": "Femenino",
+            "b": "Masculino",
+        },
+    },
+    3: {
+        "question": "¿Qué nivel de formación académica posee?",
+        "options": {
+            "a": "Educación Escolar Básica",
+            "b": "Educación Media y Técnica",
+            "c": "Educación Universitaria",
+        },
+    },
+    # Preguntas sobre la disponibilidad de dispositivos en la institución
+    4: {
+        "question": "¿Cuenta el Colegio Nacional Santa Lucía con computadora para usar en clases?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    5: {
+        "question": "¿Cuenta el Colegio Nacional Santa Lucía con notebook para usar en clases?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    6: {
+        "question": "¿Cuenta el Colegio Nacional Santa Lucía con teléfono celular para usar en clases?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    7: {
+        "question": "¿Cuenta el Colegio Nacional Santa Lucía con tablet para usar en clases?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    8: {
+        "question": "¿Tiene conocimiento de alguna herramienta tecnológica?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    # Preguntas sobre la posesión de dispositivos personales
+    9: {
+        "question": "¿Posee computadora de uso particular?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    10: {
+        "question": "¿Posee notebook de uso particular?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    11: {
+        "question": "¿Posee teléfono celular de uso particular?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    12: {
+        "question": "¿Posee tablet de uso particular?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    13: {
+        "question": "¿Qué mejoras tecnológicas quisiera que se realicen en su institución educativa para optimizar el rendimiento académico de la ortografía de la Lengua Castellana?",
+        "options": {
+            "a": "Sí a la aplicación de algún software didáctico que apoye a los estudiantes en el aprendizaje de la asignatura.",
+            "b": "La no aplicación de algún software didáctico a los estudiantes durante el proceso de aprendizaje de la asignatura.",
+        },
+    },
+    14: {
+        "question": "Algunas personas opinan que los efectos negativos de la Informática han sido mayores que su contribución al mejoramiento del aprendizaje de los educandos. ¿Está de acuerdo con esta afirmación?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    15: {
+        "question": "¿Cree que es prioridad promover la integración de la Informática en el Sistema Educativo Paraguayo?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    16: {
+        "question": "Algunos docentes argumentan que el uso de las tecnologías como recurso didáctico no ayudaría a mejorar significativamente el aprendizaje y desempeño de los alumnos. ¿Está de acuerdo con esta percepción?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    17: {
+        "question": "¿Considera que el uso didáctico de un software contribuye de manera positiva al proceso de enseñanza de su aprendizaje?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    18: {
+        "question": "¿Ha utilizado algún software didáctico durante su vida académica?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    19: {
+        "question": "¿Ha escuchado hablar del Software Recomendador Inteligente de Contenidos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    20: {
+        "question": "¿Tiene conocimiento de la utilidad de la aplicación del Software Recomendador Inteligente de Contenidos como guías de aprendizajes personalizadas de la ortografía de la lengua castellana?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    21: {
+        "question": "¿Le gustaría que, para el desarrollo de la clase de Lengua Castellana y Literatura, específicamente de ortografía, sea utilizado el Software Recomendador Inteligente de Contenidos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    22: {
+        "question": "¿Considera que el uso del Software Recomendador Inteligente de Contenidos puede facilitar y mejorar el aprendizaje de la ortografía?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    23: {
+        "question": "¿Cree que la capacitación del docente en el uso didáctico de las tecnologías puede ejercer un impacto importante en los resultados académicos de los educandos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+}
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def survey_question_view(request: HttpRequest, qnum: int) -> HttpResponse:
+    """Muestra una pregunta de la encuesta.
+
+    Si el número de pregunta excede el total de preguntas definidas, se
+    redirige automáticamente a la vista de resultados de la encuesta.
+    """
+    total_questions = len(SURVEY_QUESTIONS)
+    try:
+        qnum_int = int(qnum)
+    except (TypeError, ValueError):
+        qnum_int = 1
+    if qnum_int < 1:
+        qnum_int = 1
+    if qnum_int > total_questions:
+        return redirect('survey_result')
+    question_data = SURVEY_QUESTIONS[qnum_int]
+    submit_url = reverse('survey_submit', kwargs={"qnum": qnum_int})
+    return render(
+        request,
+        'encuesta/question.html',
+        {
+            'question_number': qnum_int,
+            'total_questions': total_questions,
+            'question': question_data['question'],
+            'options': question_data['options'],
+            'submit_url': submit_url,
+        },
+    )
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def survey_submit_view(request: HttpRequest, qnum: int) -> JsonResponse:
+    """Procesa la respuesta a una pregunta de la encuesta.
+
+    Se almacena la opción seleccionada por el usuario y se devuelve
+    la URL de la siguiente pregunta o de la pantalla de resultados si
+    todas las preguntas han sido respondidas.
+    """
+    try:
+        qnum_int = int(qnum)
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Número de pregunta inválido.'}, status=400)
+    total_questions = len(SURVEY_QUESTIONS)
+    # Obtener la opción seleccionada
+    selected_option = request.POST.get('option')
+    if not selected_option:
+        return JsonResponse({'error': 'Debe seleccionar una opción.'}, status=400)
+    # Guardar la respuesta
+    SurveyAttempt.objects.create(
+        user=request.user,
+        question_number=qnum_int,
+        selected_option=selected_option,
+        survey_slug='encuesta',
+    )
+    # Calcular la siguiente URL
+    if qnum_int >= total_questions:
+        # Registrar que el usuario completó la encuesta
+        # Evitar duplicados: solo crear un SurveyResult si no existe
+        SurveyResult.objects.get_or_create(
+            user=request.user,
+            survey_slug='encuesta',
+            defaults={'total_questions': total_questions},
+        )
+        next_url = reverse('survey_result')
+    else:
+        next_url = reverse('survey_question', kwargs={'qnum': qnum_int + 1})
+    return JsonResponse({'message': '¡Respuesta guardada!', 'next_url': next_url})
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def survey_result_view(request: HttpRequest) -> HttpResponse:
+    """Muestra la pantalla final tras completar la encuesta."""
+    return render(request, 'encuesta/result.html')

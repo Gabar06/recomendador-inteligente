@@ -374,3 +374,59 @@ class MultipleChoiceResult(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"Resultado {self.exercise_slug} ({self.percentage:.0f}%)"
+    
+    # -----------------------------------------------------------------------------
+# Modelos para la encuesta de opinión
+#
+# La encuesta de opinión se compone de una serie de preguntas que no
+# requieren evaluación automática ni tienen respuestas correctas.  Cada
+# respuesta del estudiante se guarda en SurveyAttempt y, al finalizar
+# la encuesta, se registra un SurveyResult para indicar que el
+# estudiante completó el formulario.  Estos modelos son similares a
+# MultipleChoiceAttempt y MultipleChoiceResult, pero omiten los
+# campos relacionados con la puntuación y la corrección.
+
+
+class SurveyAttempt(models.Model):
+    """Almacena la respuesta del usuario a una pregunta de la encuesta.
+
+    Cada vez que un estudiante responde a una pregunta de la encuesta se
+    crea un registro indicando el número de la pregunta y la opción
+    seleccionada.  No se registra una opción correcta ya que no existen
+    respuestas correctas o incorrectas en la encuesta.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    survey_slug = models.CharField(max_length=50, default="encuesta")
+    question_number = models.PositiveSmallIntegerField()
+    selected_option = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Respuesta de encuesta"
+        verbose_name_plural = "Respuestas de encuestas"
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Encuesta {self.survey_slug} Q{self.question_number}: {self.selected_option}"
+
+
+class SurveyResult(models.Model):
+    """Registra que un usuario ha completado la encuesta.
+
+    Este modelo almacena la cantidad de preguntas respondidas y permite
+    conocer cuándo el usuario finalizó la encuesta.  No almacena
+    puntuaciones ni recomendaciones, ya que la encuesta no evalúa
+    conocimientos, sino que recopila opiniones y datos demográficos.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    survey_slug = models.CharField(max_length=50, default="encuesta")
+    total_questions = models.PositiveSmallIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Resultado de encuesta"
+        verbose_name_plural = "Resultados de encuestas"
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Resultado Encuesta {self.survey_slug} ({self.total_questions} preguntas)"
