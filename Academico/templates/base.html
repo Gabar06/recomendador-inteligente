@@ -39,69 +39,19 @@
         </button>
         <div class="collapse navbar-collapse" id="collapsibleNavbar">
           <ul class="navbar-nav">
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="navbarDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                >Mantenimientos</a
-              >
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="/Adm">Administrador</a></li>
-                <li><a class="dropdown-item" href="/Sop">Soporte</a></li>
-              </ul>
-            </li>
-
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link active dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-                >Movimientos</a
-              >
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="/Alu">Alumnos</a></li>
-                <li><a class="dropdown-item" href="/Asi">Asignaturas</a></li>
-              </ul>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link active dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-                >Consultas</a
-              >
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="/Not">Notas</a></li>
-                <li><a class="dropdown-item" href="/Asis">Asistencia</a></li>
-                <li><a class="dropdown-item" href="/Cat">Categorias</a></li>
-              </ul>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/Contacto">Contactos</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/Acerca_de">Acerca de</a>
-            </li>        
-            <li class="nav-item">
+              <a class="navbar-brand" href="/Contacto">Contactos</a>
+              <a class="navbar-brand" href="/Acerca_de">Acerca de</a>       
               {% if request.user.role == 'DOCENTE' %}
-                <a class="nav-link" href="{% url 'logout_docente' %}"
+                <a class="navbar-brand" href="{% url 'logout_docente' %}"
                 >Cerrar Sesión</a>
               {% else %}
-              <a class="nav-link" href="{% url 'logout_estudiante' %}"
+              <a class="navbar-brand" href="{% url 'logout_estudiante' %}"
                 >Cerrar Sesión</a>
               {% endif %}
 
-            </li>
-            <li class="nav-item">
               <div class="navbar-brand" id="Usuario">
                   {{ user.cedula }} - {{ user.nombre }} {{ user.apellido }}
               </div>
-            </li>
           </ul>
           
         </div>

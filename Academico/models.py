@@ -10,43 +10,7 @@ from django.conf import settings
 #########################
 
 # Create your models here.
-class Administrador(models.Model):
-    id = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=60)
-    login = models.CharField(max_length=60)
-    clave = models.CharField(max_length=60)
 
-class Alumnos(models.Model):
-    id = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=60)
-    curso = models.CharField(max_length=60)
-    sexo = models.CharField(max_length=60)
-
-class Asignatura(models.Model):
-    id = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=60)
-#
-class Asistencia(models.Model):
-    id = models.AutoField(primary_key=True)
-    materia = models.CharField(max_length=60)
-    horas = models.IntegerField()
-
-class Categorias(models.Model):
-    id = models.AutoField(primary_key=True)
-    descripcion = models.CharField(max_length=60)
-
-class Nota(models.Model):
-    id = models.AutoField(primary_key=True)
-    materia = models.CharField(max_length=60)
-    calificacion = models.IntegerField()
-
-class Soporte(models.Model):
-    id = models.AutoField(primary_key=True)
-    mantenimiento = models.CharField(max_length=60)
-    reparacion = models.CharField(max_length=60)
-
-    
-############################
 
 CURSOS = [
     ('1', '1er Curso'),
