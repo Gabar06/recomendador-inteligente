@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Administrador,Alumnos,Asignatura,Asistencia,Categorias,Nota,Soporte
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
+
 ################
 from .models import Contenido, Libro
 from .forms import ContenidoForm
@@ -2741,3 +2742,48 @@ def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
         "recommendation": recommendation,
     }
     return render(request, "mc/result.html", context)
+#############
+#Instrucciones
+#############
+# Mapeo de identificadores de unidad a archivos PDF en la carpeta static/pdfs.
+# Definimos un slug corto por unidad para que las URLs sean más intuitivas.
+# Cada entrada vincula el slug con el PDF correspondiente dentro de static/pdfs.
+UNIT_PDFS = {
+    "acento": "pdfs/acento_instr.pdf",
+    "puntuacion": "pdfs/puntuacion_instr.pdf",
+    "mayuscula": "pdfs/mayus_instr.pdf",
+    "letras": "pdfs/letras_instr.pdf",
+}
+
+# Títulos descriptivos para cada unidad
+UNIT_TITLES = {
+    "acento": "Unidad I: Acentuación",
+    "puntuacion": "Unidad II: Puntuación",
+    "mayuscula": "Unidad III: Mayúsculas y Minúsculas",
+    "letras": "Unidad IV: Reglas de las Letras",
+}
+
+
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def instruccion_view(request: HttpRequest, unit_slug: str) -> HttpResponse:
+    """Muestra la página de instrucción para la unidad especificada.
+
+    Args:
+        request: Petición HTTP recibida.
+        unit_slug: Identificador de la unidad (p. ej. 'acentuacion').
+
+    Devuelve:
+        Una respuesta HTTP con la plantilla renderizada.  Si el slug
+        no corresponde a una unidad conocida, se lanza un ``Http404``.
+    """
+    if unit_slug not in UNIT_PDFS:
+        raise Http404("Unidad no encontrada")
+    pdf_relative_path = UNIT_PDFS[unit_slug]
+    # Construir la URL estática al PDF utilizando el helper de plantillas
+    # La plantilla hará uso de la etiqueta 'static' para concatenar esta ruta.
+    context = {
+        "unit_slug": unit_slug,
+        "unit_title": UNIT_TITLES.get(unit_slug, unit_slug),
+        "pdf_path": pdf_relative_path,
+    }
+    return render(request, "instruccion/unidad.html", context)

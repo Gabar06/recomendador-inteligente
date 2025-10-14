@@ -1,0 +1,22 @@
+{% extends './unidad_base.html' %}
+{% load static %}
+
+{% block title %}{{ unit_title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-4">
+  <div class="bg-white shadow-lg rounded-lg border border-green-400 p-6">
+    <div class="flex items-center mb-4">
+      <span class="text-green-600 text-4xl mr-3">📘</span>
+      <h1 class="text-3xl font-semibold">{{ unit_title }} – Instrucción</h1>
+    </div>
+    <p class="mb-4 text-gray-700">Consulta el siguiente material para introducirte en los conceptos clave de esta unidad.</p>
+    <div class="mb-4" style="height: 70vh;">
+      <iframe src="{% static pdf_path %}" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>
+    </div>
+    <div class="text-center">
+      <a href="{% url 'guia_aprendizaje' %}" class="px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700">Volver a la guía</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -159,5 +159,9 @@ urlpatterns = [
     path("mc/<slug:slug>/<int:qnum>/submit/", views.mc_submit_view, name="mc_submit"),
     path("mc/explain/", views.mc_explain, name="mc_explain"),
     path("mc/<slug:slug>/result/", views.mc_result_view, name="mc_result"),
+    
+    #Instrucciones para los ejercicios de opción múltiple
+    path('instruccion/<slug:unit_slug>/',views.instruccion_view, name='instruccion'),
+    
 
 ]
