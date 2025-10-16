@@ -2226,7 +2226,7 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
             },
             "correct": "b",
             "feedback_correct": "¡Correcto!",
-            "feedback_incorrect": "¡Incorrecto!, la <strong>primera oración</strong>",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>segunda oración</strong> es la correcta.",
         },
         3: {
             "question": "Marca la opción correcta:",
@@ -2238,7 +2238,7 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
             },
             "correct": "a",
             "feedback_correct": "¡Correcto!",
-            "feedback_incorrect": "¡Incorrecto!, la <strong>primera oración</strong>",
+            "feedback_incorrect": "¡Incorrecto!, la <strong>primera oración</strong> es la correcta.",
         },
     },
     # Evaluación final con 25 preguntas combinadas de acentuación, puntuación,
@@ -2580,16 +2580,16 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
 # Títulos descriptivos para cada ejercicio.  Se muestran en la cabecera de
 # las páginas de pregunta y en la página de resultados.
 EXERCISE_TITLES: Dict[str, str] = {
-    "acentuacion2": "Ejercicio 2 de acentuación",
-    "puntuacion1": "Ejercicio 1 de puntuación",
-    "puntuacion2": "Ejercicio 2 de puntuación",
-    "puntuacion3": "Ejercicio Final de puntuación",
-    "mayus1": "Ejercicio 1 de mayúsculas y minúsculas",
-    "mayus2": "Ejercicio 2 de mayúsculas y minúsculas",
-    "mayus3": "Ejercicio Final de mayúsculas y minúsculas",
-    "letras1": "Ejercicio 1 de reglas ortográficas",
-    "letras2": "Ejercicio 2 de reglas ortográficas",
-    "letras3": "Ejercicio Final de reglas ortográficas",
+    "acentuacion2": "Ejercicio 2 de Acentuación",
+    "puntuacion1": "Ejercicio 1 de Puntuación",
+    "puntuacion2": "Ejercicio 2 de Puntuación",
+    "puntuacion3": "Ejercicio Final de Puntuación",
+    "mayus1": "Ejercicio 1 de Mayúsculas",
+    "mayus2": "Ejercicio 2 de Mayúsculas",
+    "mayus3": "Ejercicio Final de Mayúsculas",
+    "letras1": "Ejercicio 1 de Letras",
+    "letras2": "Ejercicio 2 de Letras",
+    "letras3": "Ejercicio Final de Letras",
     # Evaluación final abarca todos los temas
     "evaluacionfinal": "Evaluación final",
 }

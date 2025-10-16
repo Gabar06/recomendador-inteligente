@@ -92,11 +92,16 @@ def _classify_domain(percentage: Optional[float]) -> str:
     """
     if percentage is None:
         return "N/A"
-    if percentage < 60:
+    if percentage < 40:
         return "Insuficiente"
+    if percentage < 60:
+        return "Básico"
     if percentage < 80:
-        return "Suficiente"
+        return "Bueno"
+    if percentage < 90:
+        return "Muy Bueno"
     return "Excelente"
+
 
 
 @role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  

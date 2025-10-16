@@ -1,11 +1,47 @@
 {% extends "./login_base.html" %}
+{% block title %}Verificar código{% endblock %}
+
 {% block content %}
-<form method="post">
-  {% csrf_token %}
-  <label>Cédula o Email</label>{{ form.identificador }}
-  <label>Código</label>{{ form.code }}
-  <label>Nueva contraseña</label>{{ form.new_password1 }}
-  <label>Confirmar nueva contraseña</label>{{ form.new_password2 }}
-  <button class="btn" type="submit">Cambiar contraseña</button>
-</form>
+<div class="login-container">
+  <div class="form-wrapper">
+    <h2>Verificar código</h2>
+
+    {% if form.non_field_errors %}<div class="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="{{ form.identificador.id_for_label }}">Cédula o Email</label>
+        {{ form.identificador }}
+        {% for error in form.identificador.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}
+      </div>
+
+      <div class="field">
+        <label for="{{ form.code.id_for_label }}">Código</label>
+        {{ form.code }}
+        {% for error in form.code.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="{{ form.new_password1.id_for_label }}">Nueva contraseña</label>
+          {{ form.new_password1 }}
+          {% for error in form.new_password1.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}
+        </div>
+        <div class="field">
+          <label for="{{ form.new_password2.id_for_label }}">Confirmar nueva contraseña</label>
+          {{ form.new_password2 }}
+          {% for error in form.new_password2.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}
+        </div>
+      </div>
+
+      <button class="btn-primary" type="submit">Cambiar contraseña</button>
+    </form>
+
+    <div class="links">
+      <a href="{% url 'login_estudiante' %}">Volver al inicio de sesión</a>
+    </div>
+  </div>
+</div>
 {% endblock %}

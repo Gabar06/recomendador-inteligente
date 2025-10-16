@@ -1,8 +1,27 @@
 {% extends "./login_base.html" %}
+{% block title %}Restablecer contraseña{% endblock %}
+
 {% block content %}
-<form method="post">
-  {% csrf_token %}
-  <label>Cédula o Email</label>{{ form.identificador }}
-  <button class="btn" type="submit">Enviar código</button>
-</form>
+<div class="login-container">
+  <div class="form-wrapper">
+    <h2>Restablecer contraseña</h2>
+    <p class="subtle">Te enviaremos un código de verificación.</p>
+
+    {% if form.non_field_errors %}<div class="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="field">
+        <label for="{{ form.identificador.id_for_label }}">Cédula o Email</label>
+        {{ form.identificador }}
+        {% for error in form.identificador.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}
+      </div>
+      <button class="btn-primary" type="submit">Enviar código</button>
+    </form>
+
+    <div class="links">
+      <a href="{% url 'login_estudiante' %}">Volver al inicio de sesión</a>
+    </div>
+  </div>
+</div>
 {% endblock %}

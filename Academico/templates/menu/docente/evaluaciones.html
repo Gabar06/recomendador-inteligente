@@ -39,8 +39,10 @@
   th:first-child{background:linear-gradient(180deg,#8dd43a,#7CC300)}
   .pill{display:inline-block; padding:.25rem .6rem; border-radius:999px; font-weight:700; font-size:.78rem; border:1px solid transparent}
   .pill.excelente{background:#eaffea; color:#176d37; border-color:#b7ecb7}
-  .pill.suficiente{background:#fff7e6; color:#975a16; border-color:#ffd89b}
-  .pill.insuficiente{background:#ffefef; color:#9f1111; border-color:#ffb3b3}
+  .pill.muy-bueno{background:#f0fdfa; color:#0f766e; border-color:#99f6e4}
+  .pill.bueno{background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe}
+  .pill.insuficiente{background:#ffecec; color:#9f1111; border-color:#ffb3b3}
+  .pill.basico{background:#fff7e6; color:#975a16, border-color:#ffd89b}
   .pill.na{background:#f3f4f6; color:#374151; border-color:#e5e7eb}
   .meter{height:8px; background:#eef7e3; border-radius:999px; position:relative; overflow:hidden}
   .meter .bar{height:100%; border-radius:inherit; background:var(--g-500)}
@@ -56,11 +58,13 @@
   </div>
 
   <div class="legend">
-    <span><span class="dot" style="background:#b7ecb7"></span>Excelente</span>
-    <span><span class="dot" style="background:#ffd89b"></span>Suficiente</span>
-    <span><span class="dot" style="background:#ffb3b3"></span>Insuficiente</span>
-    <span><span class="dot" style="background:#e5e7eb"></span>N/A</span>
-  </div>
+  <span><span class="dot" style="background:#b7ecb7"></span>Excelente</span>
+  <span><span class="dot" style="background:#99f6e4"></span>Muy Bueno</span>
+  <span><span class="dot" style="background:#bfdbfe"></span>Bueno</span>
+  <span><span class="dot" style="background:#ffd89b"></span>Básico</span>
+  <span><span class="dot" style="background:#ffb3b3"></span>Insuficiente</span>
+  <span><span class="dot" style="background:#e5e7eb"></span>N/A</span>
+</div>
 
   <div class="table-wrap shadow-mask">
     <table>
@@ -95,7 +99,7 @@
             {% else %}<span class="meter-label">N/A</span>{% endif %}
           </td>
           <td>
-            <span class="pill {% if stu.acento_dom == 'Excelente' %}excelente{% elif stu.acento_dom == 'Suficiente' %}suficiente{% elif stu.acento_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+            <span class="pill {% if stu.acento_dom == 'Excelente' %}excelente{% elif stu.acento_dom == 'Muy Bueno' %}muy-bueno{% elif stu.acento_dom == 'Bueno' %}bueno{% elif stu.acento_dom == 'Básico' %}basico{% elif stu.acento_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
               {{ stu.acento_dom }}
             </span>
           </td>
@@ -108,7 +112,7 @@
             {% else %}<span class="meter-label">N/A</span>{% endif %}
           </td>
           <td>
-            <span class="pill {% if stu.puntuacion_dom == 'Excelente' %}excelente{% elif stu.puntuacion_dom == 'Suficiente' %}suficiente{% elif stu.puntuacion_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+            <span class="pill {% if stu.puntuacion_dom == 'Excelente' %}excelente{% elif stu.puntuacion_dom == 'Muy Bueno' %}muy-bueno{% elif stu.puntuacion_dom == 'Bueno' %}bueno{% elif stu.puntuacion_dom == 'Básico' %}basico{% elif stu.puntuacion_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
               {{ stu.puntuacion_dom }}
             </span>
           </td>
@@ -121,7 +125,7 @@
             {% else %}<span class="meter-label">N/A</span>{% endif %}
           </td>
           <td>
-            <span class="pill {% if stu.mayus_dom == 'Excelente' %}excelente{% elif stu.mayus_dom == 'Suficiente' %}suficiente{% elif stu.mayus_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+            <span class="pill {% if stu.mayus_dom == 'Excelente' %}excelente{% elif stu.mayus_dom == 'Muy Bueno' %}muy-bueno{% elif stu.mayus_dom == 'Bueno' %}bueno{% elif stu.mayus_dom == 'Básico' %}basico{% elif stu.mayus_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
               {{ stu.mayus_dom }}
             </span>
           </td>
@@ -134,7 +138,7 @@
             {% else %}<span class="meter-label">N/A</span>{% endif %}
           </td>
           <td>
-            <span class="pill {% if stu.letras_dom == 'Excelente' %}excelente{% elif stu.letras_dom == 'Suficiente' %}suficiente{% elif stu.letras_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+            <span class="pill {% if stu.letras_dom == 'Excelente' %}excelente{% elif stu.letras_dom == 'Muy Bueno' %}muy-bueno{% elif stu.letras_dom == 'Bueno' %}bueno{% elif stu.letras_dom == 'Básico' %}basico{% elif stu.letras_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
               {{ stu.letras_dom }}
             </span>
           </td>
@@ -147,7 +151,7 @@
             {% else %}<span class="meter-label">N/A</span>{% endif %}
           </td>
           <td>
-            <span class="pill {% if stu.final_dom == 'Excelente' %}excelente{% elif stu.final_dom == 'Suficiente' %}suficiente{% elif stu.final_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+            <span class="pill {% if stu.final_dom == 'Excelente' %}excelente{% elif stu.final_dom == 'Muy Bueno' %}muy-bueno{% elif stu.final_dom == 'Bueno' %}bueno{% elif stu.final_dom == 'Básico' %}basico{% elif stu.final_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
               {{ stu.final_dom }}
             </span>
           </td>

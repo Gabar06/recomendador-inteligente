@@ -1,53 +1,47 @@
 {% extends './login_base.html' %}
 {% load static %}
-
-{% block title %}Iniciar sesión{% endblock %}
+{% block title %}{{ title|default:"Iniciar sesión" }}{% endblock %}
 
 {% block content %}
- <style>
-    .msg{margin:10px 0 0;color:#fdd}
-    #e{margin:0 23px 12px}
-    #d{margin:0 40px 12px}
- </style>
 <div class="login-container">
-    <div class="form-wrapper">
-        {% if "Docente" in title %}
-        <h1 id="d">{{ title }}</h1>
-        {% else %}
-        <h1 id="e">{{ title }}</h1>
-        {% endif %}
-        <h2>Iniciar Sesión</h2>
-        <form method="post">
-            {% for message in messages %}
-                <div class="msg">{{ message }}</div>
-            {% endfor %}
-            {% csrf_token %}
-            {{ form.non_field_errors }}
-            <div>
-                {{ form.cedula.label_tag }}
-                {{ form.cedula }}
-                {% for error in form.cedula.errors %}
-                    <small style="color:red">{{ error }}</small>
-                {% endfor %}
-            </div>
-            <div>
-                {{ form.password.label_tag }}
-                {{ form.password }}
-                {% for error in form.password.errors %}
-                    <small style="color:red">{{ error }}</small>
-                {% endfor %}
-            </div>
-            <input type="submit" value="Iniciar sesión">
-        </form>
-        <div>
-            <small><a href="{% url 'reset_request' %}">¿Olvidó la contraseña?</a></small>
-            {% if "Docente" in title %}
-                <small><a href="{% url 'register_docente' %}">Crear cuenta</a></small>
-            {% else %}
-                <small><a href="{% url 'register_estudiante' %}">Crear cuenta</a></small>
-            {% endif %}
-            <small><a href="{% url 'portal_selection' %}">Volver</a></small>
-        </div>
+  <div class="form-wrapper">
+    <h1>{{ title|default:"Login" }}</h1>
+    <h2>Iniciar Sesión</h2>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    {% if form.non_field_errors %}
+      <div class="alert">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="field">
+        {{ form.cedula.label_tag }}
+        {{ form.cedula }}
+        {% for error in form.cedula.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.password.label_tag }}
+        {{ form.password }}
+        {% for error in form.password.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}
+      </div>
+
+      <button type="submit" class="btn-primary">Iniciar sesión</button>
+    </form>
+
+    <div class="links">
+      <a href="{% url 'reset_request' %}">¿Olvidó la contraseña?</a>
+      {% if "Docente" in title %}
+        <a href="{% url 'register_docente' %}">Crear cuenta</a>
+      {% else %}
+        <a href="{% url 'register_estudiante' %}">Crear cuenta</a>
+      {% endif %}
+      <a href="{% url 'portal_selection' %}">Volver</a>
     </div>
+  </div>
 </div>
 {% endblock %}
