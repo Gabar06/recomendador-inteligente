@@ -26,6 +26,7 @@ urlpatterns = [
     path('menu-docente', views.menu_docente, name='menu_docente'),
     path('menu-estudiante', views.menu_estudiante, name='menu_estudiante'),
     path('guia_aprendizaje', views.guia_aprendizaje, name='guia_aprendizaje'),
+    path('guia_aprendizaje_docente', views.guia_aprendizaje_docente, name='guia_aprendizaje_docente'),
     path('acento_final', views.acento_final, name='acento_final'),
     path("chat/", views.chat_with_openai, name="chat_openai"),
     path('api/', views.chat_con_gemini, name="chat_gemini"),
@@ -89,11 +90,18 @@ urlpatterns = [
     path("evaluaciones/", views_evaluaciones.evaluaciones_view, name="evaluaciones"),
     path("evaluaciones/report/", views_evaluaciones.evaluaciones_report, name="evaluaciones_report"),
     
+    # Evaluaciones para docentes: tabla con resultados de todos los estudiantes
+    path("evaluaciones/docente/", views_evaluaciones.evaluaciones_docente_view, name="evaluaciones_docente"),
+    path("evaluaciones/docente/report/", views_evaluaciones.evaluaciones_docente_report, name="evaluaciones_docente_report"),
+    
     path("calendario/", views.calendario, name="calendario"),
     path("calendario/events/", views.calendario_events, name="calendario_events"),
     path("calendario/detalle/", views.calendario_detalle, name="calendario_detalle"),
     
+    # Perfil del estudiante
     path("perfil_estudiante/", views.perfil_estudiante, name="perfil_estudiante"),
+    # Perfil del docente
+    path('perfil-docente/', views.perfil_docente, name='perfil_docente'),
     
     #######################
     # Ejercicios de opción múltiple genéricos (puntuación, mayúsculas y letras)
@@ -108,10 +116,14 @@ urlpatterns = [
     path('instruccion/<slug:unit_slug>/',views.instruccion_view, name='instruccion'),
     
     #######################
-    # Rutas para la encuesta de opinión
+    # Rutas para la encuesta de opinión Estudiante
     path("encuesta/<int:qnum>/", views.survey_question_view, name="survey_question"),
     path("encuesta/<int:qnum>/submit/", views.survey_submit_view, name="survey_submit"),
     path("encuesta/result/", views.survey_result_view, name="survey_result"),
     
+    # Rutas para la encuesta de opinión Docente
+    path("encuesta_docente/<int:qnum>/", views.survey_question_view_docente, name="survey_question_docente"),
+    path("encuesta_docente/<int:qnum>/submit/", views.survey_submit_view_docente, name="survey_submit_docente"),
+    path("encuesta_docente/result/", views.survey_result_view_docente, name="survey_result_docente"),
 
 ]

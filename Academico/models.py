@@ -394,3 +394,82 @@ class SurveyResult(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"Resultado Encuesta {self.survey_slug} ({self.total_questions} preguntas)"
+    
+    
+class SurveyAttemptDocente(models.Model):
+    """Almacena la respuesta del usuario a una pregunta de la encuesta.
+
+    Cada vez que un estudiante responde a una pregunta de la encuesta se
+    crea un registro indicando el número de la pregunta y la opción
+    seleccionada.  No se registra una opción correcta ya que no existen
+    respuestas correctas o incorrectas en la encuesta.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    survey_slug = models.CharField(max_length=50, default="encuesta")
+    question_number = models.PositiveSmallIntegerField()
+    selected_option = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Respuesta de encuesta"
+        verbose_name_plural = "Respuestas de encuestas"
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Encuesta {self.survey_slug} Q{self.question_number}: {self.selected_option}"
+
+
+class SurveyResultDocente(models.Model):
+    """Registra que un usuario ha completado la encuesta.
+
+    Este modelo almacena la cantidad de preguntas respondidas y permite
+    conocer cuándo el usuario finalizó la encuesta.  No almacena
+    puntuaciones ni recomendaciones, ya que la encuesta no evalúa
+    conocimientos, sino que recopila opiniones y datos demográficos.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    survey_slug = models.CharField(max_length=50, default="encuesta")
+    total_questions = models.PositiveSmallIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Resultado de encuesta"
+        verbose_name_plural = "Resultados de encuestas"
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Resultado Encuesta {self.survey_slug} ({self.total_questions} preguntas)"
+
+    
+
+# -----------------------------------------------------------------------------
+# Modelo para actividades del calendario
+#
+# Este modelo registra cada ejercicio o evaluación finalizada por el estudiante
+# para que pueda visualizarse en un calendario de actividades.  Al completar
+# un ejercicio o una evaluación se crea un registro en esta tabla.  La
+# aplicación puede mostrar estas entradas en un calendario (por ejemplo,
+# mediante la biblioteca FullCalendar) permitiendo al estudiante llevar un
+# historial de su progreso.
+
+class CalendarActivity(models.Model):
+    """Almacena una actividad del calendario para un usuario.
+
+    Cada vez que un estudiante finaliza un ejercicio o una evaluación,
+    se crea un evento en el calendario con un título descriptivo, una
+    descripción opcional y la fecha de realización.
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    activity_slug = models.CharField(max_length=50)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    date = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Actividad del calendario"
+        verbose_name_plural = "Actividades del calendario"
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.activity_slug}: {self.title} ({self.date.date()})"

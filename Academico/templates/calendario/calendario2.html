@@ -1,0 +1,131 @@
+{% extends "./calendario_base.html" %}
+{% load static %}
+
+{% block content %}
+    <title>Calendario de Actividades</title>
+    <!-- Importamos FullCalendar desde CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+    <style>
+        body {
+            background-color: #f0f8e8;
+            font-family: Arial, sans-serif;
+        }
+        .calendar-container {
+            width: 90%;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border: 4px solid #7CC300;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .calendar-row {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .calendar-side {
+            flex: 1 1 25%;
+            padding: 10px;
+            border-right: 2px solid #e0e8d8;
+        }
+        .calendar-main {
+            flex: 1 1 75%;
+            padding: 10px;
+        }
+        #activity-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        #activity-list li {
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            background-color: #f5fdf0;
+            border-left: 4px solid #7CC300;
+            border-radius: 4px;
+        }
+        .title {
+            font-size: 1.6rem;
+            color: #00471b;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .side-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #00471b;
+        }
+        .date-input {
+            width: 100%;
+            padding: 8px 6px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+<div class="calendar-container">
+    <h2 class="title">Calendario de Actividades</h2>
+    <div class="calendar-row">
+        <div class="calendar-side">
+            <div class="side-title">Actividades del día</div>
+            <input type="text" id="selected-date" class="date-input" placeholder="Seleccioná una fecha" readonly>
+            <ul id="activity-list">
+                <li>No hay actividades.</li>
+            </ul>
+        </div>
+        <div class="calendar-main">
+            <div id='calendar'></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var activityList = document.getElementById('activity-list');
+    var selectedDateInput = document.getElementById('selected-date');
+
+    function loadActivities(dateStr) {
+        fetch('{% url "calendario_detalle" %}?date=' + dateStr)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                activityList.innerHTML = '';
+                if (data.length === 0) {
+                    activityList.innerHTML = '<li>No hay actividades.</li>';
+                } else {
+                    data.forEach(function(item) {
+                        var li = document.createElement('li');
+                        var desc = item.description ? ' - ' + item.description : '';
+                        li.textContent = item.title + desc;
+                        activityList.appendChild(li);
+                    });
+                }
+            });
+    }
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: ''
+        },
+        events: '{% url "calendario_events" %}',
+        eventDisplay: 'block',
+        eventClick: function(info) {
+            var dateStr = info.event.startStr.split('T')[0];
+            selectedDateInput.value = dateStr;
+            loadActivities(dateStr);
+        },
+        dateClick: function(info) {
+            var dateStr = info.dateStr;
+            selectedDateInput.value = dateStr;
+            loadActivities(dateStr);
+        }
+    });
+    calendar.render();
+});
+</script>
+{% endblock %}

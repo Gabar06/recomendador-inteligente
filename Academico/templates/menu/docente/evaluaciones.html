@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body %}
+<style>
+  :root{
+    --g-700:#00471b; --g-600:#2b7a2b; --g-500:#7CC300;
+    --line:#d9efbb; --bg:#f6faf3; --panel:#ffffff; --text:#0f172a;
+  }
+  body{background:var(--bg); font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; color:var(--text);}
+  .sheet{max-width:1200px; margin:28px auto; padding:22px; background:var(--panel);
+         border:1px solid var(--g-500); border-radius:16px; box-shadow:0 12px 28px rgba(0,0,0,.08);}
+  .header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:10px}
+  .h-title{font-size:1.6rem; color:var(--g-700); letter-spacing:.2px}
+  .btn{
+    display:inline-flex; align-items:center; gap:.5rem; padding:10px 16px; border-radius:10px;
+    border:1px solid var(--g-500); background:linear-gradient(180deg,#96da54, var(--g-500));
+    color:#fff; text-decoration:none; font-weight:600; box-shadow:0 4px 10px rgba(124,195,0,.25);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(124,195,0,.35)}
+  .legend{display:flex; gap:12px; align-items:center; margin:6px 0 14px}
+  .legend span{display:inline-flex; align-items:center; gap:6px; font-size:.8rem; color:#475569}
+  .legend .dot{width:10px; height:10px; border-radius:50%}
+  .table-wrap{position:relative; overflow:auto; border:1px solid var(--line); border-radius:12px}
+  .shadow-mask{
+    mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+  }
+  table{width:100%; border-collapse:separate; border-spacing:0; min-width:980px}
+  th, td{padding:10px 12px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap}
+  th{
+    position:sticky; top:0; z-index:2;
+    background:linear-gradient(180deg,#8dd43a,#7CC300); color:#fff; font-weight:800; letter-spacing:.2px;
+  }
+  tr:hover td{background:#fbfff5}
+  td:first-child, th:first-child{position:sticky; left:0; z-index:3; text-align:left}
+  td:first-child{background:#ffffff}
+  th:first-child{background:linear-gradient(180deg,#8dd43a,#7CC300)}
+  .pill{display:inline-block; padding:.25rem .6rem; border-radius:999px; font-weight:700; font-size:.78rem; border:1px solid transparent}
+  .pill.excelente{background:#eaffea; color:#176d37; border-color:#b7ecb7}
+  .pill.suficiente{background:#fff7e6; color:#975a16; border-color:#ffd89b}
+  .pill.insuficiente{background:#ffefef; color:#9f1111; border-color:#ffb3b3}
+  .pill.na{background:#f3f4f6; color:#374151; border-color:#e5e7eb}
+  .meter{height:8px; background:#eef7e3; border-radius:999px; position:relative; overflow:hidden}
+  .meter .bar{height:100%; border-radius:inherit; background:var(--g-500)}
+  .meter-label{font-size:.78rem; color:#334155; margin-top:4px}
+  .cell-meter{min-width:120px}
+  .last-activity{font-size:.82rem; line-height:1.2; color:#475569}
+</style>
+
+<div class="sheet">
+  <div class="header">
+    <h2 class="h-title">Evaluaciones de Educandos</h2>
+    <a class="btn" href="{% url 'evaluaciones_docente_report' %}">Descargar PDF</a>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:#b7ecb7"></span>Excelente</span>
+    <span><span class="dot" style="background:#ffd89b"></span>Suficiente</span>
+    <span><span class="dot" style="background:#ffb3b3"></span>Insuficiente</span>
+    <span><span class="dot" style="background:#e5e7eb"></span>N/A</span>
+  </div>
+
+  <div class="table-wrap shadow-mask">
+    <table>
+      <thead>
+        <tr>
+          <th>Educando</th>
+          <th>Cédula</th>
+          <th title="Acentuación (%)">Acentuación (%)</th>
+          <th title="Dominio Acentuación">Dominio Acentuación</th>
+          <th title="Puntuación (%)">Puntuación (%)</th>
+          <th title="Dominio Puntuación">Dominio Puntuación</th>
+          <th title="Mayúsculas (%)">Mayúsculas (%)</th>
+          <th title="Dominio M/M">Dominio Mayúsculas</th>
+          <th title="Reglas de las Letras (%)">Letras (%)</th>
+          <th title="Dominio Letras">Dominio Letras</th>
+          <th title="Evaluación Final (%)">Final (%)</th>
+          <th title="Dominio Final">Dominio Final</th>
+          <th>Última Actividad</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for stu in students %}
+        <tr>
+          <td>{{ stu.name }}</td>
+          <td>{{ stu.id }}</td>
+
+          <!-- Acentuación -->
+          <td class="cell-meter">
+            {% if stu.acento_pct != 'N/A' %}
+              <div class="meter"><div class="bar" style="width: {{ stu.acento_pct|cut:'%' }}%"></div></div>
+              <div class="meter-label">{{ stu.acento_pct }}</div>
+            {% else %}<span class="meter-label">N/A</span>{% endif %}
+          </td>
+          <td>
+            <span class="pill {% if stu.acento_dom == 'Excelente' %}excelente{% elif stu.acento_dom == 'Suficiente' %}suficiente{% elif stu.acento_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+              {{ stu.acento_dom }}
+            </span>
+          </td>
+
+          <!-- Puntuación -->
+          <td class="cell-meter">
+            {% if stu.puntuacion_pct != 'N/A' %}
+              <div class="meter"><div class="bar" style="width: {{ stu.puntuacion_pct|cut:'%' }}%"></div></div>
+              <div class="meter-label">{{ stu.puntuacion_pct }}</div>
+            {% else %}<span class="meter-label">N/A</span>{% endif %}
+          </td>
+          <td>
+            <span class="pill {% if stu.puntuacion_dom == 'Excelente' %}excelente{% elif stu.puntuacion_dom == 'Suficiente' %}suficiente{% elif stu.puntuacion_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+              {{ stu.puntuacion_dom }}
+            </span>
+          </td>
+
+          <!-- Mayúsculas/Minúsculas -->
+          <td class="cell-meter">
+            {% if stu.mayus_pct != 'N/A' %}
+              <div class="meter"><div class="bar" style="width: {{ stu.mayus_pct|cut:'%' }}%"></div></div>
+              <div class="meter-label">{{ stu.mayus_pct }}</div>
+            {% else %}<span class="meter-label">N/A</span>{% endif %}
+          </td>
+          <td>
+            <span class="pill {% if stu.mayus_dom == 'Excelente' %}excelente{% elif stu.mayus_dom == 'Suficiente' %}suficiente{% elif stu.mayus_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+              {{ stu.mayus_dom }}
+            </span>
+          </td>
+
+          <!-- Reglas de Letras -->
+          <td class="cell-meter">
+            {% if stu.letras_pct != 'N/A' %}
+              <div class="meter"><div class="bar" style="width: {{ stu.letras_pct|cut:'%' }}%"></div></div>
+              <div class="meter-label">{{ stu.letras_pct }}</div>
+            {% else %}<span class="meter-label">N/A</span>{% endif %}
+          </td>
+          <td>
+            <span class="pill {% if stu.letras_dom == 'Excelente' %}excelente{% elif stu.letras_dom == 'Suficiente' %}suficiente{% elif stu.letras_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+              {{ stu.letras_dom }}
+            </span>
+          </td>
+
+          <!-- Final -->
+          <td class="cell-meter">
+            {% if stu.final_pct != 'N/A' %}
+              <div class="meter"><div class="bar" style="width: {{ stu.final_pct|cut:'%' }}%"></div></div>
+              <div class="meter-label">{{ stu.final_pct }}</div>
+            {% else %}<span class="meter-label">N/A</span>{% endif %}
+          </td>
+          <td>
+            <span class="pill {% if stu.final_dom == 'Excelente' %}excelente{% elif stu.final_dom == 'Suficiente' %}suficiente{% elif stu.final_dom == 'Insuficiente' %}insuficiente{% else %}na{% endif %}">
+              {{ stu.final_dom }}
+            </span>
+          </td>
+
+          <td class="last-activity">
+            {% if stu.last_date %}
+              {{ stu.last_date|date:"Y-m-d H:i" }}<br>
+              <span>{{ stu.last_title }}</span>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="13">No hay educandos registrados.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

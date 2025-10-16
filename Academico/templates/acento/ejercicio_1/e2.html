@@ -1,37 +1,161 @@
 {% extends './e1_base.html' %}
 {% block title %}Ejercicio 2 – Clasifica las palabras{% endblock %}
 {% block content %}
-<div class="exercise-container">
-  <h2>Ejercicio 2</h2>
-  <p class="question">Clasifica cada palabra según su tipo de acentuación.</p>
-
-  <form id="exercise2-form" class="classify-form" data-submit-url="{% url 'exercise2_submit' %}">
-    {% csrf_token %}
-    <table class="classification-table">
-      <thead>
-        <tr><th>Palabra</th><th>Clasificación</th></tr>
-      </thead>
-      <tbody>
+{% load static %}
+<style>
+  body {
+    background-color: #eafdeb;
+    font-family: Arial, sans-serif;
+  }
+  .trainer-container {
+    text-align: center;
+    padding-top: 20px;
+  }
+  .trainer-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2a7d2e;
+    margin-bottom: 10px;
+  }
+  .exercise-box {
+    width: 700px;
+    max-width: 95%;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 3px solid #72c68e;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  .exercise-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2a7d2e;
+    margin-bottom: 12px;
+  }
+  .exercise-question {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    color: #333333;
+  }
+  .classification-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+  }
+  .classification-table th,
+  .classification-table td {
+    border: 1px solid #72c68e;
+    padding: 8px;
+    text-align: left;
+  }
+  .classification-table th {
+    background-color: #72c68e;
+    color: #ffffff;
+  }
+  .classification-table tr:nth-child(even) {
+    background-color: #f5fff5;
+  }
+  .classification-table select {
+    width: 100%;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .submit-btn {
+    margin-top: 12px;
+    background: linear-gradient(#6dd26a, #5cbc5c);
+    color: #ffffff;
+    font-weight: bold;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 0 #4e9e4d;
+  }
+  .submit-btn:hover {
+    background: linear-gradient(#5cbc5c, #4ea04c);
+  }
+  #feedback-box {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 2px solid #72c68e;
+    background-color: #f5fff5;
+    border-radius: 4px;
+  }
+  #feedback-box p {
+    color: #2a7d2e;
+    font-weight: bold;
+  }
+  #feedback-box .btn {
+    display: inline-block;
+    color: #ffffff;
+    font-weight: bold;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-right: 12px;
+    margin-top: 10px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  }
+  .explain-btn {
+    background: linear-gradient(#49a0ff, #3388e0);
+    box-shadow: 0 2px 0 #2b6cb0;
+  }
+  .continue-btn {
+    background: linear-gradient(#6dd26a, #5cbc5c);
+    box-shadow: 0 2px 0 #4e9e4d;
+  }
+  .explain-btn:hover,
+  .continue-btn:hover {
+    opacity: 0.9;
+  }
+  .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #49a0ff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 0.8s linear infinite;
+    margin: 10px auto;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
+<div class="trainer-container">
+  <div class="trainer-title">Entrenador de Acentuación</div>
+  <div class="exercise-box">
+    <div class="exercise-title">Ejercicio 2 de acentuación</div>
+    <p class="question">Clasifica cada palabra según su tipo de acentuación.</p>
+    <form id="exercise2-form" data-submit-url="{% url 'exercise2_submit' %}" data-explain-endpoint="{% url 'explain_attempt' 0 %}">
+      {% csrf_token %}
+      <table class="classification-table">
+        <thead>
+          <tr><th>Palabra</th><th>Clasificación</th></tr>
+        </thead>
+        <tbody>
         {% for word, _ in items %}
-        <tr>
-          <td class="w">{{ word }}</td>
-          <td>
-            <select name="{{ word }}" required>
-              <option value="" disabled selected>— Elegir —</option>
-              {% for c in categories %}
-              <option value="{{ c }}">{{ c }}</option>
-              {% endfor %}
-            </select>
-          </td>
-        </tr>
+          <tr>
+            <td class="w">{{ word }}</td>
+            <td>
+              <select name="{{ word }}" required>
+                <option value="" disabled selected>— Elegir —</option>
+                {% for c in categories %}
+                <option value="{{ c }}">{{ c }}</option>
+                {% endfor %}
+              </select>
+            </td>
+          </tr>
         {% endfor %}
-      </tbody>
-    </table>
-    <div class="actions">
-      <button type="submit" class="btn primary">Comprobar</button>
-    </div>
-  </form>
-
-  <div class="feedback-box" data-explain-endpoint="{% url 'explain_attempt' 0 %}"></div>
+        </tbody>
+      </table>
+      <button type="submit" class="submit-btn">Comprobar</button>
+    </form>
+    <div id="feedback-box" class="feedback-box" data-explain-endpoint="{% url 'explain_attempt' 0 %}"></div>
+  </div>
 </div>
+<script src="{% static 'js/recomendador/acento_1.js' %}"></script>
 {% endblock %}

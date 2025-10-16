@@ -87,9 +87,11 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Min, Max, Count
+from .models import CalendarActivity
+from datetime import datetime, time, timedelta
 
 #Ecuesta
-from .models import SurveyAttempt, SurveyResult
+from .models import SurveyAttempt, SurveyResult, SurveyAttemptDocente, SurveyResultDocente
 
 class LibroViewSet(viewsets.ModelViewSet):
     queryset = Libro.objects.all()
@@ -271,6 +273,9 @@ def menu_docente(request):
 
 def guia_aprendizaje(request):
     return render(request, "menu/estudiante/guia_aprendizaje.html")
+
+def guia_aprendizaje_docente(request):
+    return render(request, "menu/docente/guia_aprendizaje.html")
 
 def acento_1(request):
     return render(request, "acento/ejercicio_1.html")
@@ -543,20 +548,15 @@ def _openai_explain(prompt: str) -> str:
     """
     Llama a OpenAI si hay clave y librería instalada; si no, devuelve explicación local.
     """
-    api_key = settings.OPENAI_API_KEY
-    if not api_key:
-        return prompt  # caemos al prompt (que ya contiene buena explicación)
+ # caemos al prompt (que ya contiene buena explicación)
     try:
         # Cliente nuevo (openai>=1.x)
-        from openai import OpenAI  # type: ignore
-        client = OpenAI(api_key=api_key)
         msg = client.chat.completions.create(
             model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": "Eres un profesor de lengua conciso. Explica ortografía del español con ejemplos."},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=220,
         )
         return msg.choices[0].message.content or "No se obtuvo texto de la IA."
     except Exception:
@@ -564,7 +564,7 @@ def _openai_explain(prompt: str) -> str:
         return prompt
 
 # ---------- Ejercicio 1 ----------
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@login_required 
 def exercise1(request: HttpRequest) -> HttpResponse:
     run_id = _ensure_run_id(request)
     _log(request.user, run_id, 1, "visit")
@@ -574,7 +574,7 @@ def exercise1(request: HttpRequest) -> HttpResponse:
     context = {"options": options}
     return render(request, "acento/ejercicio_1/e1.html", context)
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@login_required
 @require_http_methods(["POST"])
 def exercise1_submit(request: HttpRequest) -> JsonResponse:
     run_id = _ensure_run_id(request)
@@ -595,7 +595,7 @@ def exercise1_submit(request: HttpRequest) -> JsonResponse:
     if is_correct:
         feedback = "¡Así se hace!"
     else:
-        feedback = "¡Incorecta!, La palabra correcta es <b>rápido</b>"
+        feedback = "¡Incorrecta!, La palabra correcta es <b>rápido</b>"
 
     return JsonResponse({
         "ok": True,
@@ -613,7 +613,7 @@ WORDS2 = {
     "Cálidamente": "Sobresdrújulas",
 }
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@login_required
 def exercise2(request: HttpRequest) -> HttpResponse:
     run_id = _ensure_run_id(request)
     _log(request.user, run_id, 2, "visit")
@@ -623,7 +623,7 @@ def exercise2(request: HttpRequest) -> HttpResponse:
     categories = ["Agudas", "Llanas", "Esdrújulas", "Sobresdrújulas"]
     return render(request, "acento/ejercicio_1/e2.html", {"items": items, "categories": categories})
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@login_required
 @require_http_methods(["POST"])
 def exercise2_submit(request: HttpRequest) -> JsonResponse:
     run_id = _ensure_run_id(request)
@@ -685,7 +685,7 @@ def exercise2_submit(request: HttpRequest) -> JsonResponse:
 QUESTION3 = {"word": "exhibición", "correct": "Agudas"}
 CATEGORIES3 = ["Agudas", "Llanas", "Esdrújulas", "Sobresdrújulas"]
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@login_required
 def exercise3(request: HttpRequest) -> HttpResponse:
     run_id = _ensure_run_id(request)
     _log(request.user, run_id, 3, "visit")
@@ -694,7 +694,7 @@ def exercise3(request: HttpRequest) -> HttpResponse:
     cats.sort(key=lambda c: (hash(request.user.id + hash(run_id + c)) % 10))
     return render(request, "acento/ejercicio_1/e3.html", {"word": QUESTION3["word"], "categories": cats})
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@login_required
 @require_http_methods(["POST"])
 def exercise3_submit(request: HttpRequest) -> JsonResponse:
     run_id = _ensure_run_id(request)
@@ -726,7 +726,7 @@ def exercise3_submit(request: HttpRequest) -> JsonResponse:
     })
 
 # ---------- Explicación (IA) ----------
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@login_required  
 @require_http_methods(["POST"])
 def explain_attempt(request: HttpRequest, attempt_id: int) -> JsonResponse:
     attempt = get_object_or_404(ExerciseAttempt, pk=attempt_id, user=request.user)
@@ -759,7 +759,7 @@ def explain_attempt(request: HttpRequest, attempt_id: int) -> JsonResponse:
     return JsonResponse({"ok": True, "explanation_html": f"<div class='explanation'>{resp}</div>"})
 
 # ---------- Resultados ----------
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@login_required 
 def results_view(request: HttpRequest) -> HttpResponse:
     run_id = _ensure_run_id(request)
 
@@ -1070,15 +1070,6 @@ def evaluaciones_report(request: HttpRequest) -> HttpResponse:
 ###########################
 #Calendario
 ###########################
-# Mapa de unidades -> ejercicios (ajusta a tus IDs reales)
-UNITS = [
-    {"key": "U1", "title": "Acentuación",             "exercises": [1, 2, 3]},
-    {"key": "U2", "title": "Puntuación",               "exercises": [4, 5]},
-    {"key": "U3", "title": "Mayúscula y Minúscula",    "exercises": [6, 7]},
-    {"key": "U4", "title": "Reglas de las Letras",     "exercises": [8]},
-]
-# Diccionario rápido: ejercicio -> nombre de unidad
-EX_TO_UNIT = {ex: u["title"] for u in UNITS for ex in u["exercises"]}
 
 @role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
 def calendario(request):
@@ -1086,103 +1077,61 @@ def calendario(request):
     today = timezone.localdate()
     return render(request, "calendario/calendario.html", {"today": today})
 
+
 @role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
 def calendario_events(request):
-    """
-    Devuelve eventos agrupados por día:
-    - start: 'YYYY-MM-DD'
-    - title: cantidad (para pintar badge)
-    - extendedProps.units: lista única de unidades trabajadas ese día
-    """
-    # podés filtrar por rango si querés (start/end de FullCalendar):
-    # start = request.GET.get("start")  # 'YYYY-MM-DD'
-    # end   = request.GET.get("end")
+    user = request.user
+    activities = CalendarActivity.objects.filter(user=user).order_by("date")
+    from collections import defaultdict
+    date_counts = defaultdict(int)
 
-    attempts = (
-        ExerciseAttempt.objects
-        .filter(user=request.user)
-        .values("created_at", "exercise_number")
-    )
-
-    per_day = defaultdict(lambda: {"count": 0, "units": set()})
-    for a in attempts:
-        # ✅ usar fecha LOCAL (America/Asuncion) para agrupar
-        local_dt = timezone.localtime(a["created_at"])
-        day = local_dt.date()
-        per_day[day]["count"] += 1
-        per_day[day]["units"].add(EX_TO_UNIT.get(a["exercise_number"], "Unidad"))
-
+    for act in activities:
+        # Tomar la fecha en la zona horaria actual
+        local_day = timezone.localtime(act.date).date()
+        date_counts[local_day] += 1
 
     events = []
-    for day, info in per_day.items():
+    for day, count in date_counts.items():
         events.append({
-            "id": str(day),
+            "title": str(count),
             "start": day.isoformat(),
-            "title": str(info["count"]),            # badge
             "allDay": True,
-            "extendedProps": {
-                "units": sorted(info["units"]),
-            },
         })
     return JsonResponse(events, safe=False)
 
+
 @role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
 def calendario_detalle(request):
-    """Lista de actividades por unidad del día seleccionado (rango local [00:00, 24:00))."""
+    user = request.user
     date_str = request.GET.get("date")
     if not date_str:
-        return JsonResponse({"items": []})
+        return JsonResponse([], safe=False)
 
     try:
-        y, m, d = map(int, date_str.split("-"))
+        day = datetime.strptime(date_str[:10], "%Y-%m-%d").date()
     except Exception:
-        return JsonResponse({"items": []})
+        return JsonResponse([], safe=False)
 
-    # --- Rango del día en zona LOCAL (America/Asuncion) ---
+    # Inicio y fin del día en la TZ actual
     tz = timezone.get_current_timezone()
-    base_start = datetime(y, m, d, 0, 0, 0)              # naive
-    if settings.USE_TZ:
-        # 🟢 zoneinfo: usar make_aware (NO .localize)
-        start_local = timezone.make_aware(base_start, tz)
-    else:
-        start_local = base_start
-    end_local = start_local + timedelta(days=1)
+    start = timezone.make_aware(datetime.combine(day, time.min), tz)
+    end   = start + timedelta(days=1)
 
-    qs = (
-        ExerciseAttempt.objects
-        .filter(
-            user=request.user,
-            created_at__gte=start_local,
-            created_at__lt=end_local,
-        )
-        .values("exercise_number")
-        .annotate(
-            start=Min("created_at"),
-            end=Max("created_at"),
-            total=Count("id"),
-        )
-        .order_by("start")
-    )
+    activities = CalendarActivity.objects.filter(
+        user=user,
+        date__gte=start, date__lt=end
+    ).order_by("date")
 
-    def fmt_local(dt):
-        if not dt:
-            return "—"
-        if settings.USE_TZ:
-            dt = timezone.localtime(dt, tz)   # a hora local
-        return dt.strftime("%I:%M:%S %p")
+    events = [{
+        "title": a.title,
+        "description": a.description or "",
+        "date": a.date.isoformat(),
+    } for a in activities]
 
-    items = []
-    for row in qs:
-        unidad = EX_TO_UNIT.get(row["exercise_number"], "Unidad")
-        items.append({
-            "unidad": unidad,
-            "inicio": fmt_local(row["start"]),
-            "fin": fmt_local(row["end"]),
-            "total": row["total"],
-        })
+    return JsonResponse(events, safe=False)
 
-    return JsonResponse({"date": date_str, "items": items})
-
+###############
+#Perfil del Estudiante
 ###############
 @role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
 def perfil_estudiante(request):
@@ -1199,9 +1148,28 @@ def perfil_estudiante(request):
     # Por ahora se establece el progreso al 100%.  Ajustalo según tus
     # necesidades o calcula el valor real de manera dinámica.
     progreso = 100
-    return render(request, "perfil/perfil.html", {"usuario": usuario, "progress": progreso})
+    return render(request, "perfil/estudiante/perfil.html", {"usuario": usuario, "progress": progreso})
 
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def perfil_docente(request):
+    """Renderiza la página de perfil del docente.
 
+    Muestra los datos personales del usuario autenticado (nombre, apellido,
+    cédula y correo electrónico) en un formato no editable, similar al
+    perfil del estudiante.  También se puede proporcionar un valor de
+    progreso (por ejemplo, porcentaje de preparación o avance en la
+    planificación), aunque por defecto se establece en 100% para no
+    mostrar avances parciales.
+
+    Args:
+        request: objeto ``HttpRequest`` de Django.
+
+    Returns:
+        ``HttpResponse`` con la plantilla renderizada.
+    """
+    usuario = request.user
+    progreso = 100
+    return render(request, "perfil/docente/perfil.html", {"usuario": usuario, "progress": progreso})
 #####################
 #Ejercicio 2
 #####################
@@ -1223,7 +1191,7 @@ EXERCISE2_QUESTIONS: Dict[int, Dict[str, Any]] = {
         "correct": "b",
         "feedback_correct": "¡Así se hace!",
         # Se emplea este mensaje cuando la respuesta es errónea.
-        "feedback_incorrect": "¡Incorrecta!, la palabra correcta es <b>huimos</b>",
+        "feedback_incorrect": "¡Incorrecta!, la palabra correcta es huimos",
     },
     2: {
         "question": "Palabra correctamente tildada por hiato:",
@@ -1235,7 +1203,7 @@ EXERCISE2_QUESTIONS: Dict[int, Dict[str, Any]] = {
         },
         "correct": "b",
         "feedback_correct": "¡Bien hecho!",
-        "feedback_incorrect": "¡Incorrecta!, la palabra tildada correctamente por hiato es <b>país</b>",
+        "feedback_incorrect": "¡Incorrecta!, la palabra tildada correctamente por hiato es país",
     },
     3: {
         "question": "Completa: “___ vienes y ___ hermano también.”",
@@ -1247,7 +1215,7 @@ EXERCISE2_QUESTIONS: Dict[int, Dict[str, Any]] = {
         },
         "correct": "b",
         "feedback_correct": "¡Correcta!",
-        "feedback_incorrect": "¡Incorrecta!, la opción correcta es b, <b>Tú / tu</b>",
+        "feedback_incorrect": "¡Incorrecta!, la opción correcta es b, Tú / tu",
     },
 }
 
@@ -1277,21 +1245,21 @@ def _get_question_context(question_number: int) -> Dict[str, Any]:
     return context
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def exercise2_question1(request: HttpRequest) -> HttpResponse:
     """Muestra la primera pregunta del ejercicio 2."""
     context = _get_question_context(1)
     return render(request, "acento/ejercicio_2/question.html", context)
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def exercise2_question2(request: HttpRequest) -> HttpResponse:
     """Muestra la segunda pregunta del ejercicio 2."""
     context = _get_question_context(2)
     return render(request, "acento/ejercicio_2/question.html", context)
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def exercise2_question3(request: HttpRequest) -> HttpResponse:
     """Muestra la tercera pregunta del ejercicio 2."""
     context = _get_question_context(3)
@@ -1299,21 +1267,21 @@ def exercise2_question3(request: HttpRequest) -> HttpResponse:
 
 
 @require_POST
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def exercise2_question1_submit(request: HttpRequest) -> JsonResponse:
     """Procesa la respuesta de la pregunta 1 y devuelve JSON con el resultado."""
     return _process_submission(request, 1)
 
 
 @require_POST
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def exercise2_question2_submit(request: HttpRequest) -> JsonResponse:
     """Procesa la respuesta de la pregunta 2 y devuelve JSON con el resultado."""
     return _process_submission(request, 2)
 
 
 @require_POST
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def exercise2_question3_submit(request: HttpRequest) -> JsonResponse:
     """Procesa la respuesta de la pregunta 3 y devuelve JSON con el resultado."""
     return _process_submission(request, 3)
@@ -1369,7 +1337,7 @@ def _process_submission(request: HttpRequest, question_number: int) -> JsonRespo
     )
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def explain_attempt2(request: HttpRequest) -> JsonResponse:
     """Devuelve una explicación sobre la respuesta del estudiante.
 
@@ -1407,16 +1375,12 @@ def explain_attempt2(request: HttpRequest) -> JsonResponse:
         # Intentar generar la explicación utilizando la API de OpenAI si se
         # encuentra instalada y se dispone de una clave.  En caso de
         # cualquier error, se recurrirá a una explicación manual.
-        try:
-            api_key = getattr(settings, "OPENAI_API_KEY", None)
-            if api_key:
-                openai.api_key = api_key  # type: ignore[assignment]
-                completion = openai.ChatCompletion.create(  # type: ignore[attr-defined]
-                    model="gpt-5-mini",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=150,
-                )
-                explanation = completion.choices[0].message["content"].strip()  # type: ignore[index]
+        try:            # type: ignore[assignment]
+            completion = client.chat.completions.create(  # type: ignore[attr-defined]
+                model="gpt-5-mini",
+                messages=[{"role": "user", "content": prompt}],
+            )
+            explanation = completion.choices[0].message["content"].strip()  # type: ignore[index]
         except Exception:
             explanation = None
 
@@ -1450,7 +1414,7 @@ def explain_attempt2(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"explanation": explanation})
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def results_view2(request: HttpRequest) -> HttpResponse:
     """Muestra al estudiante su puntaje final del ejercicio 2.
 
@@ -1577,7 +1541,7 @@ def _compute_current_progress(user) -> Dict[str, int]:
     return {"step": step, "score": score}
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def punctuation_exercise(request: HttpRequest) -> HttpResponse:
     """Muestra la actividad interactiva de puntuación.
 
@@ -1607,7 +1571,7 @@ def punctuation_exercise(request: HttpRequest) -> HttpResponse:
 
 
 @require_POST
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def punctuation_submit(request: HttpRequest) -> JsonResponse:
     """Procesa un clic del estudiante entre dos palabras.
 
@@ -1676,7 +1640,7 @@ def punctuation_submit(request: HttpRequest) -> JsonResponse:
     return JsonResponse(response_data)
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def punctuation_explain(request: HttpRequest) -> JsonResponse:
     """Devuelve una explicación personalizada sobre un intento de puntuación.
 
@@ -1753,7 +1717,7 @@ def punctuation_explain(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"explanation": explanation})
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def punctuation_result(request: HttpRequest) -> HttpResponse:
     """Muestra el resultado final del ejercicio de puntuación.
 
@@ -1883,6 +1847,45 @@ from .models import MultipleChoiceAttempt, MultipleChoiceResult
 #       como HTML seguro.
 
 MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
+    # Ejercicio 2 de acentuación
+    "acentuacion2": {
+        1: {
+            "question": "¿Cuál es la forma correcta?",
+            "options": {
+                "a": "huímos",
+                "b": "huimos",
+                "c": "huimós",
+                "d": "húimos",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Bien hecho!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>huimos</strong>",
+        },
+        2: {
+            "question": "Palabra correctamente tildada por hiato:",
+            "options": {
+                "a": "pais",
+                "b": "país",
+                "c": "raices",
+                "d": "héroe",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra correcta es <strong>país</strong>",
+        },
+        3: {
+            "question": "Completa: “___ vienes y ___ hermano también.”",
+            "options": {
+                "a": "Tu / tú",
+                "b": "Tú / tu",
+                "c": "Tú / tú",
+                "d": "Tu / tu",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Así se hace!",
+            "feedback_incorrect": "¡Incorrecto!, las palabras correctas son <strong>Tú / tu</strong>",
+        },
+    },
     # Ejercicio 1 de puntuación
     "puntuacion1": {
         1: {
@@ -1959,6 +1962,45 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
             "correct": "c",
             "feedback_correct": "¡Correcto!",
             "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Quiero ir al cine, pero si empieza tarde, me quedo en casa.</strong>",
+        },
+    },
+    # Ejercicio 3 de puntuación
+    "puntuacion3": {
+        1: {
+            "question": "Elige la opción correctamente puntuada.",
+            "options": {
+                "a": "Amigos si no llegamos a tiempo, perderemos el tren.",
+                "b": "Amigos, si no llegamos a tiempo perderemos el tren.",
+                "c": "Amigos, si no llegamos a tiempo, perderemos el tren.",
+                "d": "Amigos: si no llegamos a tiempo, perderemos el tren.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Amigos, si no llegamos a tiempo, perderemos el tren.</strong>",
+        },
+        2: {
+            "question": "Elige la opción correctamente puntuada.",
+            "options": {
+                "a": "En mi casa leemos novelas, en la tuya solo periódicos.",
+                "b": "En mi casa leemos novelas; en la tuya, solo periódicos.",
+                "c": "En mi casa leemos novelas; en la tuya solo periódicos.",
+                "d": "En mi casa leemos novelas: en la tuya solo periódicos.",
+            },
+            "correct": "b",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>En mi casa leemos novelas; en la tuya, solo periódicos.</strong>",
+        },
+        3: {
+            "question": "Elige la opción correctamente puntuada.",
+            "options": {
+                "a": "Asunción, capital del Paraguay, registró un aumento de visitantes.",
+                "b": "Asunción capital del Paraguay, registró un aumento de visitantes.",
+                "c": "Asunción, capital del Paraguay registró un aumento de visitantes.",
+                "d": "Asunción (capital del Paraguay) registró un aumento de visitantes.",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Asunción, capital del Paraguay, registró un aumento de visitantes.</strong>",
         },
     },
     # Ejercicio 1 de mayúsculas y minúsculas
@@ -2538,8 +2580,10 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
 # Títulos descriptivos para cada ejercicio.  Se muestran en la cabecera de
 # las páginas de pregunta y en la página de resultados.
 EXERCISE_TITLES: Dict[str, str] = {
+    "acentuacion2": "Ejercicio 2 de acentuación",
     "puntuacion1": "Ejercicio 1 de puntuación",
     "puntuacion2": "Ejercicio 2 de puntuación",
+    "puntuacion3": "Ejercicio Final de puntuación",
     "mayus1": "Ejercicio 1 de mayúsculas y minúsculas",
     "mayus2": "Ejercicio 2 de mayúsculas y minúsculas",
     "mayus3": "Ejercicio Final de mayúsculas y minúsculas",
@@ -2553,11 +2597,19 @@ EXERCISE_TITLES: Dict[str, str] = {
 # Recomendaciones por ejercicio para mostrar al final en caso de no obtener
 # el 100 %.  Se pueden personalizar con referencias a libros o capítulos.
 EXERCISE_RECOMMENDATIONS: Dict[str, str] = {
+    "acentuacion2": (
+        "Recomendación: repasa el capítulo dedicado a los signos de acentuación en un buen libro de ortografía, "
+        "por ejemplo en la 'Ortografía de la lengua española' de la Real Academia Española."
+    ),
     "puntuacion1": (
         "Recomendación: repasa el capítulo dedicado a los signos de puntuación en un buen libro de ortografía, "
         "por ejemplo en la 'Ortografía de la lengua española' de la Real Academia Española."
     ),
     "puntuacion2": (
+        "Recomendación: estudia con atención las reglas de uso de comas, puntos y puntos y coma. "
+        "El capítulo sobre puntuación de la 'Ortografía de la lengua española' te será de gran ayuda."
+    ),
+    "puntuacion3": (
         "Recomendación: estudia con atención las reglas de uso de comas, puntos y puntos y coma. "
         "El capítulo sobre puntuación de la 'Ortografía de la lengua española' te será de gran ayuda."
     ),
@@ -2607,9 +2659,17 @@ def _get_mc_question_context(slug: str, number: int) -> Dict[str, Any]:
     q_data = MC_QUESTIONS.get(slug, {}).get(number)
     if not q_data:
         raise ValueError(f"Pregunta no encontrada: {slug} #{number}")
+    # Determinar título del entrenador según el tipo de ejercicio
+    if slug.startswith("puntuacion"):
+        trainer_title = "Entrenador de Puntuación"
+    elif slug.startswith("mayus"):
+        trainer_title = "Entrenador de Mayúsculas y Minúsculas"
+    else:
+        trainer_title = "Entrenador de Ortografía"
     context = {
         "exercise_slug": slug,
         "exercise_title": EXERCISE_TITLES.get(slug, slug),
+        "trainer_title": trainer_title,
         "num": number,
         "question": q_data["question"],
         "options": q_data["options"],
@@ -2618,8 +2678,7 @@ def _get_mc_question_context(slug: str, number: int) -> Dict[str, Any]:
     }
     return context
 
-
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def mc_question_view(request: HttpRequest, slug: str, qnum: int) -> HttpResponse:
     """Muestra una de las preguntas de un ejercicio de opción múltiple.
 
@@ -2640,7 +2699,7 @@ def mc_question_view(request: HttpRequest, slug: str, qnum: int) -> HttpResponse
 
 
 @require_POST
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def mc_submit_view(request: HttpRequest, slug: str, qnum: int) -> JsonResponse:
     """Procesa la respuesta de una pregunta de un ejercicio de opción múltiple.
 
@@ -2667,8 +2726,9 @@ def mc_submit_view(request: HttpRequest, slug: str, qnum: int) -> JsonResponse:
         correct_option=correct_option,
         is_correct=is_correct,
     )
-    # Calcular la URL siguiente
-    if qnum < 3:
+    # Calcular la URL siguiente según el número total de preguntas del ejercicio
+    total_questions = len(MC_QUESTIONS.get(slug, {}))
+    if qnum < total_questions:
         next_url = reverse("mc_question", args=(slug, qnum + 1))
     else:
         next_url = reverse("mc_result", args=(slug,))
@@ -2682,7 +2742,8 @@ def mc_submit_view(request: HttpRequest, slug: str, qnum: int) -> JsonResponse:
     })
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+
+@login_required
 def mc_explain(request: HttpRequest) -> JsonResponse:
     """Devuelve una explicación para un intento de un ejercicio de opción múltiple.
 
@@ -2716,14 +2777,13 @@ def mc_explain(request: HttpRequest) -> JsonResponse:
     explanation = None
     if OpenAI is not None:
         try:
-            api_key = getattr(settings, "OPENAI_API_KEY", None)
-            if api_key:
-                openai.api_key = api_key  # type: ignore[assignment]
-                completion = openai.ChatCompletion.create(  # type: ignore[attr-defined]
-                    model="gpt-5-mini",
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                explanation = completion.choices[0].message["content"].strip()  # type: ignore[index]
+            respuesta = client.chat.completions.create(  # type: ignore[attr-defined]
+                model="gpt-5-mini",
+                messages=[
+                    {"role": "system", "content": "Eres un experto en ortografía que evalúa ejercicios"},
+                    {"role": "user", "content": prompt}],
+            )
+            explanation = respuesta.choices[0].message.content # type: ignore[index]
         except Exception:
             explanation = None
     if not explanation:
@@ -2742,7 +2802,7 @@ def mc_explain(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"explanation": explanation})
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
     """Muestra la pantalla de resultados de un ejercicio de opción múltiple.
 
@@ -2756,18 +2816,38 @@ def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
         return HttpResponse("Ejercicio no encontrado", status=404)
     user = request.user
     attempts = MultipleChoiceAttempt.objects.filter(user=user, exercise_slug=slug)
-    total_questions = 3
+    # Determinar el número total de preguntas dinámicamente según el ejercicio
+    total_questions = len(MC_QUESTIONS.get(slug, {}))
     correct_answers = sum(1 for a in attempts if a.is_correct)
     percentage = (correct_answers / total_questions) * 100 if total_questions else 0
-    # Guardar resultado
-    MultipleChoiceResult.objects.create(
+    # Guardar resultado (se asignará recomendación más abajo)
+    result = MultipleChoiceResult.objects.create(
         user=user,
         exercise_slug=slug,
         total_questions=total_questions,
         correct_answers=correct_answers,
         percentage=percentage,
-        recommendation="",  # se asignará más abajo si corresponde
+        recommendation="",
     )
+
+    # Registrar la actividad en el calendario.  Identificamos el slug para
+    # asignar un título amigable según el ejercicio o evaluación final.
+    try:
+        if slug == "evaluacionfinal":
+            title = "Evaluación final completada"
+            activity_slug = "evaluacionfinal"
+        else:
+            # Generamos un título genérico a partir del diccionario de títulos
+            title = f"{EXERCISE_TITLES.get(slug, slug)} completado"
+            activity_slug = slug
+        CalendarActivity.objects.create(
+            user=user,
+            activity_slug=activity_slug,
+            title=title,
+            description=f"Obtuviste {percentage:.0f}% de aciertos en {EXERCISE_TITLES.get(slug, slug).lower()}.",
+        )
+    except Exception:
+        pass
     # Determinar el mensaje principal y la recomendación
     if correct_answers == total_questions:
         headline = "¡Completaste todos los ejercicios sin errores, sigue así!"
@@ -2778,6 +2858,10 @@ def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
     else:
         headline = f"¡Faltaría reforzar un poco más, acertaste solo el {percentage:.0f}%!"
         recommendation = EXERCISE_RECOMMENDATIONS.get(slug)
+    # Actualizar la recomendación en el registro guardado (None se convierte en "")
+    if recommendation:
+        result.recommendation = recommendation
+        result.save(update_fields=["recommendation"])
     context = {
         "exercise_title": EXERCISE_TITLES.get(slug, slug),
         "headline": headline,
@@ -2830,11 +2914,11 @@ def instruccion_view(request: HttpRequest, unit_slug: str) -> HttpResponse:
         "pdf_path": pdf_relative_path,
     }
     return render(request, "instruccion/unidad.html", context)
-
+#ENCUESTA ESTUDIANTE
 ###############################
 # ----------------------------------------------------------------------------
 # Definición de las preguntas de la encuesta
-#
+#  ---------------------------------------------------------------------------
 # Cada entrada del diccionario SURVEY_QUESTIONS representa una
 # pregunta de la encuesta.  Las claves son números consecutivos
 # empezando en 1.  Cada pregunta contiene el enunciado y un mapa de
@@ -2843,61 +2927,57 @@ def instruccion_view(request: HttpRequest, unit_slug: str) -> HttpResponse:
 
 SURVEY_QUESTIONS: Dict[int, Dict[str, Any]] = {
     1: {
-        "question": "¿Qué edad tiene?",
+        "question": "¿Considera que la ortografía es importante para tu educación y para la vida?",
         "options": {
-            "a": "Menos de 15 años",
-            "b": "16 años",
-            "c": "17 años",
-            "d": "18 años",
-            "e": "Más de 18 años",
+            "a": "Sí",
+            "b": "No",
         },
     },
     2: {
-        "question": "¿Cuál es su sexo?",
+        "question": "¿Participa de forma más activa durante las clases de ortografía?",
         "options": {
-            "a": "Femenino",
-            "b": "Masculino",
+            "a": "Sí",
+            "b": "No",
         },
     },
     3: {
-        "question": "¿Qué nivel de formación académica posee?",
+        "question": "¿Le ha gustado más aprender la ortografía con la aplicación del Software Recomendador Inteligente de Contenidos?",
         "options": {
-            "a": "Educación Escolar Básica",
-            "b": "Educación Media y Técnica",
-            "c": "Educación Universitaria",
+            "a": "Sí",
+            "b": "No",
         },
     },
     # Preguntas sobre la disponibilidad de dispositivos en la institución
     4: {
-        "question": "¿Cuenta el Colegio Nacional Santa Lucía con computadora para usar en clases?",
+        "question": "¿Se siente menos motivado durante la clase?",
         "options": {
             "a": "Sí",
             "b": "No",
         },
     },
     5: {
-        "question": "¿Cuenta el Colegio Nacional Santa Lucía con notebook para usar en clases?",
+        "question": "¿Ha aprendido con más rapidez la ortografía?",
         "options": {
             "a": "Sí",
             "b": "No",
         },
     },
     6: {
-        "question": "¿Cuenta el Colegio Nacional Santa Lucía con teléfono celular para usar en clases?",
+        "question": "¿La aplicación del Software Recomendador Inteligente de Contenidos para las guías de aprendizajes personalizadas le ha ayudado a reflexionar sobre sus errores ortográficos?",
         "options": {
             "a": "Sí",
             "b": "No",
         },
     },
     7: {
-        "question": "¿Cuenta el Colegio Nacional Santa Lucía con tablet para usar en clases?",
+        "question": "¿Utilizando el Software Recomendador Inteligente de Contenidos ha mejorado su aprendizaje de la ortografía de la lengua castellana?",
         "options": {
             "a": "Sí",
             "b": "No",
         },
     },
     8: {
-        "question": "¿Tiene conocimiento de alguna herramienta tecnológica?",
+        "question": "¿Cree que el uso de estas tecnologías fomenta suficientemente para adquirir conocimientos ortográficos y optimizar o mejorar su rendimiento académico?",
         "options": {
             "a": "Sí",
             "b": "No",
@@ -2905,105 +2985,84 @@ SURVEY_QUESTIONS: Dict[int, Dict[str, Any]] = {
     },
     # Preguntas sobre la posesión de dispositivos personales
     9: {
-        "question": "¿Posee computadora de uso particular?",
+        "question": "¿Según su opinión, constituye una metodología de gran utilidad y eficaz la aplicación del Software Recomendador Inteligente de Contenidos como guías de aprendizajes personalizadas de la ortografía de la lengua castellana para los educandos?",
         "options": {
             "a": "Sí",
             "b": "No",
         },
     },
     10: {
-        "question": "¿Posee notebook de uso particular?",
+        "question": "¿Considera que el Software Recomendador Inteligente de Contenidos es flexible para interactuar o fácil de usar?",
         "options": {
             "a": "Sí",
             "b": "No",
         },
     },
     11: {
-        "question": "¿Posee teléfono celular de uso particular?",
+        "question": "¿Opina que es posible de llegar a ser hábil en el uso del Software Recomendador Inteligente de Contenidos, constituyéndose en una guía de aprendizaje personalizada?",
         "options": {
             "a": "Sí",
             "b": "No",
         },
     },
     12: {
-        "question": "¿Posee tablet de uso particular?",
+        "question": "¿Cuáles son las principales dificultades que ha tenido con la aplicación del Software Recomendador Inteligente de Contenidos? ",
         "options": {
-            "a": "Sí",
-            "b": "No",
+            "a": "Falta de recursos tecnológicos",
+            "b": "Falta de conocimiento de la herramienta digital",
+            "c": "Falta de tiempo",
+            "d": "Falta de conectividad de internet",
         },
     },
     13: {
-        "question": "¿Qué mejoras tecnológicas quisiera que se realicen en su institución educativa para optimizar el rendimiento académico de la ortografía de la Lengua Castellana?",
+        "question": "¿Cómo valoraría esta herramienta tecnológica para uso didáctico?",
         "options": {
-            "a": "Sí a la aplicación de algún software didáctico que apoye a los estudiantes en el aprendizaje de la asignatura.",
-            "b": "La no aplicación de algún software didáctico a los estudiantes durante el proceso de aprendizaje de la asignatura.",
+            "a": "Buena",
+            "b": "Media",
+            "c": "Mala",
         },
     },
     14: {
-        "question": "Algunas personas opinan que los efectos negativos de la Informática han sido mayores que su contribución al mejoramiento del aprendizaje de los educandos. ¿Está de acuerdo con esta afirmación?",
+        "question": "¿En general cuál es su percepción del sistema aplicado?",
         "options": {
-            "a": "Sí",
-            "b": "No",
+            "a": "Buena",
+            "b": "Media",
+            "c": "Mala",
         },
     },
     15: {
-        "question": "¿Cree que es prioridad promover la integración de la Informática en el Sistema Educativo Paraguayo?",
+        "question": "¿Estás conforme con el diseño del Software Recomendador Inteligente de Contenidos?",
         "options": {
-            "a": "Sí",
-            "b": "No",
+            "a": "Buena",
+            "b": "Media",
+            "c": "Mala",
         },
     },
     16: {
-        "question": "Algunos docentes argumentan que el uso de las tecnologías como recurso didáctico no ayudaría a mejorar significativamente el aprendizaje y desempeño de los alumnos. ¿Está de acuerdo con esta percepción?",
+        "question": "¿Cómo es la calidad de la información obtenida del sistema utilizado?",
         "options": {
-            "a": "Sí",
-            "b": "No",
+            "a": "Buena",
+            "b": "Media",
+            "c": "Mala",
         },
     },
     17: {
-        "question": "¿Considera que el uso didáctico de un software contribuye de manera positiva al proceso de enseñanza de su aprendizaje?",
+        "question": "¿Cómo fue tu experiencia con el sistema informático: Recomendador Inteligente de Contenidos?",
         "options": {
-            "a": "Sí",
-            "b": "No",
+            "a": "Buena",
+            "b": "Media",
+            "c": "Mala",
         },
     },
     18: {
-        "question": "¿Ha utilizado algún software didáctico durante su vida académica?",
+        "question": "¿Usaría este sistema tecnológico fuera de la clase del área Lengua Castellana y Literatura como también del colegio para reforzar y afianzar su aprendizaje de la ortografía?",
         "options": {
             "a": "Sí",
             "b": "No",
         },
     },
     19: {
-        "question": "¿Ha escuchado hablar del Software Recomendador Inteligente de Contenidos?",
-        "options": {
-            "a": "Sí",
-            "b": "No",
-        },
-    },
-    20: {
-        "question": "¿Tiene conocimiento de la utilidad de la aplicación del Software Recomendador Inteligente de Contenidos como guías de aprendizajes personalizadas de la ortografía de la lengua castellana?",
-        "options": {
-            "a": "Sí",
-            "b": "No",
-        },
-    },
-    21: {
-        "question": "¿Le gustaría que, para el desarrollo de la clase de Lengua Castellana y Literatura, específicamente de ortografía, sea utilizado el Software Recomendador Inteligente de Contenidos?",
-        "options": {
-            "a": "Sí",
-            "b": "No",
-        },
-    },
-    22: {
-        "question": "¿Considera que el uso del Software Recomendador Inteligente de Contenidos puede facilitar y mejorar el aprendizaje de la ortografía?",
-        "options": {
-            "a": "Sí",
-            "b": "No",
-        },
-    },
-    23: {
-        "question": "¿Cree que la capacitación del docente en el uso didáctico de las tecnologías puede ejercer un impacto importante en los resultados académicos de los educandos?",
+        "question": "¿Recomendaría al docente a que aplique este sistema tecnológico como recurso didáctico para sus clases de otros contenidos como también a otros docentes y alumnos?",
         "options": {
             "a": "Sí",
             "b": "No",
@@ -3032,7 +3091,7 @@ def survey_question_view(request: HttpRequest, qnum: int) -> HttpResponse:
     submit_url = reverse('survey_submit', kwargs={"qnum": qnum_int})
     return render(
         request,
-        'encuesta/question.html',
+        'encuesta/estudiante/question.html',
         {
             'question_number': qnum_int,
             'total_questions': total_questions,
@@ -3085,4 +3144,230 @@ def survey_submit_view(request: HttpRequest, qnum: int) -> JsonResponse:
 @role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
 def survey_result_view(request: HttpRequest) -> HttpResponse:
     """Muestra la pantalla final tras completar la encuesta."""
-    return render(request, 'encuesta/result.html')
+    return render(request, 'encuesta/estudiante/result.html')
+
+
+#ENCUESTA DOCENTE
+###############################
+# ----------------------------------------------------------------------------
+# Definición de las preguntas de la encuesta
+#  ---------------------------------------------------------------------------
+# Cada entrada del diccionario SURVEY_QUESTIONS representa una
+# pregunta de la encuesta.  Las claves son números consecutivos
+# empezando en 1.  Cada pregunta contiene el enunciado y un mapa de
+# opciones (a, b, c, etc.) a sus textos.  No se incluye un campo
+# "correct" porque no existen respuestas correctas o incorrectas.
+
+SURVEY_QUESTIONS_DOCENTE: Dict[int, Dict[str, Any]] = {
+    1: {
+        "question": "¿Los educandos participan de forma más activa durante las clases de ortografía?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    2: {
+        "question": "¿A sus estudiantes le ha gustado más aprender la ortografía con la aplicación del Software Recomendador Inteligente de Contenidos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    3: {
+        "question": "¿El estudiantado se siente menos motivado durante la clase?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    # Preguntas sobre la disponibilidad de dispositivos en la institución
+    4: {
+        "question": "¿El educando ha aprendido con más rapidez la ortografía?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    5: {
+        "question": "¿La aplicación del Software Recomendador Inteligente de Contenidos para las guías de aprendizajes personalizadas le ha ayudado al educando a reflexionar sobre sus errores ortográficos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    6: {
+        "question": "¿Cree que utilizando el Software Recomendador Inteligente de Contenidos el estudiante ha mejorado su aprendizaje de la ortografía de la lengua castellana?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    7: {
+        "question": "¿Considera que el uso de estas tecnologías fomenta suficientemente para adquirir conocimientos ortográficos y optimizar elevando el rendimiento académico de los alumnos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    8: {
+        "question": "¿Según su opinión, constituye una metodología de gran utilidad y eficaz la aplicación del Software Recomendador Inteligente de Contenidos como guías de aprendizajes personalizadas de la ortografía de la lengua castellana para los educandos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    # Preguntas sobre la posesión de dispositivos personales
+    9: {
+        "question": "¿Cree que el Software Recomendador Inteligente de Contenidos es flexible para interactuar o fácil de usar?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    10: {
+        "question": "¿Opina que es posible de llegar a ser hábil en el uso del Software Recomendador Inteligente de Contenidos, constituyéndose en una guía de aprendizaje personalizada?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    11: {
+        "question": "¿Cuáles son las principales dificultades que ha tenido con la aplicación del Software Recomendador Inteligente de Contenidos?",
+        "options": {
+            "a": "Falta de recursos tecnológicos",
+            "b": "Falta de conocimiento de la herramienta digital",
+            "c": "Falta de tiempo",
+            "d": "Desconocimiento por parte de los estudiantes",
+            "e": "Falta de conexión de internet",
+        },
+    },
+    12: {
+        "question": "¿Cómo valoraría esta herramienta tecnológica para uso didáctico?",
+        "options": {
+            "a": "Buena",
+            "b": "Mala",
+            "c": "Media",
+        },
+    },
+    13: {
+        "question": "¿En general cuál es su percepción del sistema aplicado?",
+        "options": {
+            "a": "Buena",
+            "b": "Mala",
+            "c": "Media",
+        },
+    },
+    14: {
+        "question": "¿Estás conforme con el diseño del Software Recomendador Inteligente de Contenidos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    15: {
+        "question": "¿Cómo es la calidad de la información obtenida del sistema utilizado?",
+        "options": {
+            "a": "Buena",
+            "b": "Mala",
+            "c": "Media",
+        },
+    },
+    16: {
+        "question": "¿Cómo fue tu experiencia con el sistema informático: Recomendador Inteligente de Contenidos?",
+        "options": {
+            "a": "Buena",
+            "b": "Mala",
+            "c": "Media",
+        },
+    },
+    17: {
+        "question": "¿Usaría este sistema tecnológico como recurso didáctico para sus clases de otros contenidos?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+    18: {
+        "question": "¿Recomendaría a sus colegas a que aplique este sistema tecnológico como recurso didáctico para sus clases?",
+        "options": {
+            "a": "Sí",
+            "b": "No",
+        },
+    },
+}
+
+
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def survey_question_view_docente(request: HttpRequest, qnum: int) -> HttpResponse:
+    """Muestra una pregunta de la encuesta.
+
+    Si el número de pregunta excede el total de preguntas definidas, se
+    redirige automáticamente a la vista de resultados de la encuesta.
+    """
+    total_questions = len(SURVEY_QUESTIONS_DOCENTE)
+    try:
+        qnum_int = int(qnum)
+    except (TypeError, ValueError):
+        qnum_int = 1
+    if qnum_int < 1:
+        qnum_int = 1
+    if qnum_int > total_questions:
+        return redirect('survey_result_docente')
+    question_data = SURVEY_QUESTIONS_DOCENTE[qnum_int]
+    submit_url = reverse('survey_submit_docente', kwargs={"qnum": qnum_int})
+    return render(
+        request,
+        'encuesta/docente/question.html',
+        {
+            'question_number': qnum_int,
+            'total_questions': total_questions,
+            'question': question_data['question'],
+            'options': question_data['options'],
+            'submit_url': submit_url,
+        },
+    )
+
+
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def survey_submit_view_docente(request: HttpRequest, qnum: int) -> JsonResponse:
+    """Procesa la respuesta a una pregunta de la encuesta.
+
+    Se almacena la opción seleccionada por el usuario y se devuelve
+    la URL de la siguiente pregunta o de la pantalla de resultados si
+    todas las preguntas han sido respondidas.
+    """
+    try:
+        qnum_int = int(qnum)
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Número de pregunta inválido.'}, status=400)
+    total_questions = len(SURVEY_QUESTIONS_DOCENTE)
+    # Obtener la opción seleccionada
+    selected_option = request.POST.get('option')
+    if not selected_option:
+        return JsonResponse({'error': 'Debe seleccionar una opción.'}, status=400)
+    # Guardar la respuesta
+    SurveyAttemptDocente.objects.create(
+        user=request.user,
+        question_number=qnum_int,
+        selected_option=selected_option,
+        survey_slug='encuesta_docente',
+    )
+    # Calcular la siguiente URL
+    if qnum_int >= total_questions:
+        # Registrar que el usuario completó la encuesta
+        # Evitar duplicados: solo crear un SurveyResult si no existe
+        SurveyResultDocente.objects.get_or_create(
+            user=request.user,
+            survey_slug='encuesta_docente',
+            defaults={'total_questions': total_questions},
+        )
+        next_url = reverse('survey_result_docente')
+    else:
+        next_url = reverse('survey_question_docente', kwargs={'qnum': qnum_int + 1})
+    return JsonResponse({'message': '¡Respuesta guardada!', 'next_url': next_url})
+
+
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def survey_result_view_docente(request: HttpRequest) -> HttpResponse:
+    """Muestra la pantalla final tras completar la encuesta."""
+    return render(request, 'encuesta/docente/result.html')

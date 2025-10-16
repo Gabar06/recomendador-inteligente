@@ -27,19 +27,12 @@ from django.contrib.auth.decorators import login_required
 from .decorators import role_login_required
 from .models import (
     Usuario,
-    ExerciseAttempt,
-    ResultSummary,
+    Exercise2Result,
     PunctuationResult,
     MultipleChoiceResult,
-    CalendarActivity,
 )
 
-########
-from django.http import JsonResponse, HttpRequest, HttpResponse
-
 import io
-
-# Condicionalmente importamos reportlab. Si está disponible, lo utilizaremos
 
 # Condicionalmente importamos reportlab. Si está disponible, lo utilizaremos
 try:
@@ -51,13 +44,10 @@ try:
     _HAS_REPORTLAB = True
 except Exception:
     # Si reportlab no está instalado caemos en el modo de respaldo con Matplotlib
-     # Si reportlab no está instalado caemos en el modo de respaldo con Matplotlib
     _HAS_REPORTLAB = False
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
 
-
-########
 
 def _average_percentage(values: list[float]) -> Optional[float]:
     """Calcula el promedio de una lista de porcentajes.
@@ -99,7 +89,7 @@ def _classify_domain(percentage: Optional[float]) -> str:
     return "Excelente"
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")  
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
 def evaluaciones_view(request):
     """Muestra el reporte de evaluaciones para el estudiante actual.
 
@@ -118,13 +108,13 @@ def evaluaciones_view(request):
     user = request.user
 
     # Acentuación: solo se dispone del resultado del ejercicio 2
-    acento_res = ResultSummary.objects.filter(user=user).order_by("-created_at").first()
+    acento_res = Exercise2Result.objects.filter(user=user).order_by("-created_at").first()
     acento_pct = acento_res.percentage if acento_res else None
 
     # Puntuación: combinamos resultados de opción múltiple y del ejercicio
     # interactivo de puntuación final. Calculamos la media de todos los
     # resultados disponibles.
-    punct_slugs = ["puntuacion1", "puntuacion2" , "puntuacion3"]
+    punct_slugs = ["puntuacion1", "puntuacion2"]
     punct_mc_results = MultipleChoiceResult.objects.filter(
         user=user, exercise_slug__in=punct_slugs
     )
@@ -135,7 +125,7 @@ def evaluaciones_view(request):
     puntuacion_pct = _average_percentage(punct_values)
 
     # Mayúsculas y minúsculas
-    mayus_slugs = ["mayus1", "mayus2" , "mayus3"]
+    mayus_slugs = ["mayus1", "mayus2"]
     mayus_results = MultipleChoiceResult.objects.filter(
         user=user, exercise_slug__in=mayus_slugs
     )
@@ -143,13 +133,13 @@ def evaluaciones_view(request):
     mayus_pct = _average_percentage(mayus_values)
 
     # Reglas de las letras
-    letras_slugs = ["letras1", "letras2" , "letras3"]
+    letras_slugs = ["letras1", "letras2"]
     letras_results = MultipleChoiceResult.objects.filter(
         user=user, exercise_slug__in=letras_slugs
     )
     letras_values: list[float] = [res.percentage for res in letras_results]
     letras_pct = _average_percentage(letras_values)
-    
+
     # Evaluación final: obtenemos el resultado más reciente del ejercicio de evaluación final
     final_res = MultipleChoiceResult.objects.filter(user=user, exercise_slug="evaluacionfinal").order_by("-created_at").first()
     final_pct = final_res.percentage if final_res else None
@@ -170,32 +160,7 @@ def evaluaciones_view(request):
     })
 
 
-# Mapea % → etiqueta de dominio (ajusta si querés otros nombres/umbrales)
-def _domain_label(p: int | None) -> str:
-    if p is None:
-        return "N/A"
-    if p >= 90: return "Excelente"
-    if p >= 80: return "Muy Satisfactorio"
-    if p >= 60: return "Satisfactorio"
-    if p >= 40: return "Básico"
-    return "Insuficiente"
-def _student_name(user) -> str:
-    full = (user.nombre + " " + user.apellido or "").strip()
-    return full if full else user.nombre + " " + user.apellido
-
-def _student_id(user) -> str:
-    for attr in ("cedula", "dni", "documento"):
-        if hasattr(user, attr) and getattr(user, attr):
-            return str(getattr(user, attr))
-    prof = getattr(user, "profile", None)
-    if prof:
-        for attr in ("cedula", "dni", "documento"):
-            if hasattr(prof, attr) and getattr(prof, attr):
-                return str(getattr(prof, attr))
-    return "—"
-
-
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante") 
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
 def evaluaciones_report(request):
     """Genera un informe PDF con los resultados de todas las unidades.
 
@@ -208,10 +173,10 @@ def evaluaciones_report(request):
 
     # Reutilizamos el cálculo de porcentajes de la vista principal
     # Acentuación
-    acento_res = ResultSummary.objects.filter(user=user).order_by("-created_at").first()
+    acento_res = Exercise2Result.objects.filter(user=user).order_by("-created_at").first()
     acento_pct = acento_res.percentage if acento_res else None
     # Puntuación
-    punct_slugs = ["puntuacion1", "puntuacion2", "puntuacion3"]
+    punct_slugs = ["puntuacion1", "puntuacion2"]
     punct_mc_results = MultipleChoiceResult.objects.filter(
         user=user, exercise_slug__in=punct_slugs
     )
@@ -221,25 +186,25 @@ def evaluaciones_report(request):
         punct_values.append(punct_final.percentage)
     puntuacion_pct = _average_percentage(punct_values)
     # Mayúsculas
-    mayus_slugs = ["mayus1", "mayus2", "mayus3"]
+    mayus_slugs = ["mayus1", "mayus2"]
     mayus_results = MultipleChoiceResult.objects.filter(
         user=user, exercise_slug__in=mayus_slugs
     )
     mayus_values: list[float] = [res.percentage for res in mayus_results]
     mayus_pct = _average_percentage(mayus_values)
     # Letras
-    letras_slugs = ["letras1", "letras2", "letras3"]
+    letras_slugs = ["letras1", "letras2"]
     letras_results = MultipleChoiceResult.objects.filter(
         user=user, exercise_slug__in=letras_slugs
     )
     letras_values: list[float] = [res.percentage for res in letras_results]
     letras_pct = _average_percentage(letras_values)
 
+    # Construcción de tabla para PDF
     # Evaluación final
     final_res = MultipleChoiceResult.objects.filter(user=user, exercise_slug="evaluacionfinal").order_by("-created_at").first()
     final_pct = final_res.percentage if final_res else None
-    
-    # Construcción de tabla para PDF
+
     results = {
         "Acentuación": (
             f"{acento_pct:.0f}%" if acento_pct is not None else "N/A",
@@ -344,13 +309,13 @@ def evaluaciones_report(request):
         # Calculamos extremos para dibujar bordes de la tabla.
         # row_count equivale a la cantidad de filas de datos. Hay una fila extra para el encabezado.
         row_count = len(results)
-        table_height = row_height * (row_count + 0) #Tamaño lineas de columnas
+        table_height = row_height * (row_count + 1)
         table_bottom_y = table_y - table_height
         c.setLineWidth(1)
         c.setStrokeColor(green_primary)
 
         # Líneas horizontales: dibujamos desde la parte superior de la tabla hasta la inferior
-        for i in range(row_count + 1):  # incluye la línea inferior después del último dato #Tamaño lineas de filas
+        for i in range(row_count + 2):  # incluye la línea inferior después del último dato
             y_line = table_y - i * row_height
             c.line(margin_x, y_line, margin_x + table_width, y_line)
 
@@ -402,7 +367,7 @@ def evaluaciones_report(request):
             ax.text(0.1, info_y, f'Nombre: {user.nombre + " " + user.apellido or ""}', fontsize=11, color='black',
                     transform=ax.transAxes)
             info_y -= 0.03
-            user_id_val = getattr(user, 'cedula', '')
+            user_id_val = getattr(user, 'identificacion', '')
             ax.text(0.1, info_y, f'Cédula: {user_id_val}', fontsize=11, color='black', transform=ax.transAxes)
 
             # Coordenadas para la tabla
@@ -470,277 +435,4 @@ def evaluaciones_report(request):
     from django.http import HttpResponse
     response = HttpResponse(pdf_data, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="reporte_evaluaciones.pdf"'
-    return response
-
-#########################################
-# -----------------------------------------------------------------------------
-# Vistas de evaluaciones para docentes
-#
-# Estas funciones permiten a los usuarios con rol de docente revisar el
-# desempeño de todos los estudiantes registrados.  Se calcula el
-# porcentaje de cada unidad de la misma manera que para la vista de
-# estudiantes, pero iterando sobre todos los alumnos.  También se
-# incluye la posibilidad de generar un informe PDF con los resultados
-# globales.
-
-@login_required
-@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
-def evaluaciones_docente_view(request):
-    """Muestra un resumen de evaluaciones para todos los estudiantes.
-
-    Se recaban los porcentajes de cada unidad (Acentuación, Puntuación,
-    Mayúsculas y Minúsculas, Reglas de las Letras y Evaluación final) para
-    cada estudiante con rol ESTUDIANTE.  Además se recupera la última
-    actividad registrada en el calendario para ofrecer contexto sobre la
-    actividad más reciente del alumno.  Los datos se presentan en una
-    tabla dentro de una plantilla específica para docentes.
-
-    Args:
-        request: objeto ``HttpRequest`` de Django.
-
-    Returns:
-        ``HttpResponse`` con la página renderizada.
-    """
-    # Obtenemos el modelo de usuario personalizado
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    # Obtenemos estudiantes según el campo de rol definido en el modelo de usuario.
-    # Algunos modelos utilizan ``role`` y otros ``rol``.  Intentamos ambos
-    # antes de recurrir a un campo booleano ``is_student`` si existe.
-    if hasattr(User, 'role'):
-        estudiantes = User.objects.filter(role=Usuario.ESTUDIANTE)
-    elif hasattr(User, 'rol'):
-        estudiantes = User.objects.filter(rol=Usuario.ESTUDIANTE)
-    elif hasattr(User, 'is_student'):
-        estudiantes = User.objects.filter(is_student=True)
-    else:
-        estudiantes = User.objects.none()
-
-    estudiantes_data: list[dict[str, object]] = []
-    for est in estudiantes:
-        # Resultado de acentuación (ejercicio 2)
-        acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()
-        acento_pct = acento_res.percentage if acento_res else None
-        # Resultado de puntuación: media de ejercicios de opción múltiple y final
-        punct_values: list[float] = []
-        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["puntuacion1", "puntuacion2", "puntuacion3"]):
-            punct_values.append(res.percentage)
-        punct_final = PunctuationResult.objects.filter(user=est).order_by("-created_at").first()
-        if punct_final:
-            punct_values.append(punct_final.percentage)
-        puntuacion_pct = _average_percentage(punct_values)
-        # Mayúscula y minúscula
-        mayus_values: list[float] = []
-        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["mayus1", "mayus2", "mayus3"]):
-            mayus_values.append(res.percentage)
-        mayus_pct = _average_percentage(mayus_values)
-        # Reglas de las letras
-        letras_values: list[float] = []
-        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["letras1", "letras2", "letras3"]):
-            letras_values.append(res.percentage)
-        letras_pct = _average_percentage(letras_values)
-        # Evaluación final
-        final_res = MultipleChoiceResult.objects.filter(user=est, exercise_slug="evaluacionfinal").order_by("-created_at").first()
-        final_pct = final_res.percentage if final_res else None
-        # Última actividad
-        last_activity = CalendarActivity.objects.filter(user=est).order_by("-date").first()
-        if last_activity:
-            last_title = last_activity.title
-            last_desc = last_activity.description or ""
-            last_date = last_activity.date
-        else:
-            last_title = ""
-            last_desc = ""
-            last_date = None
-        estudiantes_data.append({
-            "name": est.nombre + " " + est.apellido or "",
-            "id": getattr(est, "cedula", ""),
-            "acento_pct": f"{acento_pct:.0f}%" if acento_pct is not None else "N/A",
-            "acento_dom": _classify_domain(acento_pct),
-            "puntuacion_pct": f"{puntuacion_pct:.0f}%" if puntuacion_pct is not None else "N/A",
-            "puntuacion_dom": _classify_domain(puntuacion_pct),
-            "mayus_pct": f"{mayus_pct:.0f}%" if mayus_pct is not None else "N/A",
-            "mayus_dom": _classify_domain(mayus_pct),
-            "letras_pct": f"{letras_pct:.0f}%" if letras_pct is not None else "N/A",
-            "letras_dom": _classify_domain(letras_pct),
-            "final_pct": f"{final_pct:.0f}%" if final_pct is not None else "N/A",
-            "final_dom": _classify_domain(final_pct),
-            "last_title": last_title,
-            "last_desc": last_desc,
-            "last_date": last_date,
-        })
-    # Ordenamos alfabéticamente
-    estudiantes_data.sort(key=lambda x: x['name'])
-    return render(request, "menu/docente/evaluaciones.html", {"students": estudiantes_data})
-
-
-@login_required
-@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
-def evaluaciones_docente_report(request):
-    """Genera un PDF con los resultados de todos los estudiantes.
-
-    Cada fila de la tabla en el PDF representa a un estudiante con sus
-    porcentajes y dominios para cada unidad.  Si ReportLab está
-    disponible se utiliza la clase ``Canvas`` para lograr un diseño
-    profesional; de lo contrario se recurre a un respaldo con
-    Matplotlib.
-
-    Args:
-        request: objeto ``HttpRequest``.
-
-    Returns:
-        ``HttpResponse`` que contiene el PDF.
-    """
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    # Seleccionamos estudiantes de acuerdo con el campo de rol existente en el modelo.
-    if hasattr(User, 'role'):
-        estudiantes = User.objects.filter(role=Usuario.ESTUDIANTE)
-    elif hasattr(User, 'rol'):
-        estudiantes = User.objects.filter(rol=Usuario.ESTUDIANTE)
-    elif hasattr(User, 'is_student'):
-        estudiantes = User.objects.filter(is_student=True)
-    else:
-        estudiantes = User.objects.none()
-    rows_dom: list[list[str]] = []
-    for est in estudiantes:
-        # Cálculo de porcentajes para cada estudiante
-        acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()
-        acento_pct = acento_res.percentage if acento_res else None
-        punct_vals = [res.percentage for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["puntuacion1", "puntuacion2", "puntuacion3"])]
-        pf = PunctuationResult.objects.filter(user=est).order_by("-created_at").first()
-        if pf:
-            punct_vals.append(pf.percentage)
-        puntuacion_pct = _average_percentage(punct_vals)
-        mayus_vals = [res.percentage for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["mayus1", "mayus2", "mayus3"])]
-        mayus_pct = _average_percentage(mayus_vals)
-        letras_vals = [res.percentage for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["letras1", "letras2", "letras3"])]
-        letras_pct = _average_percentage(letras_vals)
-        final_res = MultipleChoiceResult.objects.filter(user=est, exercise_slug="evaluacionfinal").order_by("-created_at").first()
-        final_pct = final_res.percentage if final_res else None
-        rows_dom.append([
-        f"{getattr(est, 'nombre', '') or ''} {getattr(est, 'apellido', '') or ''}".strip(),
-        f"{getattr(est, 'cedula', '') or ''}",
-        _classify_domain(acento_pct),
-        _classify_domain(puntuacion_pct),
-        _classify_domain(mayus_pct),
-        _classify_domain(letras_pct),
-        _classify_domain(final_pct),
-    ])
-    buffer = io.BytesIO()
-    if _HAS_REPORTLAB:
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-        from reportlab.lib import colors
-        from reportlab.lib.units import mm
-
-        # Paleta
-        GREEN    = colors.HexColor('#7CC300')
-        DARK     = colors.HexColor('#00471b')
-        BAND     = colors.HexColor('#e6f4d7')  # banda de cabecera (suave)
-        STRIPE   = colors.HexColor('#f5fdf0')  # cebreado filas
-
-        # Doc
-        doc = SimpleDocTemplate(
-            buffer, pagesize=A4,
-            leftMargin=18*mm, rightMargin=18*mm,
-            topMargin=24*mm, bottomMargin=18*mm
-        )
-        W, H = A4
-
-        styles = getSampleStyleSheet()
-        cell = ParagraphStyle(
-            "cell", parent=styles["Normal"],
-            fontName="Helvetica", fontSize=9, leading=11, textColor=colors.black
-        )
-        cell_bold = ParagraphStyle(
-            "cell_bold", parent=cell, fontName="Helvetica-Bold"
-        )
-
-        # Encabezado: banda + info del educador
-        def _header(canvas, doc):
-            canvas.saveState()
-            # Banda verde clara
-            x = doc.leftMargin
-            w = W - doc.leftMargin - doc.rightMargin
-            canvas.setFillColor(BAND)
-            canvas.rect(x, H - doc.topMargin + 6*mm, w, 10*mm, stroke=0, fill=1)
-            # Título centrado
-            canvas.setFillColor(DARK)
-            canvas.setFont("Helvetica-Bold", 14)
-            canvas.drawCentredString(W/2, H - doc.topMargin + 9*mm, "Reporte de Evaluaciones Educador")
-            # Información del Educador
-            y = H - doc.topMargin - 2*mm
-            canvas.setFont("Helvetica-Bold", 10)
-            canvas.drawString(x, y, "Información del Educador")
-            canvas.setFont("Helvetica", 9)
-            canvas.setFillColor(colors.black)
-            canvas.drawString(x, y - 12, f"Nombre : {getattr(request.user, 'nombre', '')} {getattr(request.user, 'apellido', '')}".strip())
-            canvas.drawString(x, y - 24, f"Cédula: {getattr(request.user, 'cedula', '')}")
-            canvas.restoreState()
-
-        # Datos
-        headers = [
-            "Educando", "Cédula", "Dominio Acentuación",
-            "Dominio Puntuación", "Dominio Mayúscula",
-            "Dominio Letras", "Dominio Final",
-        ]
-        # Anchuras medidas para A4
-        col_widths = [40*mm, 25*mm, 25*mm, 25*mm, 25*mm, 25*mm, 25*mm]
-
-        # Parrafos para wraps elegantes
-        data = [[Paragraph(h, cell_bold) for h in headers]]
-        for r in rows_dom:
-            data.append([
-                Paragraph(r[0], cell),  # nombre
-                Paragraph(r[1], cell),  # cédula
-                Paragraph(r[2], cell),
-                Paragraph(r[3], cell),
-                Paragraph(r[4], cell),
-                Paragraph(r[5], cell),
-                Paragraph(r[6], cell),
-            ])
-
-        table = Table(data, colWidths=col_widths, repeatRows=1)
-
-        # Estilo base
-        style = TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), GREEN),
-            ('TEXTCOLOR',  (0,0), (-1,0), colors.white),
-            ('FONTNAME',   (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE',   (0,0), (-1,0), 10),
-            ('ALIGN',      (0,0), (0,-1), 'LEFT'),   # primera col a la izquierda
-            ('ALIGN',      (1,0), (-1,-1), 'CENTER'),
-            ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
-            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, STRIPE]),
-            ('GRID',       (0,0), (-1,-1), 0.6, GREEN),
-            ('TOPPADDING', (0,0), (-1,-1), 6),
-            ('BOTTOMPADDING',(0,0),(-1,-1), 6),
-        ])
-
-        # Colorear por dominio
-        def bg_for(value: str):
-            v = (value or "").strip().lower()
-            if v == "excelente":     return colors.HexColor("#ffffff") #eaffea
-            if v == "suficiente":    return colors.HexColor("#ffffff") #fff5e6
-            if v == "insuficiente":  return colors.HexColor("#ffffff") #ffecec
-            return colors.HexColor("#ffffff") #f1f5f9 # N/A
-
-        for ridx, row in enumerate(rows_dom, start=1):   # +1 por el header
-            for cidx in range(2, 7):  # solo columnas de dominio
-                style.add('BACKGROUND', (cidx, ridx), (cidx, ridx), bg_for(row[cidx]))
-
-        table.setStyle(style)
-
-        # Dejo aire para que no invada el header
-        story = [Spacer(1, 40*mm), table]
-        doc.build(story, onFirstPage=_header, onLaterPages=_header)
-
-        pdf_data = buffer.getvalue()
-        buffer.close()
-
-    from django.http import HttpResponse
-    response = HttpResponse(pdf_data, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="reporte_evaluaciones_docente.pdf"'
     return response

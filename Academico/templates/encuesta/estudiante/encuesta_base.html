@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Encuesta{% endblock %}</title>
+  {# Carga de Bootstrap CSS desde CDN para estilos básicos. #}
+  <link rel="stylesheet" href="{% static 'css/acento_1.css' %}">
+  {# Carga opcional de Tailwind para estilos utilitarios. #}
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-light">
+  <header class="site-header">
+    <h1 class="site-title">Entrenador de Ortografía</h1>
+  </header>
+ <main class="site-main">
+    {% block body %}
+      {% block content %}{% endblock %}
+    {% endblock %}
+  </main>
+  <footer class="site-footer">
+    <small>&copy; 2025 – Proyecto educativo de ortografía</small>
+  </footer>
+  {# Scripts de Bootstrap #}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-xwR8noEvkB3RX7vJkFiaPslBLtAeCZ1pDxA1oQkMx63FIvS5zm+8WvPa0aHq0Fj4" crossorigin="anonymous"></script>
+</body>
+</html>
