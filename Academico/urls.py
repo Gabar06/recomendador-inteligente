@@ -124,5 +124,12 @@ urlpatterns = [
     path("encuesta_docente/<int:qnum>/", views.survey_question_view_docente, name="survey_question_docente"),
     path("encuesta_docente/<int:qnum>/submit/", views.survey_submit_view_docente, name="survey_submit_docente"),
     path("encuesta_docente/result/", views.survey_result_view_docente, name="survey_result_docente"),
+    
+    path('acento_1/reiniciar/', views.reiniciar_acento, name='reiniciar_acento'),
+    path('mc/<slug:slug>/reiniciar/', views.reiniciar_mc, name='reiniciar_mc'),
+    
+    path("encuesta/cancel/", views.survey_cancel, name="survey_cancel"),
+    path("encuesta_docente/cancel/", views.survey_cancel_docente, name="survey_cancel_docente"),
+
 
 ]

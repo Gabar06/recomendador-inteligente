@@ -9,6 +9,8 @@
  * vez disponible, se resaltan palabras clave en negrita.
  */
 
+
+
 // CSRF helper para obtener el token desde las cookies
 function getCookie(name) {
   let cookieValue = null;
@@ -24,6 +26,38 @@ function getCookie(name) {
   }
   return cookieValue;
 }
+
+// Guardia anti-retroceso
+(function installLeaveGuard() {
+  const RESTART_URL = "/acento_1/reiniciar/";
+  window.__allowLeave = false;
+
+  history.pushState(null, "", location.href);
+
+  window.addEventListener("popstate", function () {
+    if (window.__allowLeave) return;
+    const msg = "Si salís ahora, perdés tu progreso de esta unidad. ¿Salir de todos modos?";
+    if (confirm(msg)) {
+      window.__allowLeave = true;
+      location.href = RESTART_URL;
+    } else {
+      history.pushState(null, "", location.href);
+    }
+  });
+
+  window.addEventListener("beforeunload", function (e) {
+    if (window.__allowLeave) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+
+  document.addEventListener("click", function (ev) {
+    const a = ev.target.closest("a");
+    if (a && a.dataset.allowLeave === "1") {
+      window.__allowLeave = true;
+    }
+  });
+})();
 
 // Resalta palabras clave en la explicación con <strong>
 function highlightImportantWords(text) {
@@ -123,6 +157,7 @@ function wireForm(formId) {
           }
         });
         continueBtn.addEventListener('click', () => {
+          window.__allowLeave = true;
           window.location.href = data.next_url;
         });
       } else {
@@ -131,6 +166,7 @@ function wireForm(formId) {
         continueBtn.className = 'btn continue-btn';
         feedbackBox.appendChild(continueBtn);
         continueBtn.addEventListener('click', () => {
+          window.__allowLeave = true;
           window.location.href = data.next_url;
         });
       }
@@ -143,6 +179,64 @@ function wireForm(formId) {
     }
   });
 }
+
+// --- Guardia anti-retroceso para la guía ---
+// Si el usuario intenta volver, advertimos y, si confirma, reiniciamos intento.
+(function installLeaveGuard() {
+  const RESTART_URL = "/acento_1/reiniciar/";
+  // Flag global para permitir salidas "legítimas" (Continuar, links con permiso, etc.)
+  window.__allowLeave = false;
+
+  // Apila un estado vacío para que el primer "Atrás" dispare popstate
+  history.pushState(null, "", location.href);
+
+  // Botón Atrás del navegador
+  window.addEventListener("popstate", function () {
+    if (window.__allowLeave) return;
+    const msg = "Si salís ahora, perdés tu progreso de esta unidad. ¿Salir de todos modos?";
+    if (confirm(msg)) {
+      window.__allowLeave = true;
+      location.href = RESTART_URL;  // Volvemos a la Guía y limpiamos progreso
+    } else {
+      history.pushState(null, "", location.href); // Nos quedamos
+    }
+  });
+
+  // Cerrar pestaña/recargar: muestra aviso nativo del navegador
+  window.addEventListener("beforeunload", function (e) {
+    if (window.__allowLeave) return;
+    e.preventDefault();
+    e.returnValue = ""; // Requerido para que aparezca el diálogo
+  });
+
+  // Si clickea un enlace con permiso explícito, no molestamos
+  document.addEventListener("click", function (ev) {
+    const a = ev.target.closest("a");
+    if (a && a.dataset.allowLeave === "1") {
+      window.__allowLeave = true;
+    }
+  });
+})();
+
+// --- BLOQUEO DURO DE "ATRÁS" EN EL NAVEGADOR ---
+(function backBlock() {
+  try {
+    // Crea un estado fantasma y, si el usuario intenta volver, lo volvemos a empujar
+    history.pushState(null, "", location.href);
+    window.addEventListener("popstate", function () {
+      // Mantener en la misma URL, evitando navegar atrás
+      history.pushState(null, "", location.href);
+    }, { passive: true });
+
+    // Bloquea atajos comunes de "Atrás" (Alt+← en Windows, ⌘+[ en Mac)
+    window.addEventListener("keydown", function (e) {
+      const k = e.key?.toLowerCase();
+      if ((e.altKey && k === "arrowleft") || (e.metaKey && k === "[")) {
+        e.preventDefault();
+      }
+    });
+  } catch (_) { /* meh */ }
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
   wireForm('exercise1-form');

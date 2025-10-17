@@ -93,6 +93,41 @@ from datetime import datetime, time, timedelta
 #Ecuesta
 from .models import SurveyAttempt, SurveyResult, SurveyAttemptDocente, SurveyResultDocente
 
+################
+#Evitar retrocesos en la guia
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+
+###############
+def reiniciar_acento(request):
+    """Reinicia el progreso del usuario en la unidad de acentuación y redirige a la guía."""
+    # Si hay un run activo, borro todo lo asociado y limpio la sesión
+    run_id = request.session.get("run_id")
+    if run_id:
+        ExerciseAttempt.objects.filter(user=request.user, run_id=run_id).delete()
+        ExplanationRequest.objects.filter(attempt__user=request.user, attempt__run_id=run_id).delete()
+        ResultSummary.objects.filter(user=request.user, run_id=run_id).delete()
+        ActionLog.objects.filter(user=request.user, run_id=run_id).delete()
+        request.session.pop("run_id", None)
+        messages.success(request, "Progreso reiniciado. Volviendo a la guía de aprendizaje.")
+    # Borrar logs y summaries si aplican
+    # Vuelta a la guía
+    return redirect("guia_aprendizaje")
+
+@login_required
+def reiniciar_mc(request, slug):
+    run_id = request.session.get("mc_run_id")
+    if run_id:
+        MultipleChoiceAttempt.objects.filter(user=request.user, exercise_slug=slug, run_id=run_id).delete()
+        MultipleChoiceResult.objects.filter(user=request.user, exercise_slug=slug, run_id=run_id).delete()
+        request.session.pop("mc_run_id", None)
+        messages.success(request, f"Progreso de {slug} reiniciado.")
+    return redirect("guia_aprendizaje")
+
+
+
+#################
+
 class LibroViewSet(viewsets.ModelViewSet):
     queryset = Libro.objects.all()
     serializer_class = LibroSerializer
@@ -1850,6 +1885,16 @@ from django.views.decorators.http import require_POST
 
 from .models import MultipleChoiceAttempt, MultipleChoiceResult
 
+# ---------- utilidades ----------
+def _ensure_mc_run_id(request):
+    rid = request.session.get('mc_run_id')
+    if not rid:
+        rid = str(uuid.uuid4())
+        request.session['mc_run_id'] = rid
+    return rid
+
+
+
 
 ###########################
 #Todos los ejercicios de opción múltiple
@@ -2700,44 +2745,34 @@ def _get_mc_question_context(slug: str, number: int) -> Dict[str, Any]:
 
 @login_required
 def mc_question_view(request: HttpRequest, slug: str, qnum: int) -> HttpResponse:
-    """Muestra una de las preguntas de un ejercicio de opción múltiple.
-
-    Si se accede a la primera pregunta de un ejercicio, se reinician
-    previamente los intentos y resultados almacenados para ese usuario y
-    ejercicio, de modo que pueda comenzar de nuevo sin interferencia de
-    respuestas anteriores.
-    """
-    # Validar que el ejercicio y la pregunta existan
     if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
         return HttpResponse("Ejercicio o pregunta no encontrada", status=404)
-    # Reiniciar intentos y resultados al comenzar el ejercicio
+
+    # Al entrar a la primera pregunta, empezar un run nuevo
     if qnum == 1:
-        MultipleChoiceAttempt.objects.filter(user=request.user, exercise_slug=slug).delete()
-        MultipleChoiceResult.objects.filter(user=request.user, exercise_slug=slug).delete()
+        request.session.pop('mc_run_id', None)
+    _ensure_mc_run_id(request)  # crea uno si no existe
+
     context = _get_mc_question_context(slug, qnum)
     return render(request, "mc/question.html", context)
+
 
 
 @require_POST
 @login_required
 def mc_submit_view(request: HttpRequest, slug: str, qnum: int) -> JsonResponse:
-    """Procesa la respuesta de una pregunta de un ejercicio de opción múltiple.
-
-    Recibe la opción seleccionada y registra el intento.  Devuelve un
-    JSON con información sobre si la respuesta fue correcta, un mensaje
-    de retroalimentación, la URL de la siguiente vista y el ID del
-    intento guardado.
-    """
-    # Validar que el ejercicio y la pregunta existan
     if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
         return JsonResponse({"error": "Ejercicio o pregunta no encontrada."}, status=404)
+
+    run_id = _ensure_mc_run_id(request)
     selected_option = request.POST.get("option")
     if not selected_option:
         return JsonResponse({"error": "No se recibió ninguna opción."}, status=400)
+
     q_data = MC_QUESTIONS[slug][qnum]
     correct_option = q_data["correct"]
     is_correct = (selected_option == correct_option)
-    # Guardar el intento
+
     attempt = MultipleChoiceAttempt.objects.create(
         user=request.user,
         exercise_slug=slug,
@@ -2745,21 +2780,20 @@ def mc_submit_view(request: HttpRequest, slug: str, qnum: int) -> JsonResponse:
         selected_option=selected_option,
         correct_option=correct_option,
         is_correct=is_correct,
+        run_id=run_id,                   # ← clave del run
     )
-    # Calcular la URL siguiente según el número total de preguntas del ejercicio
+
     total_questions = len(MC_QUESTIONS.get(slug, {}))
-    if qnum < total_questions:
-        next_url = reverse("mc_question", args=(slug, qnum + 1))
-    else:
-        next_url = reverse("mc_result", args=(slug,))
-    # Seleccionar el mensaje apropiado
+    next_url = reverse("mc_question", args=(slug, qnum + 1)) if qnum < total_questions else reverse("mc_result", args=(slug,))
     message = q_data["feedback_correct"] if is_correct else q_data["feedback_incorrect"]
+
     return JsonResponse({
         "correct": is_correct,
         "message": message,
         "next_url": next_url,
         "attempt_id": attempt.id,
     })
+
 
 
 
@@ -2834,20 +2868,26 @@ def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
     # Validar ejercicio
     if slug not in MC_QUESTIONS:
         return HttpResponse("Ejercicio no encontrado", status=404)
-    user = request.user
-    attempts = MultipleChoiceAttempt.objects.filter(user=user, exercise_slug=slug)
+    
+    run_id = request.session.get('mc_run_id') or _ensure_mc_run_id(request)
+    user=request.user
+    attempts = MultipleChoiceAttempt.objects.filter(
+        user=request.user, exercise_slug=slug, run_id=run_id
+    )
+    
     # Determinar el número total de preguntas dinámicamente según el ejercicio
     total_questions = len(MC_QUESTIONS.get(slug, {}))
     correct_answers = sum(1 for a in attempts if a.is_correct)
     percentage = (correct_answers / total_questions) * 100 if total_questions else 0
     # Guardar resultado (se asignará recomendación más abajo)
     result = MultipleChoiceResult.objects.create(
-        user=user,
+        user=request.user,
         exercise_slug=slug,
         total_questions=total_questions,
         correct_answers=correct_answers,
         percentage=percentage,
         recommendation="",
+        run_id=run_id,
     )
 
     # Registrar la actividad en el calendario.  Identificamos el slug para
@@ -2882,6 +2922,8 @@ def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
     if recommendation:
         result.recommendation = recommendation
         result.save(update_fields=["recommendation"])
+    # Cerrar el run para empezar limpio la próxima vez
+    request.session.pop('mc_run_id', None)
     context = {
         "exercise_title": EXERCISE_TITLES.get(slug, slug),
         "headline": headline,
@@ -2944,6 +2986,26 @@ def instruccion_view(request: HttpRequest, unit_slug: str) -> HttpResponse:
 # empezando en 1.  Cada pregunta contiene el enunciado y un mapa de
 # opciones (a, b, c, etc.) a sus textos.  No se incluye un campo
 # "correct" porque no existen respuestas correctas o incorrectas.
+
+# views.py
+from uuid import uuid4
+from django.contrib import messages
+
+def _survey_ensure_run_id(request, session_key: str) -> str:
+    rid = request.session.get(session_key)
+    if not rid:
+        rid = str(uuid4())
+        request.session[session_key] = rid
+    return rid
+
+def _reset_run(request, session_key: str, AttemptModel, ResultModel, slug_value="encuesta"):
+    rid = request.session.pop(session_key, None)
+    if rid:
+        SurveyAttempt.objects.filter(user=request.user, survey_slug=slug_value, run_id=rid).delete()
+        SurveyResult.objects.filter(user=request.user, survey_slug=slug_value, run_id=rid).delete()
+    messages.warning(request, "Se canceló la encuesta y se borró tu progreso. Volviendo a la guía de aprendizaje.")
+    return redirect("guia_aprendizaje")
+
 
 SURVEY_QUESTIONS: Dict[int, Dict[str, Any]] = {
     1: {
@@ -3098,6 +3160,7 @@ def survey_question_view(request: HttpRequest, qnum: int) -> HttpResponse:
     Si el número de pregunta excede el total de preguntas definidas, se
     redirige automáticamente a la vista de resultados de la encuesta.
     """
+    run_id = _survey_ensure_run_id(request, "survey_run_id")  # crea/recupera corrida
     total_questions = len(SURVEY_QUESTIONS)
     try:
         qnum_int = int(qnum)
@@ -3107,17 +3170,19 @@ def survey_question_view(request: HttpRequest, qnum: int) -> HttpResponse:
         qnum_int = 1
     if qnum_int > total_questions:
         return redirect('survey_result')
-    question_data = SURVEY_QUESTIONS[qnum_int]
-    submit_url = reverse('survey_submit', kwargs={"qnum": qnum_int})
+    question_data = SURVEY_QUESTIONS[int(qnum)]
+    submit_url = reverse('survey_submit', kwargs={"qnum": int(qnum)})
+    cancel_url = reverse('survey_cancel')  # NUEVO
     return render(
         request,
         'encuesta/estudiante/question.html',
         {
-            'question_number': qnum_int,
+            'question_number': int(qnum),
             'total_questions': total_questions,
             'question': question_data['question'],
             'options': question_data['options'],
             'submit_url': submit_url,
+            'cancel_url': cancel_url,  # <-- para el JS
         },
     )
 
@@ -3140,11 +3205,14 @@ def survey_submit_view(request: HttpRequest, qnum: int) -> JsonResponse:
     if not selected_option:
         return JsonResponse({'error': 'Debe seleccionar una opción.'}, status=400)
     # Guardar la respuesta
-    SurveyAttempt.objects.create(
+    run_id = _survey_ensure_run_id(request, "survey_run_id")
+    SurveyAttempt.objects.update_or_create(
         user=request.user,
         question_number=qnum_int,
         selected_option=selected_option,
         survey_slug='encuesta',
+        run_id=run_id,
+        defaults={'selected_option': selected_option},
     )
     # Calcular la siguiente URL
     if qnum_int >= total_questions:
@@ -3153,6 +3221,7 @@ def survey_submit_view(request: HttpRequest, qnum: int) -> JsonResponse:
         SurveyResult.objects.get_or_create(
             user=request.user,
             survey_slug='encuesta',
+            run_id=run_id,
             defaults={'total_questions': total_questions},
         )
         next_url = reverse('survey_result')
@@ -3160,10 +3229,14 @@ def survey_submit_view(request: HttpRequest, qnum: int) -> JsonResponse:
         next_url = reverse('survey_question', kwargs={'qnum': qnum_int + 1})
     return JsonResponse({'message': '¡Respuesta guardada!', 'next_url': next_url})
 
+@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+def survey_cancel(request: HttpRequest) -> HttpResponse:
+    return _reset_run(request, "survey_run_id", SurveyAttempt, SurveyResult, slug_value="encuesta")
 
 @role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
 def survey_result_view(request: HttpRequest) -> HttpResponse:
     """Muestra la pantalla final tras completar la encuesta."""
+    request.session.pop("survey_run_id", None)  # opcional
     return render(request, 'encuesta/estudiante/result.html')
 
 
@@ -3177,6 +3250,25 @@ def survey_result_view(request: HttpRequest) -> HttpResponse:
 # empezando en 1.  Cada pregunta contiene el enunciado y un mapa de
 # opciones (a, b, c, etc.) a sus textos.  No se incluye un campo
 # "correct" porque no existen respuestas correctas o incorrectas.
+
+from uuid import uuid4
+from django.contrib import messages
+
+def _survey_docente_ensure_run_id(request, session_key: str) -> str:
+    rid = request.session.get(session_key)
+    if not rid:
+        rid = str(uuid4())
+        request.session[session_key] = rid
+    return rid
+
+def _reset_docente_run(request, session_key: str, AttemptModel, ResultModel, slug_value="encuesta"):
+    rid = request.session.pop(session_key, None)
+    if rid:
+        SurveyAttemptDocente.objects.filter(user=request.user, survey_slug=slug_value, run_id=rid).delete()
+        SurveyResultDocente.objects.filter(user=request.user, survey_slug=slug_value, run_id=rid).delete()
+    messages.warning(request, "Se canceló la encuesta y se borró tu progreso. Volviendo a la guía de aprendizaje.")
+    return redirect("guia_aprendizaje")
+
 
 SURVEY_QUESTIONS_DOCENTE: Dict[int, Dict[str, Any]] = {
     1: {
@@ -3317,6 +3409,8 @@ SURVEY_QUESTIONS_DOCENTE: Dict[int, Dict[str, Any]] = {
 }
 
 
+
+
 @role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
 def survey_question_view_docente(request: HttpRequest, qnum: int) -> HttpResponse:
     """Muestra una pregunta de la encuesta.
@@ -3324,6 +3418,7 @@ def survey_question_view_docente(request: HttpRequest, qnum: int) -> HttpRespons
     Si el número de pregunta excede el total de preguntas definidas, se
     redirige automáticamente a la vista de resultados de la encuesta.
     """
+    run_id = _survey_docente_ensure_run_id(request, "survey_docente_run_id")
     total_questions = len(SURVEY_QUESTIONS_DOCENTE)
     try:
         qnum_int = int(qnum)
@@ -3335,6 +3430,7 @@ def survey_question_view_docente(request: HttpRequest, qnum: int) -> HttpRespons
         return redirect('survey_result_docente')
     question_data = SURVEY_QUESTIONS_DOCENTE[qnum_int]
     submit_url = reverse('survey_submit_docente', kwargs={"qnum": qnum_int})
+    cancel_url = reverse('survey_cancel_docente')
     return render(
         request,
         'encuesta/docente/question.html',
@@ -3344,6 +3440,7 @@ def survey_question_view_docente(request: HttpRequest, qnum: int) -> HttpRespons
             'question': question_data['question'],
             'options': question_data['options'],
             'submit_url': submit_url,
+            'cancel_url': cancel_url,
         },
     )
 
@@ -3366,11 +3463,14 @@ def survey_submit_view_docente(request: HttpRequest, qnum: int) -> JsonResponse:
     if not selected_option:
         return JsonResponse({'error': 'Debe seleccionar una opción.'}, status=400)
     # Guardar la respuesta
-    SurveyAttemptDocente.objects.create(
+    run_id = _survey_docente_ensure_run_id(request, "survey_run_id")
+    SurveyAttemptDocente.objects.update_or_create(
         user=request.user,
         question_number=qnum_int,
         selected_option=selected_option,
         survey_slug='encuesta_docente',
+        run_id=run_id,
+        defaults={'selected_option': selected_option},
     )
     # Calcular la siguiente URL
     if qnum_int >= total_questions:
@@ -3379,6 +3479,7 @@ def survey_submit_view_docente(request: HttpRequest, qnum: int) -> JsonResponse:
         SurveyResultDocente.objects.get_or_create(
             user=request.user,
             survey_slug='encuesta_docente',
+            run_id=run_id,
             defaults={'total_questions': total_questions},
         )
         next_url = reverse('survey_result_docente')
@@ -3386,8 +3487,13 @@ def survey_submit_view_docente(request: HttpRequest, qnum: int) -> JsonResponse:
         next_url = reverse('survey_question_docente', kwargs={'qnum': qnum_int + 1})
     return JsonResponse({'message': '¡Respuesta guardada!', 'next_url': next_url})
 
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def survey_cancel_docente(request: HttpRequest) -> HttpResponse:
+    return _reset_docente_run(request, "survey_docente_run_id", SurveyAttemptDocente, SurveyResultDocente, slug_value="encuesta")
+
 
 @role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
 def survey_result_view_docente(request: HttpRequest) -> HttpResponse:
     """Muestra la pantalla final tras completar la encuesta."""
+    request.session.pop("survey_docente_run_id", None)  # opcional
     return render(request, 'encuesta/docente/result.html')

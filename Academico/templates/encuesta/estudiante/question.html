@@ -109,7 +109,7 @@
   <div class="exercise-box">
     <div class="exercise-title">Pregunta {{ question_number }} de {{ total_questions }}</div>
     <p class="exercise-question">{{ question }}</p>
-    <form id="survey-form" data-submit-url="{{ submit_url }}">
+    <form id="survey-form" data-submit-url="{{ submit_url }}" data-cancel-url="{{ cancel_url }} ">
       {% csrf_token %}
       <div class="exercise-options">
         {% for key, text in options.items %}

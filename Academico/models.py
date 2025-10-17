@@ -303,6 +303,7 @@ class MultipleChoiceAttempt(models.Model):
     correct_option = models.CharField(max_length=10)
     is_correct = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    run_id = models.CharField(max_length=36, db_index=True)
 
     class Meta:
         verbose_name = "Intento de ejercicio de opción múltiple"
@@ -331,6 +332,7 @@ class MultipleChoiceResult(models.Model):
     percentage = models.FloatField()
     recommendation = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    run_id = models.CharField(max_length=36, db_index=True)
 
     class Meta:
         verbose_name = "Resultado de ejercicio de opción múltiple"
@@ -364,11 +366,13 @@ class SurveyAttempt(models.Model):
     survey_slug = models.CharField(max_length=50, default="encuesta")
     question_number = models.PositiveSmallIntegerField()
     selected_option = models.CharField(max_length=10)
+    run_id = models.CharField(max_length=36, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Respuesta de encuesta"
         verbose_name_plural = "Respuestas de encuestas"
+        unique_together = ("user", "survey_slug", "run_id", "question_number")
 
     def __str__(self) -> str:  # pragma: no cover
         return f"Encuesta {self.survey_slug} Q{self.question_number}: {self.selected_option}"
@@ -386,11 +390,13 @@ class SurveyResult(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     survey_slug = models.CharField(max_length=50, default="encuesta")
     total_questions = models.PositiveSmallIntegerField()
+    run_id = models.CharField(max_length=36, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Resultado de encuesta"
         verbose_name_plural = "Resultados de encuestas"
+        unique_together = ("user", "survey_slug", "run_id")
 
     def __str__(self) -> str:  # pragma: no cover
         return f"Resultado Encuesta {self.survey_slug} ({self.total_questions} preguntas)"
@@ -409,11 +415,13 @@ class SurveyAttemptDocente(models.Model):
     survey_slug = models.CharField(max_length=50, default="encuesta")
     question_number = models.PositiveSmallIntegerField()
     selected_option = models.CharField(max_length=10)
+    run_id = models.CharField(max_length=36, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Respuesta de encuesta"
         verbose_name_plural = "Respuestas de encuestas"
+        unique_together = ("user", "survey_slug", "run_id", "question_number")
 
     def __str__(self) -> str:  # pragma: no cover
         return f"Encuesta {self.survey_slug} Q{self.question_number}: {self.selected_option}"
@@ -431,11 +439,13 @@ class SurveyResultDocente(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     survey_slug = models.CharField(max_length=50, default="encuesta")
     total_questions = models.PositiveSmallIntegerField()
+    run_id = models.CharField(max_length=36, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Resultado de encuesta"
         verbose_name_plural = "Resultados de encuestas"
+        unique_together = ("user", "survey_slug", "run_id")
 
     def __str__(self) -> str:  # pragma: no cover
         return f"Resultado Encuesta {self.survey_slug} ({self.total_questions} preguntas)"

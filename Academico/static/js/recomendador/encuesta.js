@@ -10,6 +10,8 @@
  * continuar con la siguiente pregunta o finalizar la encuesta.
  */
 
+// --- BLOQUEO DURO DE "ATRÁS" EN PREGUNTAS MC ---
+
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== '') {
@@ -25,6 +27,54 @@ function getCookie(name) {
   }
   return cookieValue;
 }
+
+// Evita retroceder o salir de la encuesta sin confirmar
+
+window.__allowLeave = false;
+
+(function setupLeaveGuards() {
+  const form = document.getElementById('survey-form');
+  if (!form) return;
+  const cancelUrl = form.dataset.cancelUrl;
+
+  function confirmExit() {
+    return confirm("Si sales perderás tu progreso de la encuesta. ¿Deseas volver a la guía?");
+  }
+
+  const onPopState = () => {
+    if (window.__allowLeave) return;
+    if (confirmExit()) location.href = cancelUrl;
+    else history.pushState(null, "", location.href);
+  };
+
+  const onKeyDown = (e) => {
+    if (window.__allowLeave) return;
+    const k = e.key?.toLowerCase();
+    if ((e.altKey && k === "arrowleft") || (e.metaKey && k === "[")) {
+      e.preventDefault();
+      if (confirmExit()) location.href = cancelUrl;
+    }
+  };
+
+  const onBeforeUnload = (e) => {
+    if (window.__allowLeave) return;
+    e.preventDefault();
+    e.returnValue = "";
+  };
+
+  try { history.pushState(null, "", location.href); } catch {}
+  window.addEventListener("popstate", onPopState);
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("beforeunload", onBeforeUnload);
+
+  // util para limpiar antes de continuar
+  window.__surveyCleanupGuards = () => {
+    window.removeEventListener("popstate", onPopState);
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("beforeunload", onBeforeUnload);
+  };
+})();
+////////////////
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('survey-form');
@@ -62,7 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
       feedbackBox.appendChild(continueBtn);
       // Continuar: redirige a la siguiente pregunta o a los resultados
       continueBtn.addEventListener('click', () => {
-        window.location.href = data.next_url;
+        window.__allowLeave = true;
+        window.__surveyCleanupGuards?.();
+        location.assign(data.next_url);
+
       });
     } catch (err) {
       feedbackBox.innerHTML = '';
