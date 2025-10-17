@@ -59,19 +59,11 @@ except Exception:
 
 ########
 
-def _average_percentage(values: list[float]) -> Optional[float]:
-    """Calcula el promedio de una lista de porcentajes.
+# Normaliza tipos antes de promediar
+def _average_percentage(values) -> Optional[float]:
+    nums = [float(v) for v in values if v is not None]
+    return mean(nums) if nums else None
 
-    Si la lista está vacía se retorna ``None``.  Se utiliza el módulo
-    ``statistics.mean`` para evitar reinvenciones.
-
-    Args:
-        values: Lista de valores porcentuales (0 a 100).
-
-    Returns:
-        El promedio de los valores o ``None`` si la lista está vacía.
-    """
-    return mean(values) if values else None
 
 
 def _classify_domain(percentage: Optional[float]) -> str:
@@ -123,9 +115,21 @@ def evaluaciones_view(request):
     user = request.user
 
     # Acentuación: solo se dispone del resultado del ejercicio 2
+    acent_values = []
+    acent_slugs = ["acentuacion2"]
+    acent_mc = MultipleChoiceResult.objects.filter(
+        user=user, exercise_slug__in=acent_slugs
+    )
+    acent_values += [res.percentage for res in acent_mc]
+    
     acento_res = ResultSummary.objects.filter(user=user).order_by("-created_at").first()
-    acento_pct = acento_res.percentage if acento_res else None
-
+       
+    if acento_res:
+        acent_values.append(acento_res.percentage)
+    
+    acent_pct = _average_percentage(acent_values)
+    
+    
     # Puntuación: combinamos resultados de opción múltiple y del ejercicio
     # interactivo de puntuación final. Calculamos la media de todos los
     # resultados disponibles.
@@ -161,7 +165,7 @@ def evaluaciones_view(request):
 
     # Construimos el contexto con los porcentajes y dominios
     context: Dict[str, Tuple[str, str]] = {
-        "acentuacion": (f"{acento_pct:.0f}%" if acento_pct is not None else "N/A", _classify_domain(acento_pct)),
+        "acentuacion": (f"{acent_pct:.0f}%" if acent_pct is not None else "N/A", _classify_domain(acent_pct)),
         "puntuacion": (f"{puntuacion_pct:.0f}%" if puntuacion_pct is not None else "N/A", _classify_domain(puntuacion_pct)),
         "mayusculas": (f"{mayus_pct:.0f}%" if mayus_pct is not None else "N/A", _classify_domain(mayus_pct)),
         "letras": (f"{letras_pct:.0f}%" if letras_pct is not None else "N/A", _classify_domain(letras_pct)),
@@ -212,9 +216,20 @@ def evaluaciones_report(request):
     user = request.user
 
     # Reutilizamos el cálculo de porcentajes de la vista principal
-    # Acentuación
+    # Acentuación: solo se dispone del resultado del ejercicio 2
+    acent_values = []
+    acent_slugs = ["acentuacion2"]
+    acent_mc = MultipleChoiceResult.objects.filter(
+        user=user, exercise_slug__in=acent_slugs
+    )
+    acent_values += [res.percentage for res in acent_mc]
+    
     acento_res = ResultSummary.objects.filter(user=user).order_by("-created_at").first()
-    acento_pct = acento_res.percentage if acento_res else None
+       
+    if acento_res:
+        acent_values.append(acento_res.percentage)
+    
+    acento_pct = _average_percentage(acent_values)
     # Puntuación
     punct_slugs = ["puntuacion1", "puntuacion2", "puntuacion3"]
     punct_mc_results = MultipleChoiceResult.objects.filter(
@@ -524,8 +539,19 @@ def evaluaciones_docente_view(request):
     estudiantes_data: list[dict[str, object]] = []
     for est in estudiantes:
         # Resultado de acentuación (ejercicio 2)
-        acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()
-        acento_pct = acento_res.percentage if acento_res else None
+        
+        # Acentuación: solo se dispone del resultado del ejercicio 2
+        acent_values = []
+        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["acentuacion2"]):
+            acent_values.append(res.percentage)
+        
+        acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()    
+        if acento_res:
+            acent_values.append(acento_res.percentage)
+        
+        acento_pct = _average_percentage(acent_values)
+        
+        
         # Resultado de puntuación: media de ejercicios de opción múltiple y final
         punct_values: list[float] = []
         for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["puntuacion1", "puntuacion2", "puntuacion3"]):
@@ -610,8 +636,17 @@ def evaluaciones_docente_report(request):
     rows_dom: list[list[str]] = []
     for est in estudiantes:
         # Cálculo de porcentajes para cada estudiante
-        acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()
-        acento_pct = acento_res.percentage if acento_res else None
+        # Acentuación: solo se dispone del resultado del ejercicio 2
+        acent_values = []
+        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["acentuacion2"]):
+            acent_values.append(res.percentage)
+        
+        acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()    
+        if acento_res:
+            acent_values.append(acento_res.percentage)
+        
+        acento_pct = _average_percentage(acent_values)
+        
         punct_vals = [res.percentage for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["puntuacion1", "puntuacion2", "puntuacion3"])]
         pf = PunctuationResult.objects.filter(user=est).order_by("-created_at").first()
         if pf:

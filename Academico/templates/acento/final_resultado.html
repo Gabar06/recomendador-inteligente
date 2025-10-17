@@ -1,4 +1,4 @@
-{% extends "../base.html" %} {% load static %} {% block body %}
+{% extends "./final_base.html" %} {% load static %} {% block content %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -72,6 +72,9 @@ Uso de los acentos
 - <b>Hiato</b>: Llevarán acento las vocales <b>I, U,</b> cuando están en <b>hiato</b>, sin formar diptongo, como <b>caloría, avemaría, baúl, Andalucía, brío, María, día, caímos.</b>
 - En las oraciones <b>interrogativas y exclamativas</b> llevan tilde: <b>qué, cuál, adónde, cómo, cuán, cuándo, cuánto, dónde y quién.</b> Ejemplo: <b>¿Qué quieres?</b>
     </pre>
+    <div class="button-group" style="text-align:center; margin-top:1.5rem; text-decoration: none;">
+      <a class="btn primary" href="{% url 'guia_aprendizaje' %}">Regresar a la Guía</a>
+    </div>
   </div>
 </body>
 </html>

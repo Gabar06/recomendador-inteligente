@@ -122,15 +122,23 @@
     <h4>Evaluación Final</h4>
   </a>
   </div>
-
-  <!-- Encuesta -->
-  <div class="unit">
-    <a href="/encuesta_docente/1/" id="final">
-    <div class="icon-unit"><i class="fa-solid fa-square-poll-horizontal"></i></div>
-    <h4>Encuesta</h4>
-    </a>
-  </div>
-
+  {% if request.user.role == 'ESTUDIANTE' %}
+  <!-- Encuesta Estudiante-->
+    <div class="unit">
+      <a href="/encuesta/1/" id="final">
+      <div class="icon-unit"><i class="fa-solid fa-square-poll-horizontal"></i></div>
+      <h4>Encuesta</h4>
+      </a>
+    </div>
+  {% else %}
+    <!-- Encuesta Docente -->
+    <div class="unit">
+      <a href="/encuesta_docente/1/" id="final">
+      <div class="icon-unit"><i class="fa-solid fa-square-poll-horizontal"></i></div>
+      <h4>Encuesta</h4>
+      </a>
+    </div>
+  {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

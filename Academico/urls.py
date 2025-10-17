@@ -26,7 +26,6 @@ urlpatterns = [
     path('menu-docente', views.menu_docente, name='menu_docente'),
     path('menu-estudiante', views.menu_estudiante, name='menu_estudiante'),
     path('guia_aprendizaje', views.guia_aprendizaje, name='guia_aprendizaje'),
-    path('guia_aprendizaje_docente', views.guia_aprendizaje_docente, name='guia_aprendizaje_docente'),
     path('acento_final', views.acento_final, name='acento_final'),
     path("chat/", views.chat_with_openai, name="chat_openai"),
     path('api/', views.chat_con_gemini, name="chat_gemini"),

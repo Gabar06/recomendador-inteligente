@@ -77,7 +77,7 @@
         Bienvenido a la Guia de Aprendizaje Personalizado
       </h1>
       <div class="menu-container">
-        <a href="{% url 'guia_aprendizaje_docente' %}" class="menu-item" onclick="playClick()">
+        <a href="{% url 'guia_aprendizaje' %}" class="menu-item" onclick="playClick()">
           <img src="/static/icons/guia.png" alt="Guía" />
           <h5>Guía de Aprendizaje</h5>
         </a>
@@ -89,10 +89,10 @@
           <img src="/static/icons/calificaciones.png" alt="Calificaciones" />
           <h5>Evaluaciones</h5>
         </a>
-        <div class="menu-item" onclick="playClick()">
+        <a href="{% url 'calendario' %}" class="menu-item" onclick="playClick()">
           <img src="/static/icons/calendario.jpeg" alt="Calendario" />
           <h5>Calendario de Actividades</h5>
-        </div>
+        </a>
         <a href="{% url 'perfil_docente' %}" class="menu-item" onclick="playClick()">
           <img src="/static/icons/perfil.png" alt="Perfil" />
           <h5>Perfil</h5>

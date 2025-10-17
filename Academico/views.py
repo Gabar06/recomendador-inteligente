@@ -190,15 +190,16 @@ def gemini_demo(request):
 
 ####################
 #ACENTUACIÓN CON LOGIN PERSONALIZADO
+@login_required
 def vista_resultado(request):
     if request.method == 'POST':
         data = request.POST.get('respuestas_json')
         respuestas = json.loads(data)
         
         #Gemini
-        #resultado_md = gemini_chat(data)
+        resultado_md = gemini_chat(data)
         #Chat gpt
-        resultado_md = analizar_respuestas(data) 
+        #resultado_md = analizar_respuestas(data) 
         
         resultado_html = markdown.markdown(resultado_md, extensions=['fenced_code', 'tables'])
         print(data)
@@ -222,6 +223,17 @@ def vista_resultado(request):
                 clasificacion=r['clasificacion'],
                 #acierto=r.get('acierto', False)
             )
+        total_respuestas = 100
+        aciertos = 100  # Ajusta según tu lógica
+        percentage = 100
+        description = f"Obtuviste {percentage:.0f}% de aciertos en el Ejercicio Final de Acentuación. Errores: {total_respuestas - aciertos}."
+
+        CalendarActivity.objects.create(
+            user=request.user,
+            activity_slug='acento3',  # Slug único para este ejercicio
+            title='Ejercicio Final de Acentuación completado',
+            description=description
+)
 
         # ... renderizado de resultado, recomendaciones, etc.
         return render(request, 'acento/final_resultado.html', {'resultado': resultado_html})
@@ -272,10 +284,7 @@ def menu_docente(request):
     return render(request, "menu/docente/menu.html", {"rol": "Docente", "user": request.user})
 
 def guia_aprendizaje(request):
-    return render(request, "menu/estudiante/guia_aprendizaje.html")
-
-def guia_aprendizaje_docente(request):
-    return render(request, "menu/docente/guia_aprendizaje.html")
+    return render(request, "guia/guia_aprendizaje.html")
 
 def acento_1(request):
     return render(request, "acento/ejercicio_1.html")
@@ -797,6 +806,17 @@ def results_view(request: HttpRequest) -> HttpResponse:
     _log(request.user, run_id, 4, "visit", {"percentage": percentage})
     # Limpia el run para un nuevo intento cuando vuelvan a empezar
     request.session.pop("run_id", None)
+    
+    summary = ResultSummary.objects.get(user=request.user, run_id=run_id)
+    description = f"Obtuviste {summary.percentage}% de aciertos en el Ejercicio 1 de Acentuación."
+
+    CalendarActivity.objects.create(
+        user=request.user,
+        activity_slug='acento1',  # Slug único para este ejercicio
+        title='Ejercicio 1 de Acentuación completado',
+        description=description
+    )
+    
     return render(request, "acento/ejercicio_1/r.html", {"title": title, "recommendation": rec})
 
 
@@ -1071,14 +1091,14 @@ def evaluaciones_report(request: HttpRequest) -> HttpResponse:
 #Calendario
 ###########################
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def calendario(request):
     """Render del calendario del alumno logueado."""
     today = timezone.localdate()
     return render(request, "calendario/calendario.html", {"today": today})
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def calendario_events(request):
     user = request.user
     activities = CalendarActivity.objects.filter(user=user).order_by("date")
@@ -1100,7 +1120,7 @@ def calendario_events(request):
     return JsonResponse(events, safe=False)
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def calendario_detalle(request):
     user = request.user
     date_str = request.GET.get("date")
@@ -2891,7 +2911,7 @@ UNIT_TITLES = {
 }
 
 
-@role_login_required(Usuario.ESTUDIANTE, login_url_name="login_estudiante")
+@login_required
 def instruccion_view(request: HttpRequest, unit_slug: str) -> HttpResponse:
     """Muestra la página de instrucción para la unidad especificada.
 
