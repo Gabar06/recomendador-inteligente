@@ -109,7 +109,7 @@ def reiniciar_acento(request):
         ResultSummary.objects.filter(user=request.user, run_id=run_id).delete()
         ActionLog.objects.filter(user=request.user, run_id=run_id).delete()
         request.session.pop("run_id", None)
-        messages.success(request, "Progreso reiniciado. Volviendo a la guía de aprendizaje.")
+        #messages.success(request, "Progreso reiniciado. Volviendo a la guía de aprendizaje.")
     # Borrar logs y summaries si aplican
     # Vuelta a la guía
     return redirect("guia_aprendizaje")
@@ -121,7 +121,7 @@ def reiniciar_mc(request, slug):
         MultipleChoiceAttempt.objects.filter(user=request.user, exercise_slug=slug, run_id=run_id).delete()
         MultipleChoiceResult.objects.filter(user=request.user, exercise_slug=slug, run_id=run_id).delete()
         request.session.pop("mc_run_id", None)
-        messages.success(request, f"Progreso de {slug} reiniciado.")
+        #messages.success(request, f"Progreso de {slug} reiniciado.")
     return redirect("guia_aprendizaje")
 
 
@@ -2843,7 +2843,7 @@ def mc_explain(request: HttpRequest) -> JsonResponse:
         f"Explica al estudiante por qué la opción '{selected_text}' "
         f"{'es correcta' if attempt.is_correct else 'es incorrecta'} en la pregunta: "
         f"'{q_data['question']}'. Indica cuál es la forma correcta ('{correct_text}') "
-        f"y menciona la regla ortográfica relevante. Usa un tono amigable y motivador "
+        f"y menciona la regla ortográfica relevante."
         f"y redacta en español."
     )
     explanation = None
