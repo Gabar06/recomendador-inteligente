@@ -483,3 +483,18 @@ class CalendarActivity(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.activity_slug}: {self.title} ({self.date.date()})"
+    
+
+class Progress(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    slug = models.CharField(max_length=50, db_index=True)  # p.ej. u1_instr, u2_e1, u3_final
+    completed_at = models.DateTimeField(auto_now_add=True)
+    times_completed = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ("user", "slug")
+
+class FinalEvalLock(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    taken = models.BooleanField(default=False)
+    taken_at = models.DateTimeField(null=True, blank=True)

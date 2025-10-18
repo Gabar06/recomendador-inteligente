@@ -268,8 +268,8 @@ def vista_resultado(request):
             activity_slug='acento3',  # Slug único para este ejercicio
             title='Ejercicio Final de Acentuación completado',
             description=description
-)
-
+        )
+        mark_completed(request.user, "u1_final")
         # ... renderizado de resultado, recomendaciones, etc.
         return render(request, 'acento/final_resultado.html', {'resultado': resultado_html})
 
@@ -318,8 +318,10 @@ def menu_estudiante(request):
 def menu_docente(request):
     return render(request, "menu/docente/menu.html", {"rol": "Docente", "user": request.user})
 
+@login_required
 def guia_aprendizaje(request):
-    return render(request, "guia/guia_aprendizaje.html")
+    unlocks = compute_unlocks(request.user)
+    return render(request, "guia/guia_aprendizaje.html", {"unlocks": unlocks})
 
 def acento_1(request):
     return render(request, "acento/ejercicio_1.html")
@@ -852,6 +854,8 @@ def results_view(request: HttpRequest) -> HttpResponse:
         description=description
     )
     
+    mark_completed(request.user, "u1_e1")
+  
     return render(request, "acento/ejercicio_1/r.html", {"title": title, "recommendation": rec})
 
 
@@ -2745,6 +2749,20 @@ def _get_mc_question_context(slug: str, number: int) -> Dict[str, Any]:
 
 @login_required
 def mc_question_view(request: HttpRequest, slug: str, qnum: int) -> HttpResponse:
+    # Candado de flujo
+    unlocks = compute_unlocks(request.user)
+
+    if slug == "evaluacionfinal":
+        if not unlocks["final_eval"]:
+            messages.warning(request, "Primero completá todos los ejercicios de las cuatro unidades.")
+            return redirect("guia_aprendizaje")
+    else:
+        # Para MCs normales: debe estar habilitado el hito actual
+        needed = MC_TO_PROGRESS.get(slug)  # u2_e1, u3_e2, etc.
+        if needed and not unlocks.get(needed, False):
+            messages.info(request, "Todavía no se desbloqueó este ejercicio.")
+            return redirect("guia_aprendizaje")
+    
     if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
         return HttpResponse("Ejercicio o pregunta no encontrada", status=404)
 
@@ -2930,6 +2948,19 @@ def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
         "percentage": f"{percentage:.0f}%",
         "recommendation": recommendation,
     }
+    # Mapea y marca progreso
+    prog = MC_TO_PROGRESS.get(slug)
+    if prog:
+        mark_completed(request.user, prog)
+
+    # Si es evaluación final, bloquear para siempre
+    if slug == "evaluacionfinal":
+        fel, _ = FinalEvalLock.objects.get_or_create(user=request.user)
+        if not fel.taken:
+            fel.taken = True
+            fel.taken_at = timezone.now()
+            fel.save(update_fields=["taken", "taken_at"])
+    
     return render(request, "mc/result.html", context)
 #############
 #Instrucciones
@@ -2975,7 +3006,11 @@ def instruccion_view(request: HttpRequest, unit_slug: str) -> HttpResponse:
         "unit_title": UNIT_TITLES.get(unit_slug, unit_slug),
         "pdf_path": pdf_relative_path,
     }
-    return render(request, "instruccion/unidad.html", context)
+    resp = render(request, "instruccion/unidad.html", context)
+    # Marcar instrucción como completada para habilitar el Ejercicio 1
+    slug_map = {"acento": "u1_instr", "puntuacion": "u2_instr", "mayuscula": "u3_instr", "letras": "u4_instr"}
+    mark_completed(request.user, slug_map[unit_slug])
+    return resp
 #ENCUESTA ESTUDIANTE
 ###############################
 # ----------------------------------------------------------------------------
@@ -3160,6 +3195,12 @@ def survey_question_view(request: HttpRequest, qnum: int) -> HttpResponse:
     Si el número de pregunta excede el total de preguntas definidas, se
     redirige automáticamente a la vista de resultados de la encuesta.
     """
+    # Requiere evaluación final rendida
+    if not FinalEvalLock.objects.filter(user=request.user, taken=True).exists():
+        messages.info(request, "La encuesta se habilita después de la Evaluación Final.")
+        return redirect("guia_aprendizaje")
+    
+    
     run_id = _survey_ensure_run_id(request, "survey_run_id")  # crea/recupera corrida
     total_questions = len(SURVEY_QUESTIONS)
     try:
@@ -3497,3 +3538,68 @@ def survey_result_view_docente(request: HttpRequest) -> HttpResponse:
     """Muestra la pantalla final tras completar la encuesta."""
     request.session.pop("survey_docente_run_id", None)  # opcional
     return render(request, 'encuesta/docente/result.html')
+
+
+#####################
+# Limitaciones de progreso
+#####################
+from django.db.models import F
+from django.contrib import messages
+from .models import Progress, FinalEvalLock, MultipleChoiceResult, SurveyResult, CalendarActivity
+
+# Mapa lineal por unidad (instrucción -> e1 -> e2 -> final)
+UNIT_CHAINS = {
+    "u1": ["u1_instr", "u1_e1", "u1_e2", "u1_final"],
+    "u2": ["u2_instr", "u2_e1", "u2_e2", "u2_final"],
+    "u3": ["u3_instr", "u3_e1", "u3_e2", "u3_final"],
+    "u4": ["u4_instr", "u4_e1", "u4_e2", "u4_final"],
+}
+# Qué MC slug mapea a qué hito de progreso
+MC_TO_PROGRESS = {
+    # Unidad I (puntuación)
+    "acentuacion2": "u1_e2",
+    # Unidad II (puntuación)
+    "puntuacion1": "u2_e1",
+    "puntuacion2": "u2_e2",
+    "puntuacion3": "u2_final",
+    # Unidad III (mayúsculas)
+    "mayus1": "u3_e1",
+    "mayus2": "u3_e2",
+    "mayus3": "u3_final",
+    # Unidad IV (letras)
+    "letras1": "u4_e1",
+    "letras2": "u4_e2",
+    "letras3": "u4_final",
+    # Evaluación final
+    "evaluacionfinal": "final_eval",
+}
+REQUIRED_BEFORE_FINAL = (
+    UNIT_CHAINS["u1"][1:] + UNIT_CHAINS["u2"][1:] + UNIT_CHAINS["u3"][1:] + UNIT_CHAINS["u4"][1:]
+)  # todos los ejercicios (sin instrucciones)
+
+def mark_completed(user, slug: str):
+    obj, created = Progress.objects.get_or_create(user=user, slug=slug)
+    if not created:
+        Progress.objects.filter(pk=obj.pk).update(times_completed=F('times_completed') + 1)
+
+def has_completed(user, slug: str) -> bool:
+    return Progress.objects.filter(user=user, slug=slug).exists()
+
+def compute_unlocks(user):
+    # Instrucciones siempre habilitadas
+    unlocked = {k: False for chain in UNIT_CHAINS.values() for k in chain}
+    for u, chain in UNIT_CHAINS.items():
+        unlocked[chain[0]] = True  # *_instr
+
+        # Cada paso depende del inmediatamente anterior
+        for prev, cur in zip(chain, chain[1:]):
+            unlocked[cur] = has_completed(user, prev)
+
+    # Final global: requiere todos los ejercicios (no instrucciones) y no haberlo rendido aún
+    ready_for_final = all(has_completed(user, s) for s in REQUIRED_BEFORE_FINAL)
+    already_taken = FinalEvalLock.objects.filter(user=user, taken=True).exists()
+    unlocked["final_eval"] = ready_for_final and not already_taken
+
+    # Encuesta: solo si final ya rendido (no importa si repetida)
+    unlocked["survey"] = FinalEvalLock.objects.filter(user=user, taken=True).exists()
+    return unlocked

@@ -51,6 +51,12 @@
       text-decoration: none;
       color: #000;
     }
+    .level-box.disabled {
+      filter: grayscale(0.25);
+      opacity: .55;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -61,83 +67,177 @@
   <div class="unit">
     <div class="icon-unit"><i class="fa-solid fa-pen"></i></div>
     <h4>Unidad I: Acentuación</h4>
-    <a href="/instruccion/acento/" class="level-box">Instrucción</a>
-    <div class="connector"></div>
+  <a href="/instruccion/acento/" class="level-box">Instrucción</a>
+  <div class="connector"></div>
+
+  {% if unlocks.u1_e1 %}
     <a href="{% url 'exercise1' %}" class="level-box">Ejercicio 1</a>
-    <div class="connector"></div>
+  {% else %}
+    <span class="level-box disabled" title="Leé la instrucción para desbloquear">
+      <i class="fa-solid fa-lock me-1"></i> Ejercicio 1
+    </span>
+  {% endif %}
+  <div class="connector"></div>
+
+  {% if unlocks.u1_e2 %}
     <a href="/mc/acentuacion2/1/" class="level-box">Ejercicio 2</a>
-    <div class="connector"></div>
+  {% else %}
+    <span class="level-box disabled" title="Completá el Ejercicio 1">
+      <i class="fa-solid fa-lock me-1"></i> Ejercicio 2
+    </span>
+  {% endif %}
+  <div class="connector"></div>
+
+  {% if unlocks.u1_final %}
     <a href="{% url 'acento_final' %}" class="level-box">Final</a>
+  {% else %}
+    <span class="level-box disabled" title="Completá el Ejercicio 2">
+      <i class="fa-solid fa-lock me-1"></i> Final
+    </span>
+  {% endif %}
   </div>
-
   <!-- Unidad II: Puntuación -->
-  <div class="unit">
-    <div class="icon-unit"><i class="fa-solid fa-circle-dot"></i></div>
-    <h4>Unidad II: Puntuación</h4>
-    <!-- Enlazamos los ejercicios de puntuación a sus rutas dinámicas de selección múltiple -->
-    <a href="/instruccion/puntuacion/" class="level-box">Instrucción</a>
-    <div class="connector"></div>
-    <a href="/mc/puntuacion1/1/" class="level-box">Ejercicio 1</a>
-    <div class="connector"></div>
-    <a href="/mc/puntuacion2/1/" class="level-box">Ejercicio 2</a>
-    <div class="connector"></div>
-    <!-- El ejercicio final de puntuación se mantiene como enlace a la práctica de puntuación existente -->
-    <a href="/mc/puntuacion3/1/" class="level-box">Final</a>
-  </div>
+<div class="unit">
+  <div class="icon-unit"><i class="fa-solid fa-circle-dot"></i></div>
+  <h4>Unidad II: Puntuación</h4>
 
+  <a href="/instruccion/puntuacion/" class="level-box">Instrucción</a>
+  <div class="connector"></div>
+
+  {% if unlocks.u2_e1 %}
+    <a href="/mc/puntuacion1/1/" class="level-box">Ejercicio 1</a>
+  {% else %}
+    <span class="level-box disabled" title="Leé la instrucción para desbloquear">
+      <i class="fa-solid fa-lock me-1"></i> Ejercicio 1
+    </span>
+  {% endif %}
+  <div class="connector"></div>
+
+  {% if unlocks.u2_e2 %}
+    <a href="/mc/puntuacion2/1/" class="level-box">Ejercicio 2</a>
+  {% else %}
+    <span class="level-box disabled" title="Completá el Ejercicio 1">
+      <i class="fa-solid fa-lock me-1"></i> Ejercicio 2
+    </span>
+  {% endif %}
+  <div class="connector"></div>
+
+  {% if unlocks.u2_final %}
+    <a href="/mc/puntuacion3/1/" class="level-box">Final</a>
+  {% else %}
+    <span class="level-box disabled" title="Completá el Ejercicio 2">
+      <i class="fa-solid fa-lock me-1"></i> Final
+    </span>
+  {% endif %}
+  </div>
   <!-- Unidad III: Mayúscula y Minúscula -->
   <div class="unit">
     <div class="icon-unit"><i class="fa-solid fa-font"></i></div>
     <h4>Unidad III: Mayúscula y Minúscula</h4>
-    <!-- Enlazamos los ejercicios de mayúsculas a sus rutas dinámicas de selección múltiple -->
-     <a href="/instruccion/mayuscula/" class="level-box">Instrucción</a>
-    <div class="connector"></div>
-    <a href="/mc/mayus1/1/" class="level-box">Ejercicio 1</a>
-    <div class="connector"></div>
-    <a href="/mc/mayus2/1/" class="level-box">Ejercicio 2</a>
-    <div class="connector"></div>
-    <!-- Placeholder para un ejercicio final de mayúsculas (no implementado) -->
-    <a href="/mc/mayus3/1/" class="level-box">Final</a>
-  </div>
 
+    <a href="/instruccion/mayuscula/" class="level-box">Instrucción</a>
+    <div class="connector"></div>
+
+    {% if unlocks.u3_e1 %}
+      <a href="/mc/mayus1/1/" class="level-box">Ejercicio 1</a>
+    {% else %}
+      <span class="level-box disabled" title="Leé la instrucción para desbloquear">
+        <i class="fa-solid fa-lock me-1"></i> Ejercicio 1
+      </span>
+    {% endif %}
+    <div class="connector"></div>
+
+    {% if unlocks.u3_e2 %}
+      <a href="/mc/mayus2/1/" class="level-box">Ejercicio 2</a>
+    {% else %}
+      <span class="level-box disabled" title="Completá el Ejercicio 1">
+        <i class="fa-solid fa-lock me-1"></i> Ejercicio 2
+      </span>
+    {% endif %}
+    <div class="connector"></div>
+
+    {% if unlocks.u3_final %}
+      <a href="/mc/mayus3/1/" class="level-box">Final</a>
+    {% else %}
+      <span class="level-box disabled" title="Completá el Ejercicio 2">
+        <i class="fa-solid fa-lock me-1"></i> Final
+      </span>
+    {% endif %}
+  </div>
   <!-- Unidad IV: Reglas de las Letras -->
   <div class="unit">
     <div class="icon-unit"><i class="fa-solid fa-book"></i></div>
-    <h4>Unidad IV: Reglas de las Letras</h4>
-    <!-- Enlazamos los ejercicios de reglas de las letras a sus rutas dinámicas de selección múltiple -->
-     <a href="/instruccion/letras/" class="level-box">Instrucción</a>
-    <div class="connector"></div>
-    <a href="/mc/letras1/1/" class="level-box">Ejercicio 1</a>
-    <div class="connector"></div>
-    <a href="/mc/letras2/1/" class="level-box">Ejercicio 2</a>
-    <div class="connector"></div>
-    <!-- Placeholder para un ejercicio final de reglas de las letras (no implementado) -->
-    <a href="/mc/letras3/1/" class="level-box">Final</a>
-  </div>
+    <h4>Unidad IV: Reglas de las Letra</h4>
 
-  <!-- Evaluación Final -->
-    <div class="unit">
-    <a href="/mc/evaluacionfinal/1/" id="final">
-    <div class="icon-unit"><i class="fa-solid fa-clipboard-check"></i></div>
-    <h4>Evaluación Final</h4>
-  </a>
+    <a href="/instruccion/letras/" class="level-box">Instrucción</a>
+    <div class="connector"></div>
+
+    {% if unlocks.u4_e1 %}
+      <a href="/mc/letras1/1/" class="level-box">Ejercicio 1</a>
+    {% else %}
+      <span class="level-box disabled" title="Leé la instrucción para desbloquear">
+        <i class="fa-solid fa-lock me-1"></i> Ejercicio 1
+      </span>
+    {% endif %}
+    <div class="connector"></div>
+
+    {% if unlocks.u4_e2 %}
+      <a href="/mc/letras2/1/" class="level-box">Ejercicio 2</a>
+    {% else %}
+      <span class="level-box disabled" title="Completá el Ejercicio 1">
+        <i class="fa-solid fa-lock me-1"></i> Ejercicio 2
+      </span>
+    {% endif %}
+    <div class="connector"></div>
+
+    {% if unlocks.u4_final %}
+      <a href="/mc/letras3/1/" class="level-box">Final</a>
+    {% else %}
+      <span class="level-box disabled" title="Completá el Ejercicio 2">
+        <i class="fa-solid fa-lock me-1"></i> Final
+      </span>
+    {% endif %}
   </div>
+  <!-- Evaluación Final -->
+  <div class="unit">
+    {% if unlocks.final_eval %}
+      <a href="/mc/evaluacionfinal/1/" id="final">
+      <div class="icon-unit"><i class="fa-solid fa-clipboard-check"></i></div>
+      <h4>Evaluación Final</h4>
+      </a>
+    {% else %}
+      <span class="level-box disabled" title="Completá todos los ejercicios para habilitar">
+        <i class="fa-solid fa-lock me-1"></i> Evaluación Final
+      </span>
+    {% endif %}
+  </div>
+  <div class="unit">
   {% if request.user.role == 'ESTUDIANTE' %}
   <!-- Encuesta Estudiante-->
-    <div class="unit">
-      <a href="/encuesta/1/" id="final">
-      <div class="icon-unit"><i class="fa-solid fa-square-poll-horizontal"></i></div>
-      <h4>Encuesta</h4>
-      </a>
-    </div>
+      {% if unlocks.survey %}
+        <a href="/encuesta/1/" id="final">
+          <div class="icon-unit"><i class="fa-solid fa-square-poll-horizontal"></i></div>
+          <h4>Encuesta</h4>
+        </a>
+      {% else %}
+        <span class="level-box disabled" title="Se habilita tras la Evaluación Final">
+          <i class="fa-solid fa-lock me-1"></i> Encuesta
+        </span>
+      {% endif %}
+  </div>   
   {% else %}
     <!-- Encuesta Docente -->
-    <div class="unit">
-      <a href="/encuesta_docente/1/" id="final">
-      <div class="icon-unit"><i class="fa-solid fa-square-poll-horizontal"></i></div>
-      <h4>Encuesta</h4>
-      </a>
-    </div>
+      {% if unlocks.survey %}
+        <a href="/encuesta_docente/1/" id="final">
+          <div class="icon-unit"><i class="fa-solid fa-square-poll-horizontal"></i></div>
+          <h4>Encuesta</h4>
+        </a>
+      {% else %}
+        <span class="level-box disabled" title="Se habilita tras la Evaluación Final">
+          <i class="fa-solid fa-lock me-1"></i> Encuesta
+        </span>
+      {% endif %}
+    </div> 
   {% endif %}
 </div>
 
