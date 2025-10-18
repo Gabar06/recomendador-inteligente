@@ -1,19 +1,120 @@
-{% extends "./base.html" %}
+{% extends "base.html" %}
+{% load static %}
 
-{% block title %} Acerca de {% endblock %}
+{% block title %}Acerca de{% endblock %}
 
 {% block body %}
-
-<h3 class="mt=5" id="titulo">Autor:</h3>
-<ul><li><h3 class="mt=5" >Fernando Gabriel González Barreto</h3></li></ul>
 <style>
-#titulo{
-    margin-top: 60px;
-    font-weight: bold;
+  .hero-about{
+    background: linear-gradient(135deg,#f7ffe8,#ffffff);
+    border: 1px solid #e6f4d7;
+    border-radius: 18px;
+    padding: 28px;
+    margin-top: 22px;
   }
- h3{
-    margin-top: 30px;
- }
+  .hero-about h1{ font-weight: 800; color:#2d6a1b; letter-spacing:.3px; }
+  .section-title{
+    font-weight:700; color:#2f6e1e; margin-bottom:.25rem;
+  }
+  .lead-muted{ color:#50624e; }
+  .card-soft{
+    border: 1px solid #e9f3e0; border-radius:18px;
+    box-shadow:0 10px 24px rgba(64,128,0,.08);
+  }
+  .badge-soft{
+    background:#eaf6dc; color:#2b6418; border:1px solid #d8edc3;
+  }
 </style>
 
+<div class="hero-about">
+  <h1 class="mb-2">Acerca de</h1>
+  <p class="lead lead-muted mb-0">
+    Plataforma web educativa para ortografía con unidades, ejercicios interactivos y reportes automáticos.
+  </p>
+</div>
+
+<!-- ¿Qué es? -->
+<div class="card card-soft mt-3">
+  <div class="card-body">
+    <div class="d-flex align-items-start gap-3">
+      <i class="bi bi-stars fs-3 text-success"></i>
+      <div>
+        <div class="section-title">¿Qué es el Recomendador Inteligente de Contenidos?</div>
+        <p class="mb-2">
+          Es una plataforma desarrollada con Django y MySQL para apoyar la enseñanza de ortografía. 
+          Organiza unidades (Acentuación, Puntuación, Mayúsculas y Reglas de las letras) con ejercicios interactivos, 
+          corrección inmediata, almacenamiento de intentos, cálculo de porcentajes y reporte individual con recomendaciones. 
+        </p>
+        <span class="badge badge-soft">Django</span>
+        <span class="badge badge-soft">MySQL</span>
+        <span class="badge badge-soft">Evaluación automática</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Misión y Visión -->
+<div class="row g-3 mt-1">
+  <div class="col-12 col-lg-6">
+    <div class="card card-soft h-100">
+      <div class="card-body">
+        <i class="bi bi-bullseye fs-4 text-success"></i>
+        <div class="section-title mt-2">Misión</div>
+        <p class="mb-0">Facilitar el aprendizaje autónomo con ejercicios interactivos, feedback inmediato y recomendaciones personalizadas con IA.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card card-soft h-100">
+      <div class="card-body">
+        <i class="bi bi-binoculars fs-4 text-success"></i>
+        <div class="section-title mt-2">Visión</div>
+        <p class="mb-0">Ser una referencia digital para el estudio de lengua, integrando evaluaciones y análisis de desempeño para decisiones informadas.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ¿A quién beneficia? -->
+<div class="card card-soft mt-3">
+  <div class="card-body">
+    <div class="section-title">¿A quién beneficia?</div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="p-3 border rounded-4 h-100">
+          <div class="fw-semibold mb-1"><i class="bi bi-person-check me-1"></i> Estudiantes</div>
+          <p class="mb-0 small">Acompañamiento individual, ejercicios adaptados, explicaciones automáticas y calendario con avances.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 border rounded-4 h-100">
+          <div class="fw-semibold mb-1"><i class="bi bi-mortarboard me-1"></i> Docentes</div>
+          <p class="mb-0 small">Informe consolidado por unidad, dominio alcanzado y generación de PDF para seguimiento.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 border rounded-4 h-100">
+          <div class="fw-semibold mb-1"><i class="bi bi-people me-1"></i> Instituciones y familias</div>
+          <p class="mb-0 small">Datos objetivos del rendimiento para evaluar estrategias y ofrecer soporte adicional.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ¿Cómo utilizar el sistema? -->
+<div class="card card-soft mt-3">
+  <div class="card-body">
+    <div class="section-title">¿Cómo utilizar el sistema?</div>
+    <ol class="mb-0">
+      <li class="mb-2"><span class="fw-semibold">Acceso:</span> iniciar sesión con usuario y contraseña.</li>
+      <li class="mb-2"><span class="fw-semibold">Guía de aprendizaje:</span> unidades con PDF de teoría y ejercicios interactivos con corrección y explicación.</li>
+      <li class="mb-2"><span class="fw-semibold">Biblioteca:</span> buscar y descargar libros en PDF para estudio autónomo.</li>
+      <li class="mb-2"><span class="fw-semibold">Progreso y resultados:</span> se guardan intentos, se calcula el porcentaje y se puede descargar un reporte.</li>
+      <li class="mb-2"><span class="fw-semibold">Calendario de actividades:</span> registra las prácticas por fecha con hora, título y descripción.</li>
+      <li class="mb-2"><span class="fw-semibold">Perfil:</span> visualización de datos personales cargados en la plataforma.</li>
+      <li class="mb-0"><span class="fw-semibold">Rol docente:</span> panel de evaluaciones y generación de informes PDF.</li>
+    </ol>
+  </div>
+</div>
 {% endblock %}

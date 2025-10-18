@@ -91,7 +91,7 @@ urlpatterns = [
     
     # Evaluaciones para docentes: tabla con resultados de todos los estudiantes
     path("evaluaciones/docente/", views_evaluaciones.evaluaciones_docente_view, name="evaluaciones_docente"),
-    path("evaluaciones/docente/report/", views_evaluaciones.evaluaciones_docente_report, name="evaluaciones_docente_report"),
+    path("evaluaciones/docente/report/", views_evaluaciones.evaluaciones_docente_report, name="evaluaciones_docente_report"),   
     
     path("calendario/", views.calendario, name="calendario"),
     path("calendario/events/", views.calendario_events, name="calendario_events"),
@@ -132,4 +132,11 @@ urlpatterns = [
     path("encuesta_docente/cancel/", views.survey_cancel_docente, name="survey_cancel_docente"),
 
 
+]
+
+urlpatterns += [
+    # Gestión de educandos (CRUD) para docentes
+    path("evaluaciones/docente/educandos/crear/", views_evaluaciones.educando_create, name="educando_create"),
+    path("evaluaciones/docente/educandos/<int:user_id>/editar/", views_evaluaciones.educando_edit, name="educando_edit"),
+    path("evaluaciones/docente/educandos/<int:user_id>/eliminar/", views_evaluaciones.educando_delete, name="educando_delete"),
 ]

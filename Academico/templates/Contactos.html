@@ -1,18 +1,99 @@
-{% extends "./base.html" %}
+{% extends "base.html" %}
+{% load static %}
 
-{% block title %} Contactos {% endblock %}
+{% block title %}Contactos{% endblock %}
 
 {% block body %}
-
-<h3 class="mt=5" id="titulo">Contactos:</h3>
-<ul><li><h4 class="mt=5" ><a href="https://www.americana.edu.py/">Americana</a></h4></li></ul>
 <style>
-#titulo{
-    margin-top: 60px;
-    font-weight: bold;
+  .hero-contacto{
+    background: linear-gradient(135deg,#fffbe6,#f7ffe8);
+    border: 1px solid #e6f4d7;
+    border-radius: 18px;
+    padding: 28px;
+    margin-top: 22px;
   }
- h4{
-    margin-top: 30px;
- }
+  .hero-contacto h1{
+    font-weight: 800;
+    color:#2d6a1b;
+    letter-spacing:.3px;
+  }
+  .card-neo{
+    border:1px solid #e9f3e0;
+    border-radius:18px;
+    box-shadow: 0 10px 24px rgba(64,128,0,.08);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .card-neo:hover{ transform: translateY(-2px); box-shadow:0 14px 32px rgba(64,128,0,.12);}
+  .card-neo .bi{ font-size: 1.6rem; }
+  .contact-link{ text-decoration:none; }
+  .contact-link:hover{ text-decoration: underline; }
 </style>
+
+<div class="hero-contacto">
+  <h1 class="mb-1">Contactos</h1>
+  <p class="text-muted mb-0">¿Tenés dudas o querés colaborar? Aquí están los medios oficiales.</p>
+</div>
+
+<div class="row g-4 mt-1">
+  <!-- WhatsApp -->
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card card-neo h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+          <i class="bi bi-whatsapp text-success"></i>
+          <div>
+            <h5 class="card-title mb-1">WhatsApp</h5>
+            <div class="small text-muted mb-2">Atención rápida</div>
+            <div class="d-grid gap-1">
+              <a class="contact-link" href="https://wa.me/595986655980" target="_blank" rel="noopener">+595 986 655 980</a>
+              <a class="contact-link" href="https://wa.me/595961848525" target="_blank" rel="noopener">+595 961 848 525</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correo -->
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card card-neo h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+          <i class="bi bi-envelope-paper text-primary"></i>
+          <div>
+            <h5 class="card-title mb-1">Correo</h5>
+            <div class="small text-muted mb-2">Consultas formales</div>
+            <a class="contact-link" href="mailto:fergon.670@gmail.com">fergon.670@gmail.com</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Redes -->
+  <div class="col-12 col-lg-4">
+    <div class="card card-neo h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+          <i class="bi bi-share text-dark"></i>
+          <div>
+            <h5 class="card-title mb-1">Redes Sociales</h5>
+            <div class="small text-muted mb-2">Seguinos y comparte</div>
+            <ul class="list-unstyled mb-0 d-grid gap-1">
+              <li><i class="bi bi-facebook me-1 text-primary"></i>
+                <a class="contact-link" href="https://www.facebook.com/fernando.gonzalez.230159/" target="_blank" rel="noopener">Facebook</a>
+              </li>
+              <li><i class="bi bi-instagram me-1" ></i>
+                <a class="contact-link" href="https://www.instagram.com/nando.gonzalez2000/" target="_blank" rel="noopener">Instagram</a>
+              </li>
+              <li><i class="bi bi-tiktok me-1"></i>
+                <a class="contact-link" href="https://www.tiktok.com/@fernan670_?_t=ZM-90dwBLBhVHc&_r=1" target="_blank" rel="noopener">TikTok</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

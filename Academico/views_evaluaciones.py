@@ -32,6 +32,7 @@ from .models import (
     PunctuationResult,
     MultipleChoiceResult,
     CalendarActivity,
+    Estudiante,
 )
 
 ########
@@ -57,7 +58,21 @@ except Exception:
     from matplotlib.backends.backend_pdf import PdfPages
 
 
-########
+#########
+
+# views_evaluaciones.py
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.contrib.auth import get_user_model
+from django.views.decorators.http import require_http_methods
+
+# Ya existen: _average_percentage y _classify_domain
+# Vamos a usarlas también para calcular dominios por alumno.
+
+
+#########
 
 # Normaliza tipos antes de promediar
 def _average_percentage(values) -> Optional[float]:
@@ -503,106 +518,107 @@ def evaluaciones_report(request):
 # incluye la posibilidad de generar un informe PDF con los resultados
 # globales.
 
+# views_evaluaciones.py
 @login_required
 @role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
 def evaluaciones_docente_view(request):
-    """Muestra un resumen de evaluaciones para todos los estudiantes.
-
-    Se recaban los porcentajes de cada unidad (Acentuación, Puntuación,
-    Mayúsculas y Minúsculas, Reglas de las Letras y Evaluación final) para
-    cada estudiante con rol ESTUDIANTE.  Además se recupera la última
-    actividad registrada en el calendario para ofrecer contexto sobre la
-    actividad más reciente del alumno.  Los datos se presentan en una
-    tabla dentro de una plantilla específica para docentes.
-
-    Args:
-        request: objeto ``HttpRequest`` de Django.
-
-    Returns:
-        ``HttpResponse`` con la página renderizada.
-    """
-    # Obtenemos el modelo de usuario personalizado
-    from django.contrib.auth import get_user_model
     User = get_user_model()
-    # Obtenemos estudiantes según el campo de rol definido en el modelo de usuario.
-    # Algunos modelos utilizan ``role`` y otros ``rol``.  Intentamos ambos
-    # antes de recurrir a un campo booleano ``is_student`` si existe.
-    if hasattr(User, 'role'):
-        estudiantes = User.objects.filter(role=Usuario.ESTUDIANTE)
-    elif hasattr(User, 'rol'):
-        estudiantes = User.objects.filter(rol=Usuario.ESTUDIANTE)
-    elif hasattr(User, 'is_student'):
-        estudiantes = User.objects.filter(is_student=True)
-    else:
-        estudiantes = User.objects.none()
 
-    estudiantes_data: list[dict[str, object]] = []
-    for est in estudiantes:
-        # Resultado de acentuación (ejercicio 2)
-        
-        # Acentuación: solo se dispone del resultado del ejercicio 2
+    q = request.GET.get("q", "").strip()
+    per = request.GET.get("per", "10").strip().lower()
+    per_page = 10 if per != "all" else 100000  # "todo" sin paginar práctico
+
+    # Solo estudiantes
+    estudiantes = User.objects.filter(role=Usuario.ESTUDIANTE) if hasattr(User, "role") \
+        else User.objects.none()
+
+    # Búsqueda por cédula, nombre, apellido, email
+    if q:
+        estudiantes = estudiantes.filter(
+            Q(cedula__icontains=q) |
+            Q(nombre__icontains=q) |
+            Q(apellido__icontains=q) |
+            Q(email__icontains=q)
+        )
+
+    estudiantes = estudiantes.order_by("apellido", "nombre")
+
+    paginator = Paginator(estudiantes, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    rows = []
+    for est in page_obj.object_list:
+        # ACENTUACIÓN
         acent_values = []
         for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["acentuacion2"]):
             acent_values.append(res.percentage)
-        
-        acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()    
+        acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()
         if acento_res:
             acent_values.append(acento_res.percentage)
-        
         acento_pct = _average_percentage(acent_values)
-        
-        
-        # Resultado de puntuación: media de ejercicios de opción múltiple y final
-        punct_values: list[float] = []
-        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["puntuacion1", "puntuacion2", "puntuacion3"]):
-            punct_values.append(res.percentage)
+        acento_dom = _classify_domain(acento_pct)
+
+        # PUNTUACIÓN
+        punct_values = [r.percentage for r in MultipleChoiceResult.objects.filter(
+            user=est, exercise_slug__in=["puntuacion1", "puntuacion2", "puntuacion3"]
+        )]
         punct_final = PunctuationResult.objects.filter(user=est).order_by("-created_at").first()
         if punct_final:
             punct_values.append(punct_final.percentage)
         puntuacion_pct = _average_percentage(punct_values)
-        # Mayúscula y minúscula
-        mayus_values: list[float] = []
-        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["mayus1", "mayus2", "mayus3"]):
-            mayus_values.append(res.percentage)
+        puntuacion_dom = _classify_domain(puntuacion_pct)
+
+        # MAYÚSCULAS
+        mayus_values = [r.percentage for r in MultipleChoiceResult.objects.filter(
+            user=est, exercise_slug__in=["mayus1", "mayus2", "mayus3"]
+        )]
         mayus_pct = _average_percentage(mayus_values)
-        # Reglas de las letras
-        letras_values: list[float] = []
-        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["letras1", "letras2", "letras3"]):
-            letras_values.append(res.percentage)
+        mayus_dom = _classify_domain(mayus_pct)
+
+        # REGLAS DE LETRAS
+        letras_values = [r.percentage for r in MultipleChoiceResult.objects.filter(
+            user=est, exercise_slug__in=["letras1", "letras2", "letras3"]
+        )]
         letras_pct = _average_percentage(letras_values)
-        # Evaluación final
-        final_res = MultipleChoiceResult.objects.filter(user=est, exercise_slug="evaluacionfinal").order_by("-created_at").first()
+        letras_dom = _classify_domain(letras_pct)
+
+        # EVALUACIÓN FINAL
+        final_res = MultipleChoiceResult.objects.filter(
+            user=est, exercise_slug="evaluacionfinal"
+        ).order_by("-created_at").first()
         final_pct = final_res.percentage if final_res else None
-        # Última actividad
-        last_activity = CalendarActivity.objects.filter(user=est).order_by("-date").first()
-        if last_activity:
-            last_title = last_activity.title
-            last_desc = last_activity.description or ""
-            last_date = last_activity.date
-        else:
-            last_title = ""
-            last_desc = ""
-            last_date = None
-        estudiantes_data.append({
-            "name": est.nombre + " " + est.apellido or "",
-            "id": getattr(est, "cedula", ""),
-            "acento_pct": f"{acento_pct:.0f}%" if acento_pct is not None else "N/A",
-            "acento_dom": _classify_domain(acento_pct),
-            "puntuacion_pct": f"{puntuacion_pct:.0f}%" if puntuacion_pct is not None else "N/A",
-            "puntuacion_dom": _classify_domain(puntuacion_pct),
-            "mayus_pct": f"{mayus_pct:.0f}%" if mayus_pct is not None else "N/A",
-            "mayus_dom": _classify_domain(mayus_pct),
-            "letras_pct": f"{letras_pct:.0f}%" if letras_pct is not None else "N/A",
-            "letras_dom": _classify_domain(letras_pct),
-            "final_pct": f"{final_pct:.0f}%" if final_pct is not None else "N/A",
-            "final_dom": _classify_domain(final_pct),
-            "last_title": last_title,
-            "last_desc": last_desc,
+        final_dom = _classify_domain(final_pct)
+
+        # Última actividad del calendario si la usas (opcional)
+        last = CalendarActivity.objects.filter(user=est).order_by("-date").first()
+        last_date = last.date if last else None
+        last_title = last.title if last else None
+
+        rows.append({
+            "user_id": est.id,
+            "name": f"{est.nombre} {est.apellido}".strip(),
+            "id": est.cedula,
+            "acento_pct": f"{acentuacion:.0f}%" if (acentuacion := acento_pct) is not None else "N/A",
+            "acento_dom": acento_dom,
+            "puntuacion_pct": f"{puntuacion:.0f}%" if (puntuacion := puntuacion_pct) is not None else "N/A",
+            "puntuacion_dom": puntuacion_dom,
+            "mayus_pct": f"{mayusculas:.0f}%" if (mayusculas := mayus_pct) is not None else "N/A",
+            "mayus_dom": mayus_dom,
+            "letras_pct": f"{letras:.0f}%" if (letras := letras_pct) is not None else "N/A",
+            "letras_dom": letras_dom,
+            "final_pct": f"{final:.0f}%" if (final := final_pct) is not None else "N/A",
+            "final_dom": final_dom,
             "last_date": last_date,
+            "last_title": last_title,
         })
-    # Ordenamos alfabéticamente
-    estudiantes_data.sort(key=lambda x: x['name'])
-    return render(request, "menu/docente/evaluaciones.html", {"students": estudiantes_data})
+
+    return render(request, "menu/docente/evaluaciones.html", {
+        "students": rows,
+        "page_obj": page_obj,
+        "q": q,
+        "per": per,
+    })
+
 
 
 @login_required
@@ -784,3 +800,95 @@ def evaluaciones_docente_report(request):
     response = HttpResponse(pdf_data, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="reporte_evaluaciones_docente.pdf"'
     return response
+
+
+##############################
+# Crear nuevo educando
+@login_required
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+@require_http_methods(["GET", "POST"])
+def educando_create(request):
+    if request.method == "POST":
+        cedula = request.POST.get("cedula", "").strip()
+        nombre = request.POST.get("nombre", "").strip()
+        apellido = request.POST.get("apellido", "").strip()
+        email = request.POST.get("email", "").strip()
+        password1 = request.POST.get("password1", "")
+        password2 = request.POST.get("password2", "")
+
+        if not all([cedula, nombre, apellido, email, password1, password2]):
+            messages.error(request, "Completa todos los campos.")
+            return redirect("educando_create")
+        if password1 != password2:
+            messages.error(request, "Las contraseñas no coinciden.")
+            return redirect("educando_create")
+
+        User = get_user_model()
+        # Crea la cuenta del sistema con rol ESTUDIANTE
+        user = User.objects.create_user(
+            cedula=cedula, email=email, nombre=nombre, apellido=apellido,
+            role=Usuario.ESTUDIANTE, password=password1
+        )
+        # Crea el perfil Estudiante espejo de datos
+        Estudiante.objects.create(user=user, cedula=cedula, nombre=nombre, apellido=apellido)
+
+        messages.success(request, "Educando creado correctamente.")
+        return redirect("evaluaciones_docente")
+
+    return render(request, "menu/docente/educando_form.html", {"mode": "create"})
+
+# Editar educando existente
+@login_required
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+@require_http_methods(["GET", "POST"])
+def educando_edit(request, user_id):
+    User = get_user_model()
+    user = get_object_or_404(User, pk=user_id, role=Usuario.ESTUDIANTE)
+
+    if request.method == "POST":
+        cedula = request.POST.get("cedula", "").strip()
+        nombre = request.POST.get("nombre", "").strip()
+        apellido = request.POST.get("apellido", "").strip()
+        email = request.POST.get("email", "").strip()
+        password = request.POST.get("password", "")
+
+        # Actualizar datos reales del login
+        user.cedula = cedula
+        user.nombre = nombre
+        user.apellido = apellido
+        user.email = email
+        if password:
+            user.set_password(password)
+        user.save()
+
+        # Espejo en perfil Estudiante (si existiera)
+        try:
+            est = user.estudiante
+            est.cedula = cedula
+            est.nombre = nombre
+            est.apellido = apellido
+            est.save()
+        except Estudiante.DoesNotExist:
+            pass
+
+        messages.success(request, "Datos del educando actualizados.")
+        return redirect("evaluaciones_docente")
+
+    return render(request, "menu/docente/educando_form.html", {"mode": "edit", "u": user})
+
+# Eliminar educando existente
+@login_required
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+@require_http_methods(["GET", "POST"])
+def educando_delete(request, user_id):
+    User = get_user_model()
+    user = get_object_or_404(User, pk=user_id, role=Usuario.ESTUDIANTE)
+
+    if request.method == "POST":
+        user.delete()  # esto elimina también el perfil Estudiante
+        messages.success(request, "Educando eliminado. Ya no podrá iniciar sesión.")
+        return redirect("evaluaciones_docente")
+
+    return render(request, "menu/docente/educando_confirm_delete.html", {"u": user})
+
+

@@ -49,13 +49,88 @@
   .meter-label{font-size:.78rem; color:#334155; margin-top:4px}
   .cell-meter{min-width:120px}
   .last-activity{font-size:.82rem; line-height:1.2; color:#475569}
+  .actions{display:flex; gap:8px; align-items:center}
+  .input{padding:10px 12px; border:1px solid var(--line); border-radius:10px}
+  .btn-sm{padding:6px 10px; border-radius:8px; border:1px solid var(--g-500); background:#7CC300; color:#fff; text-decoration:none}
+  .btn-outline{background:#fff; color:var(--g-700)}
+  .btn-danger{background:#ef4444; border-color:#ef4444}
+  .footerbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px}
+  .pager a{margin:0 4px; text-decoration:none; color:var(--g-700); font-weight:700}
+
+  /* Botones con icono */
+.btn.btn-icon { display:inline-flex; align-items:center; gap:.55rem; }
+.btn.btn-icon i { font-size:1.05rem; }
+
+/* Buscador cápsula estilo imagen */
+.searchbar{ display:flex; align-items:center; gap:10px; }
+.search-input{
+  width:min(42vw, 520px);
+  height:48px;
+  border-radius:28px;
+  border:2px solid var(--g-500);
+  padding:0 64px 0 16px; /* espacio para el botón de la lupa */
+  outline:0;
+  background:#fff;
+  box-shadow:0 6px 18px rgba(124,195,0,.08) inset;
+}
+.search-input:focus{ box-shadow:0 0 0 3px rgba(124,195,0,.18); }
+.search-btn{
+  position:relative;
+  margin-left:-70px;      /* se apoya sobre el borde derecho del input */
+  width:56px; height:40px;
+  border-radius:24px;
+  border:0;
+  background:linear-gradient(180deg,#96da54, var(--g-500));
+  color:#fff;
+  display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(124,195,0,.25);
+}
+.search-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(124,195,0,.35); }
+
+.per-select{
+  height:48px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  padding:0 12px;
+  background:#fff;
+}
+
+/* Botones de acciones por fila */
+.btn-sm i{ margin-right:.4rem; }
+.btn-danger i{ margin-right:.4rem; }
+
 </style>
 
 <div class="sheet">
   <div class="header">
-    <h2 class="h-title">Evaluaciones de Educandos</h2>
-    <a class="btn" href="{% url 'evaluaciones_docente_report' %}">Descargar PDF</a>
+  <h2 class="h-title">Evaluaciones de Educandos</h2>
+
+  <div class="actions">
+    {# Buscador tipo “cápsula” con ícono submit #}
+    <form method="get" action="" class="searchbar" role="search">
+      <input class="search-input" type="search" name="q" value="{{ q }}" 
+             placeholder="Buscar por nombre, cédula o email…" />
+      <button class="search-btn" type="submit" aria-label="Buscar">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </button>
+      {# selector 10 por página | todo #}
+      <select class="per-select" name="per" onchange="this.form.submit()">
+        <option value="10" {% if per != 'all' %}selected{% endif %}>10 por página</option>
+        <option value="all" {% if per == 'all' %}selected{% endif %}>Ver todo</option>
+      </select>
+    </form>
+
+    <a class="btn btn-icon" href="{% url 'evaluaciones_docente_report' %}">
+      <i class="fa-solid fa-file-arrow-down"></i><span>Descargar PDF</span>
+    </a>
+
+    <a class="btn btn-icon" href="{% url 'educando_create' %}">
+      <i class="fa-solid fa-user-plus"></i><span>Agregar educando</span>
+    </a>
   </div>
+</div>
+</div>
 
   <div class="legend">
   <span><span class="dot" style="background:#b7ecb7"></span>Excelente</span>
@@ -66,7 +141,7 @@
   <span><span class="dot" style="background:#e5e7eb"></span>N/A</span>
 </div>
 
-  <div class="table-wrap shadow-mask">
+ <div class="table-wrap shadow-mask">
     <table>
       <thead>
         <tr>
@@ -83,6 +158,7 @@
           <th title="Evaluación Final (%)">Final (%)</th>
           <th title="Dominio Final">Dominio Final</th>
           <th>Última Actividad</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -157,17 +233,45 @@
           </td>
 
           <td class="last-activity">
-            {% if stu.last_date %}
-              {{ stu.last_date|date:"Y-m-d H:i" }}<br>
-              <span>{{ stu.last_title }}</span>
-            {% else %}—{% endif %}
+            {% if stu.last_date %}{{ stu.last_date|date:"Y-m-d H:i" }}<br><span>{{ stu.last_title }}</span>{% else %}—{% endif %}
+          </td>
+
+          <td>
+            <div class="actions">
+              <a class="btn-sm btn-outline" href="{% url 'educando_edit' stu.user_id %}">
+                <i class="fa-regular fa-pen-to-square"></i>Editar
+              </a>
+              <form method="post" action="{% url 'educando_delete' stu.user_id %}"
+                    onsubmit="return confirm('Vas a eliminar a este educando y perderá el acceso. ¿Seguro?');">
+                {% csrf_token %}
+                <button class="btn-sm btn-danger" type="submit">
+                  <i class="fa-solid fa-trash"></i>Eliminar
+                </button>
+              </form>
+            </div>
+
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="13">No hay educandos registrados.</td></tr>
+        <tr><td colspan="14">No hay educandos registrados.</td></tr>
       {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <div class="footerbar">
+    <div>
+      {% if page_obj.has_previous %}<a class="pager" href="?q={{ q }}&per={{ per }}&page={{ page_obj.previous_page_number }}">← Anterior</a>{% endif %}
+      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="pager" href="?q={{ q }}&per={{ per }}&page={{ page_obj.next_page_number }}">Siguiente →</a>{% endif %}
+    </div>
+    <div>
+      <form method="get" action="">
+        <input type="hidden" name="q" value="{{ q }}">
+        <button class="btn-sm {% if per != 'all' %}btn-outline{% endif %}" name="per" value="10">Ver 10</button>
+        <button class="btn-sm {% if per == 'all' %}btn-outline{% endif %}" name="per" value="all">Ver todo</button>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}
