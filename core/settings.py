@@ -38,17 +38,6 @@ RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     
-ALLOWED_HOSTS += [
-    "recomendador-inteligente.onrender.com",
-    ".onrender.com",
-    "localhost",
-    "127.0.0.1",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://recomendador-inteligente.onrender.com",
-    "https://*.onrender.com",
-]
 
 
 # Application definition
@@ -158,10 +147,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Static ---
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'staticfiles'),
-]
-
 STATIC_URL = '/static/'
 
 if not DEBUG:
@@ -174,16 +159,16 @@ if not DEBUG:
 
 #########################
 #########################
-
+"""
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/'  # o donde quieras redirigir luego del login
 MEDIA_URL = '/libros/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/libros')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/libros')"""
 
-CORS_ALLOW_ALL_ORIGINS = True  # Para desarrollo, después hazlo seguro
+ # Para desarrollo, después hazlo seguro
 
 ###########################
-
+"""
 # Configuración del backend de correo para enviar códigos de restablecimiento.
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
@@ -194,3 +179,4 @@ EMAIL_HOST_USER = os.getenv('correo')
 # Para Gmail se recomienda usar una contraseña de aplicación (App Password).
 EMAIL_HOST_PASSWORD = os.getenv('contraseña')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+"""
