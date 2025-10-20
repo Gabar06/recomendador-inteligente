@@ -1955,6 +1955,45 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
             "feedback_incorrect": "¡Incorrecto!, las palabras correctas son <strong>Tú / tu</strong>",
         },
     },
+    # Ejercicio 3 de acentuación
+    "acentuacion3": {
+        1: {
+            "question": "¿Cuál de las siguientes oraciones utiliza correctamente la tilde diacrítica?",
+            "options": {
+                "a": "Aun no he terminado la tarea, aun cuando he tenido tiempo.",
+                "b": "Aun no he terminado la tarea, aún cuando he tenido tiempo.",
+                "c": "Aún no he terminado la tarea, aun cuando he tenido tiempo.",
+                "d": "Aún no he terminado la tarea, aún cuando he tenido tiempo.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Bien hecho!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Aún no he terminado la tarea, aun cuando he tenido tiempo.</strong>",
+        },
+        2: {
+            "question": "¿Cuál de las siguientes oraciones utiliza correctamente la tilde diacrítica en un adverbio o adjetivo?",
+            "options": {
+                "a": "Solo quiero café solo, sin azúcar.",
+                "b": "Sólo quiero café sólo, sin azúcar.",
+                "c": "Solo quiero café sólo, sin azúcar.",
+                "d": "Sólo quiero café solo, sin azúcar.",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Solo quiero café solo, sin azúcar.</strong>",
+        },
+        3: {
+            "question": "¿En cuál opción están bien acentuadas?",
+            "options": {
+                "a": "No se cómo ni cuándo llegará, pero dime dónde esperarlo.",
+                "b": "No se como ni cuando llegará, pero dime donde esperarlo.",
+                "c": "No sé como ni cuándo llegará, pero dime donde esperarlo.",
+                "d": "No sé cómo ni cuándo llegará, pero dime dónde esperarlo.",
+            },
+            "correct": "d",
+            "feedback_correct": "¡Así se hace!",
+            "feedback_incorrect": "¡Incorrecto!, las oración correcta es <strong>No sé cómo ni cuándo llegará, pero dime dónde esperarlo.</strong>",
+        },
+    },
     # Ejercicio 1 de puntuación
     "puntuacion1": {
         1: {
@@ -2650,6 +2689,7 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
 # las páginas de pregunta y en la página de resultados.
 EXERCISE_TITLES: Dict[str, str] = {
     "acentuacion2": "Ejercicio 2 de Acentuación",
+    "acentuacion3": "Ejercicio 3 de Acentuación",
     "puntuacion1": "Ejercicio 1 de Puntuación",
     "puntuacion2": "Ejercicio 2 de Puntuación",
     "puntuacion3": "Ejercicio Final de Puntuación",
@@ -2667,6 +2707,10 @@ EXERCISE_TITLES: Dict[str, str] = {
 # el 100 %.  Se pueden personalizar con referencias a libros o capítulos.
 EXERCISE_RECOMMENDATIONS: Dict[str, str] = {
     "acentuacion2": (
+        "Recomendación: repasa el capítulo dedicado a los signos de acentuación en un buen libro de ortografía, "
+        "por ejemplo en la 'Ortografía de la lengua española' de la Real Academia Española."
+    ),
+    "acentuacion3": (
         "Recomendación: repasa el capítulo dedicado a los signos de acentuación en un buen libro de ortografía, "
         "por ejemplo en la 'Ortografía de la lengua española' de la Real Academia Española."
     ),

@@ -131,7 +131,7 @@ def evaluaciones_view(request):
 
     # Acentuación: solo se dispone del resultado del ejercicio 2
     acent_values = []
-    acent_slugs = ["acentuacion2"]
+    acent_slugs = ["acentuacion2","acentuacion3"]
     acent_mc = MultipleChoiceResult.objects.filter(
         user=user, exercise_slug__in=acent_slugs
     )
@@ -233,7 +233,7 @@ def evaluaciones_report(request):
     # Reutilizamos el cálculo de porcentajes de la vista principal
     # Acentuación: solo se dispone del resultado del ejercicio 2
     acent_values = []
-    acent_slugs = ["acentuacion2"]
+    acent_slugs = ["acentuacion2","acentuacion3"]
     acent_mc = MultipleChoiceResult.objects.filter(
         user=user, exercise_slug__in=acent_slugs
     )
@@ -550,7 +550,7 @@ def evaluaciones_docente_view(request):
     for est in page_obj.object_list:
         # ACENTUACIÓN
         acent_values = []
-        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["acentuacion2"]):
+        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["acentuacion2","acentuacion3"]):
             acent_values.append(res.percentage)
         acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()
         if acento_res:
@@ -654,7 +654,7 @@ def evaluaciones_docente_report(request):
         # Cálculo de porcentajes para cada estudiante
         # Acentuación: solo se dispone del resultado del ejercicio 2
         acent_values = []
-        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["acentuacion2"]):
+        for res in MultipleChoiceResult.objects.filter(user=est, exercise_slug__in=["acentuacion2","acentuacion3"]):
             acent_values.append(res.percentage)
         
         acento_res = ResultSummary.objects.filter(user=est).order_by("-created_at").first()    
