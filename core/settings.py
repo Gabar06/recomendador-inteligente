@@ -23,11 +23,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"      # carpeta a la que collectstatic copia todo
-STATICFILES_DIRS = [BASE_DIR / "static"]    # tu carpeta de trabajo (si la usas)
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -42,6 +38,18 @@ RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     
+ALLOWED_HOSTS += [
+    "recomendador-inteligente.onrender.com",
+    ".onrender.com",
+    "localhost",
+    "127.0.0.1",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://recomendador-inteligente.onrender.com",
+    "https://*.onrender.com",
+]
+
 
 # Application definition
 
@@ -147,6 +155,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- Static ---
+STATIC_URL = "/static/"
+from pathlib import Path
+STATIC_ROOT = BASE_DIR / "staticfiles"          # deja SOLO esta línea para STATIC_ROOT
+STATICFILES_DIRS = [BASE_DIR / "static"]        # mantenla solo si esa carpeta existe en el repo
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 #########################
 #########################
