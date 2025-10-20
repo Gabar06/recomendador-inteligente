@@ -157,11 +157,16 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Static ---
-STATIC_URL = "/static/"
-from pathlib import Path
-STATIC_ROOT = BASE_DIR / "staticfiles"          # deja SOLO esta línea para STATIC_ROOT
-STATICFILES_DIRS = [BASE_DIR / "static"]        # mantenla solo si esa carpeta existe en el repo
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+STATIC_URL = '/static/'
+
+if not DEBUG:
+    # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+    # Enable the WhiteNoise storage backend, which compresses static files to reduce disk use
+    # and renames the files with unique names for each version to support long-term caching
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 #########################
 #########################
