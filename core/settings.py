@@ -13,6 +13,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 import environ
+import dj_database_url
 
 env = environ.Env()
 environ.Env.read_env()
@@ -95,7 +96,7 @@ ASGI_APPLICATION = 'core.asgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql', # Usa 'django.db.backends.postgresql' para PostgreSQL y 'django.db.backends.mysql' para MySQL
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
         'PASSWORD': os.getenv('DB_PASSWORD'),
