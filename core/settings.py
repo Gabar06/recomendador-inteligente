@@ -97,7 +97,7 @@ ASGI_APPLICATION = 'core.asgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         # Replace this value with your local database's connection string.
-        default='postgresql://postgres:postgres@localhost:5432/mysite',
+        default='postgresql://recomendador_db_6i2z_user:U9yqjyySYrK6XiLRb1bd28YJwaFxTjul@dpg-d3qrgaripnbc73aojaog-a.oregon-postgres.render.com/recomendador_db_6i2z',
         conn_max_age=600
     )
 }
