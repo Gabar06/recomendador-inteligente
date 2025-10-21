@@ -52,7 +52,7 @@
         <input type="text" name="q" placeholder="Buscar por título, autor o editorial..." value="{{ query }}">
         <button type="submit">🔍</button>
     </form>
-    {% if request.user.role == 'DOCENTE' %}
+    {% if request.user.role == 'DOCENTE' or request.user.role == 'ADMINISTRADOR' %}
         <a class="add-btn" href="{% url 'cargar_libro' %}">+ Agregar nuevo libro</a>
     {% endif %}
      <table>
@@ -63,7 +63,7 @@
                 <th>Año</th>
                 <th>Editorial</th>
                 <th>Archivo</th>
-                {% if request.user.role == 'DOCENTE' %}
+                {% if request.user.role == 'DOCENTE' or request.user.role == 'ADMINISTRADOR' %}
                     <th>Acciones</th>
                 {% endif %}
             </tr>
@@ -76,7 +76,7 @@
                 <td>{{ libro.año }}</td>
                 <td>{{ libro.editorial }}</td>
                 <td><a href="{{ libro.archivo.url }}" title="Descargar" class="descargar-btn" download>📥</a></td>
-                {% if request.user.role == 'DOCENTE' %}
+                {% if request.user.role == 'DOCENTE' or request.user.role == 'ADMINISTRADOR' %}
                     <td>
                         <a href="{% url 'editar_libro' libro.id %}"  class="editar-btn" title="Editar">✏️</a>
                         <a href="{% url 'eliminar_libro' libro.id %}"  title="Eliminar">🗑️</a>
