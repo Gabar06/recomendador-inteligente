@@ -25,6 +25,7 @@ urlpatterns = [
     path('vista_resultado', views.vista_resultado, name='vista_resultado'),
     path('menu-docente', views.menu_docente, name='menu_docente'),
     path('menu-estudiante', views.menu_estudiante, name='menu_estudiante'),
+    path('menu-administrador', views.menu_administrador, name='menu_administrador'),
     path('guia_aprendizaje', views.guia_aprendizaje, name='guia_aprendizaje'),
     path('acento_final', views.acento_final, name='acento_final'),
     path("chat/", views.chat_with_openai, name="chat_openai"),
@@ -41,12 +42,15 @@ urlpatterns = [
       
     path('login/docente/', views.login_docente, name='login_docente'),
     path('login/estudiante/', views.login_estudiante, name='login_estudiante'),
+    path('login/administrador/', views.login_administrador, name='login_administrador'),
     path('register/docente/', views.register_docente, name='register_docente'),
     path('register/estudiante/', views.register_estudiante, name='register_estudiante'),
+    path('register/administrador/', views.register_administrador, name='register_administrador'),
     path('reset/', views.reset_request, name='reset_request'),
     path('reset/verify/', views.reset_verify, name='reset_verify'),
     path("logout-docente/", views.logout_docente, name="logout_docente"),
     path("logout-estudiante/", views.logout_estudiante, name="logout_estudiante"),
+    path("logout-administrador/", views.logout_administrador, name="logout_administrador"),
      
     #######################
     #Ejercicio1 Acentuación
@@ -101,6 +105,8 @@ urlpatterns = [
     path("perfil_estudiante/", views.perfil_estudiante, name="perfil_estudiante"),
     # Perfil del docente
     path('perfil-docente/', views.perfil_docente, name='perfil_docente'),
+      # Perfil del administrador
+    path('perfil-administrador/', views.perfil_administrador, name='perfil_administrador'),
     
     #######################
     # Ejercicios de opción múltiple genéricos (puntuación, mayúsculas y letras)
@@ -139,4 +145,10 @@ urlpatterns += [
     path("evaluaciones/docente/educandos/crear/", views_evaluaciones.educando_create, name="educando_create"),
     path("evaluaciones/docente/educandos/<int:user_id>/editar/", views_evaluaciones.educando_edit, name="educando_edit"),
     path("evaluaciones/docente/educandos/<int:user_id>/eliminar/", views_evaluaciones.educando_delete, name="educando_delete"),
+    # Gestión de usuarios (CRUD) para administradores
+    path("evaluaciones/administrador/", views_evaluaciones.evaluaciones_administrador_view, name="evaluaciones_admin"),
+    path("evaluaciones/administrador/report/", views_evaluaciones.evaluaciones_administrador_report, name="evaluaciones_administrador_report"),  # ← NUEVO
+    path("usuarios/create/", views_evaluaciones.usuario_create, name="usuario_create"),
+    path("usuarios/<int:pk>/edit/", views_evaluaciones.usuario_edit, name="usuario_edit"),
+    path("usuarios/<int:pk>/delete/", views_evaluaciones.usuario_delete, name="usuario_delete"),
 ]

@@ -892,3 +892,350 @@ def educando_delete(request, user_id):
     return render(request, "menu/docente/educando_confirm_delete.html", {"u": user})
 
 
+##################
+#Administrador
+##################
+# views_evaluaciones.py
+
+from django import forms
+from django.db.models import Q
+from django.core.paginator import Paginator
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.views.decorators.http import require_http_methods
+
+# Importa tus modelos de resultados y usuario
+from .models import (
+    Usuario, Docente, Estudiante, Administrador,
+    MultipleChoiceResult, PunctuationResult, ResultSummary, CalendarActivity
+)
+
+# ---------- Formulario base para CRUD de Usuario ----------
+class UsuarioForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ["cedula", "email", "nombre", "apellido", "role", "is_active"]
+        widgets = {
+            "cedula": forms.TextInput(attrs={"class":"input"}),
+            "email": forms.EmailInput(attrs={"class":"input"}),
+            "nombre": forms.TextInput(attrs={"class":"input"}),
+            "apellido": forms.TextInput(attrs={"class":"input"}),
+            "role": forms.Select(attrs={"class":"input"}),
+        }
+
+# Helper para mantener sincronizado el perfil OneToOne según el rol
+def _ensure_profile(user: Usuario) -> None:# ---------- Cálculo de métricas por usuario (igual que en estudiante/docente) ----------
+    # Elimina perfiles cruzados, crea el correcto si falta
+    if user.role == Usuario.DOCENTE:
+        Administrador.objects.filter(user=user).delete()
+        Estudiante.objects.filter(user=user).delete()
+        Docente.objects.get_or_create(user=user, defaults={
+            "cedula": user.cedula, "nombre": user.nombre, "apellido": user.apellido
+        })
+    elif user.role == Usuario.ESTUDIANTE:
+        Docente.objects.filter(user=user).delete()
+        Administrador.objects.filter(user=user).delete()
+        Estudiante.objects.get_or_create(user=user, defaults={
+            "cedula": user.cedula, "nombre": user.nombre, "apellido": user.apellido
+        })
+    else:  # ADMINISTRADOR
+        Docente.objects.filter(user=user).delete()
+        Estudiante.objects.filter(user=user).delete()
+        Administrador.objects.get_or_create(user=user, defaults={
+            "cedula": user.cedula, "nombre": user.nombre, "apellido": user.apellido
+        })
+
+
+def _metrics_for(user: Usuario):
+    # Acentuación: promedio entre slugs de MC y summaries
+    acent_slugs = ["acentuacion2","acentuacion3"]
+    acent_mc = MultipleChoiceResult.objects.filter(user=user, exercise_slug__in=acent_slugs).values_list("percentage", flat=True)
+    acento_res = ResultSummary.objects.filter(user=user).order_by("-created_at").first()
+    acent_values = list(acent_mc)
+    if acento_res: acent_values.append(float(acento_res.percentage))
+    acento_pct = _average_percentage(acent_values)
+    acento_dom = _classify_domain(acento_pct)
+
+    # Puntuación: MC + ejercicio final
+    punct_slugs = ["puntuacion1","puntuacion2","puntuacion3"]
+    punct_mc = MultipleChoiceResult.objects.filter(user=user, exercise_slug__in=punct_slugs).values_list("percentage", flat=True)
+    punct_values = list(punct_mc)
+    punct_final = PunctuationResult.objects.filter(user=user).order_by("-created_at").first()
+    if punct_final: punct_values.append(float(punct_final.percentage))
+    puntuacion_pct = _average_percentage(punct_values)
+    puntuacion_dom = _classify_domain(puntuacion_pct)
+
+    # Mayúsculas
+    mayus_slugs = ["mayus1","mayus2","mayus3"]
+    mayus_mc = MultipleChoiceResult.objects.filter(user=user, exercise_slug__in=mayus_slugs).values_list("percentage", flat=True)
+    mayus_pct = _average_percentage(list(mayus_mc))
+    mayus_dom = _classify_domain(mayus_pct)
+
+    # Reglas de las letras
+    letras_slugs = ["letras1","letras2","letras3"]
+    letras_mc = MultipleChoiceResult.objects.filter(user=user, exercise_slug__in=letras_slugs).values_list("percentage", flat=True)
+    letras_pct = _average_percentage(list(letras_mc))
+    letras_dom = _classify_domain(letras_pct)
+
+    # Final
+    final_res = MultipleChoiceResult.objects.filter(user=user, exercise_slug="evaluacionfinal").order_by("-created_at").first()
+    final_pct = float(final_res.percentage) if final_res else None
+    final_dom = _classify_domain(final_pct)
+
+    # Última actividad
+    last = CalendarActivity.objects.filter(user=user).order_by("-created_at").first()
+    last_date = last.created_at if last else None
+    last_title = last.title if last else None
+
+    def fmt(x): return f"{x:.0f}%" if x is not None else "N/A"
+
+    return {
+        "acento_pct": fmt(acento_pct), "acento_dom": acento_dom,
+        "puntuacion_pct": fmt(puntuacion_pct), "puntuacion_dom": puntuacion_dom,
+        "mayus_pct": fmt(mayus_pct), "mayus_dom": mayus_dom,
+        "letras_pct": fmt(letras_pct), "letras_dom": letras_dom,
+        "final_pct": fmt(final_pct), "final_dom": final_dom,
+        "last_date": last_date, "last_title": last_title,
+    }
+
+# ---------- LISTA ADMIN con buscador/paginación ----------
+@role_login_required(Usuario.ADMINISTRADOR, login_url_name="login_administrador")
+def evaluaciones_administrador_view(request):
+    q = request.GET.get("q", "").strip()
+    per = request.GET.get("per", "10")  # "10" | "all"
+
+    users = Usuario.objects.all().order_by("apellido","nombre")
+    if q:
+        users = users.filter(
+            Q(nombre__icontains=q) | Q(apellido__icontains=q) |
+            Q(email__icontains=q)  | Q(cedula__icontains=q)
+        )
+
+    if per != "all":
+        paginator = Paginator(users, 10)
+        page_obj = paginator.get_page(request.GET.get("page"))
+        list_users = page_obj.object_list
+    else:
+        page_obj = type("obj", (), {"has_previous": False, "has_next": False,
+                                    "number": 1, "paginator": type("p", (), {"num_pages": 1})})()
+        list_users = list(users)
+
+    rows = []
+    for u in list_users:
+        m = _metrics_for(u)
+        rows.append({
+            "user_id": u.id,
+            "name": f"{u.nombre} {u.apellido}".strip() or u.cedula,
+            "id": u.cedula,
+            "email": u.email,
+            "role": u.role,
+            "role_display": getattr(u, "get_role_display", lambda: u.role)(),
+            **m,
+        })
+
+    return render(request, "menu/administrador/evaluaciones_admin.html", {
+        "q": q, "per": per, "page_obj": page_obj, "students": rows  # reuso nombre 'students' para la tabla
+    })
+
+@role_login_required(Usuario.ADMINISTRADOR, login_url_name="login_administrador")
+def evaluaciones_administrador_report(request):
+    # 1) Obtener todos los usuarios
+    users = Usuario.objects.all().order_by("apellido","nombre")
+
+    # 2) Armar filas: nombre, cédula, rol, dominios
+    rows = []
+    for u in users:
+        m = _metrics_for(u)  # ya devuelve dom y pct
+        rows.append({
+            "name": f"{u.nombre} {u.apellido}".strip() or (u.cedula or ""),
+            "ced":  u.cedula or "",
+            "rol":  getattr(u, "get_role_display", lambda: u.role)(),
+            "acento_dom":      m["acento_dom"],
+            "puntuacion_dom":  m["puntuacion_dom"],
+            "mayus_dom":       m["mayus_dom"],
+            "letras_dom":      m["letras_dom"],
+            "final_dom":       m["final_dom"],
+        })
+
+    buffer = io.BytesIO()
+    if _HAS_REPORTLAB:
+        # ===== ReportLab =====
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from reportlab.lib.units import mm
+
+        GREEN  = colors.HexColor('#7CC300')
+        DARK   = colors.HexColor('#00471b')
+        STRIPE = colors.HexColor('#f5fdf0')
+
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                leftMargin=18*mm, rightMargin=18*mm,
+                                topMargin=24*mm, bottomMargin=18*mm)
+        W, H = A4
+        styles = getSampleStyleSheet()
+        cell = ParagraphStyle("cell", parent=styles["Normal"], fontName="Helvetica", fontSize=9, leading=11)
+        cell_bold = ParagraphStyle("cell_bold", parent=cell, fontName="Helvetica-Bold")
+
+        def _header(canvas, doc):
+            canvas.saveState()
+            x = doc.leftMargin
+            w = W - doc.leftMargin - doc.rightMargin
+            canvas.setFillColor(colors.HexColor("#e6f4d7"))
+            canvas.rect(x, H - doc.topMargin + 6*mm, w, 10*mm, stroke=0, fill=1)
+            canvas.setFillColor(DARK)
+            canvas.setFont("Helvetica-Bold", 14)
+            canvas.drawCentredString(W/2, H - doc.topMargin + 9*mm, "Reporte de Evaluaciones (Administrador)")
+            y = H - doc.topMargin - 2*mm
+            canvas.setFont("Helvetica-Bold", 10)
+            canvas.drawString(x, y, "Información del Administrador")
+            canvas.setFont("Helvetica", 9)
+            canvas.setFillColor(colors.black)
+            canvas.drawString(x, y - 12, f"Nombre : {(getattr(request.user,'nombre','') + ' ' + getattr(request.user,'apellido','')).strip()}")
+            canvas.drawString(x, y - 24, f"Cédula: {getattr(request.user,'cedula','')}")
+            canvas.restoreState()
+
+        headers = ["Usuario", "Cédula", "Rol",
+                   "Dom. Acentuación", "Dom. Puntuación", "Dom. Mayúsculas",
+                   "Dom. Letras", "Dom. Final"]
+        col_widths = [38*mm, 22*mm, 22*mm, 24*mm, 24*mm, 24*mm, 24*mm, 24*mm]
+
+        data = [[Paragraph(h, cell_bold) for h in headers]]
+        for r in rows:
+            data.append([
+                Paragraph(r["name"], cell),
+                Paragraph(r["ced"], cell),
+                Paragraph(r["rol"], cell),
+                Paragraph(r["acento_dom"], cell),
+                Paragraph(r["puntuacion_dom"], cell),
+                Paragraph(r["mayus_dom"], cell),
+                Paragraph(r["letras_dom"], cell),
+                Paragraph(r["final_dom"], cell),
+            ])
+
+        table = Table(data, colWidths=col_widths, repeatRows=1)
+        style = TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), GREEN),
+            ('TEXTCOLOR',  (0,0), (-1,0), colors.white),
+            ('FONTNAME',   (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',   (0,0), (-1,0), 10),
+            ('ALIGN',      (0,0), (0,-1), 'LEFT'),
+            ('ALIGN',      (1,0), (-1,-1), 'CENTER'),
+            ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, STRIPE]),
+            ('GRID',       (0,0), (-1,-1), 0.6, GREEN),
+            ('TOPPADDING', (0,0), (-1,-1), 6),
+            ('BOTTOMPADDING',(0,0),(-1,-1), 6),
+        ])
+        table.setStyle(style)
+
+        story = [Spacer(1, 40*mm), table]
+        doc.build(story, onFirstPage=_header, onLaterPages=_header)
+        pdf_data = buffer.getvalue()
+        buffer.close()
+    else:
+        # ===== Respaldo Matplotlib =====
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_pdf import PdfPages
+        import matplotlib.patches as patches
+
+        with PdfPages(buffer) as pdf:
+            fig, ax = plt.subplots(figsize=(8.27, 11.69))
+            ax.axis('off')
+            green_primary = '#7CC300'
+            green_dark = '#00471b'
+            light_green = '#f5fdf0'
+
+            rect = patches.FancyBboxPatch((0.2, 0.92), 0.6, 0.05,
+                                          boxstyle="round,pad=0.02", edgecolor=green_primary,
+                                          linewidth=2, facecolor='white', transform=ax.transAxes)
+            ax.add_patch(rect)
+            ax.text(0.5, 0.945, 'Reporte de Evaluaciones (Administrador)', ha='center', va='center',
+                    fontsize=16, fontweight='bold', color=green_dark, transform=ax.transAxes)
+
+            info_y = 0.88
+            ax.text(0.1, info_y, 'Información del Administrador', fontsize=13, weight='bold', color=green_dark, transform=ax.transAxes)
+            ax.text(0.1, info_y - 0.03, f'Nombre: {(getattr(request.user,"nombre","")+" "+getattr(request.user,"apellido","")).strip()}', fontsize=11, transform=ax.transAxes)
+            ax.text(0.1, info_y - 0.06, f'Cédula: {getattr(request.user,"cedula","")}', fontsize=11, transform=ax.transAxes)
+
+            headers = ['Usuario','Cédula','Rol','Dom. Acent.','Dom. Punt.','Dom. Mayus.','Dom. Letras','Dom. Final']
+            col_w = [0.25,0.12,0.1,0.12,0.12,0.12,0.12,0.12]
+            x0, y0, rh = 0.08, 0.78, 0.035
+
+            ax.add_patch(patches.Rectangle((x0, y0-rh), sum(col_w), rh, linewidth=0, facecolor=green_primary, transform=ax.transAxes))
+            cx = x0
+            for i,h in enumerate(headers):
+                ax.text(cx + col_w[i]/2, y0 - rh/2, h, fontsize=10, color='white', ha='center', va='center', transform=ax.transAxes)
+                cx += col_w[i]
+
+            y = y0 - 2*rh
+            for i,r in enumerate(rows):
+                if i % 2 == 1:
+                    ax.add_patch(patches.Rectangle((x0, y), sum(col_w), rh, linewidth=0, facecolor=light_green, transform=ax.transAxes))
+                cx = x0
+                vals = [r["name"], r["ced"], r["rol"], r["acento_dom"], r["puntuacion_dom"], r["mayus_dom"], r["letras_dom"], r["final_dom"]]
+                for j,v in enumerate(vals):
+                    ha = 'left' if j == 0 else 'left'
+                    ax.text(cx + 0.005, y + rh/2, str(v), fontsize=9, ha=ha, va='center', transform=ax.transAxes)
+                    cx += col_w[j]
+                y -= rh
+            pdf.savefig(fig); plt.close(fig)
+        pdf_data = buffer.getvalue(); buffer.close()
+
+    response = HttpResponse(pdf_data, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_evaluaciones_admin.pdf"'
+    return response
+
+
+# ---------- CRUD de Usuario (Administrador) ----------
+@role_login_required(Usuario.ADMINISTRADOR, login_url_name="login_administrador")
+def usuario_create(request):
+    if request.method == "POST":
+        form = UsuarioForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            # soportar contraseña al crear
+            pwd1 = request.POST.get("password1", "").strip()
+            pwd2 = request.POST.get("password2", "").strip()
+            if pwd1 and pwd1 == pwd2:
+                user.set_password(pwd1)
+            user.save()
+            _ensure_profile(user)  # sincroniza perfil según rol
+            messages.success(request, "Usuario creado.")
+            return redirect("evaluaciones_admin")
+    else:
+        form = UsuarioForm()
+    return render(request, "menu/administrador/usuario_form.html",
+                  {"form": form, "title": "Crear usuario", "mode": "create"})
+
+@role_login_required(Usuario.ADMINISTRADOR, login_url_name="login_administrador")
+def usuario_edit(request, pk: int):
+    user = get_object_or_404(Usuario, pk=pk)
+    if request.method == "POST":
+        form = UsuarioForm(request.POST, instance=user)
+        if form.is_valid():
+            user = form.save(commit=False)
+            # contraseña opcional al editar
+            pwd = request.POST.get("password", "").strip()
+            if pwd:
+                user.set_password(pwd)
+            user.save()
+            _ensure_profile(user)  # si cambiaron el rol, corrige el perfil
+            messages.success(request, "Usuario actualizado.")
+            return redirect("evaluaciones_admin")
+    else:
+        form = UsuarioForm(instance=user)
+    return render(request, "menu/administrador/usuario_form.html",
+                  {"form": form, "title": "Editar usuario", "mode": "edit"})
+
+
+@role_login_required(Usuario.ADMINISTRADOR, login_url_name="login_administrador")
+@require_http_methods(["POST","GET"])
+def usuario_delete(request, pk: int):
+    u = get_object_or_404(Usuario, pk=pk)
+    if request.method == "POST":
+        u.delete()
+        messages.success(request, "Usuario eliminado.")
+        return redirect("evaluaciones_admin")
+    return render(request, "menu/administrador/usuario_confirm_delete.html", {"u": u})

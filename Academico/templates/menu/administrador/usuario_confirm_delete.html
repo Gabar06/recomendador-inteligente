@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="sheet">
+  <h2 class="h-title">Eliminar educando</h2>
+  <p>Vas a eliminar a <b>{{ u.nombre }} {{ u.apellido }}</b> ({{ u.cedula }}). También se eliminará su perfil y no podrá volver a iniciar sesión.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Eliminar definitivamente</button>
+    <a class="btn btn-outline" href="{% url 'evaluaciones_admin' %}">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

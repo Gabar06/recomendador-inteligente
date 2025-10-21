@@ -6,8 +6,9 @@ from .models import Usuario
 
 def role_login_required(expected_role, login_url_name):
     """
-    expected_role: Usuario.DOCENTE o Usuario.ESTUDIANTE
-    login_url_name: 'login_docente' o 'login_estudiante'
+    expected_role: Usuario.DOCENTE o Usuario.ESTUDIANTE o Usuario.ADMINISTRADOR
+    0.
+    : 'login_docente' o 'login_estudiante' o 'login_administrador'
     """
     def deco(view_func):
         @wraps(view_func)
@@ -25,7 +26,8 @@ def role_login_required(expected_role, login_url_name):
                 ok = (u.role == expected_role)
             else:
                 ok = (expected_role == Usuario.DOCENTE and hasattr(u, "docente")) or \
-                     (expected_role == Usuario.ESTUDIANTE and hasattr(u, "estudiante"))
+                     (expected_role == Usuario.ESTUDIANTE and hasattr(u, "estudiante")) or \
+                     (expected_role == Usuario.ADMINISTRADOR and hasattr(u, "administrador"))
 
             # 3) Rol incorrecto -> logout y login del rol correcto
             if not ok:

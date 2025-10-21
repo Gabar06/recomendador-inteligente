@@ -38,7 +38,7 @@ from django.views.generic.edit import CreateView
 
 #####################
 
-from .models import Usuario, Docente, Estudiante, PasswordResetCode
+from .models import Usuario, Docente, Estudiante, PasswordResetCode, Administrador
 
 from .forms import LoginForm, RegisterForm, ResetRequestForm, ResetVerifyForm
 from datetime import timedelta
@@ -318,6 +318,10 @@ def menu_estudiante(request):
 def menu_docente(request):
     return render(request, "menu/docente/menu.html", {"rol": "Docente", "user": request.user})
 
+@role_login_required(Usuario.ADMINISTRADOR, login_url_name="login_administrador")
+def menu_administrador(request):
+    return render(request, "menu/administrador/menu.html", {"rol": "Administrador", "user": request.user})
+
 @login_required
 def guia_aprendizaje(request):
     unlocks = compute_unlocks(request.user)
@@ -445,6 +449,9 @@ def login_docente(request):
 def login_estudiante(request):
     return _login_role(request, role=Usuario.ESTUDIANTE, title="Login Estudiante")
 
+def login_administrador(request):
+    return _login_role(request, role=Usuario.ADMINISTRADOR, title="Login Administrador")
+
 def _login_role(request, role, title):
     form = LoginForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -464,6 +471,10 @@ def _login_role(request, role, title):
                 login(request, user)
                 messages.success(request, f"¡Bienvenido, {user.nombre}!")
                 return redirect("menu_estudiante")
+            elif user and user.role == 'ADMINISTRADOR':
+                login(request, user)
+                messages.success(request, f"¡Bienvenido, {user.nombre}!")
+                return redirect("menu_administrador")
             else:
                 messages.error(request,"Credenciales inválidas o rol incorrecto")
     else:
@@ -471,6 +482,9 @@ def _login_role(request, role, title):
     return render(request, "login/login.html", {"form": form, "title": title})
 
 # ======== Registro ========
+def register_administrador(request):
+    return _register_role(request, role=Usuario.ADMINISTRADOR, title="Crear cuenta Administrador")
+
 def register_docente(request):
     return _register_role(request, role=Usuario.DOCENTE, title="Crear cuenta Docente")
 
@@ -491,11 +505,13 @@ def _register_role(request, role, title):
             )
             if role == Usuario.DOCENTE:
                 Docente.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido)
+            elif role == Usuario.ADMINISTRADOR:
+                Administrador.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido)
             else:
                 Estudiante.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido)
         
             messages.success(request, "Cuenta creada. Ya podés iniciar sesión.")
-            return redirect("login_docente" if role == Usuario.DOCENTE else "login_estudiante")
+            return redirect("login_docente" if role == Usuario.DOCENTE else "login_estudiante" if role == Usuario.ESTUDIANTE else "login_administrador")
     else:
         form = RegisterForm()
     return render(request, "login/registro.html", {"form": form, "title": title})
@@ -558,6 +574,11 @@ def logout_estudiante(request):
     """Cierra la sesión del usuario y redirige al inicio de sesión."""
     logout(request)
     return redirect("login_estudiante")
+
+def logout_administrador(request):
+    """Cierra la sesión del usuario y redirige al inicio de sesión."""
+    logout(request)
+    return redirect("login_administrador")
 
 # ======== Helpers ========
 def _send_code_email(user, code):
@@ -1229,6 +1250,27 @@ def perfil_docente(request):
     usuario = request.user
     progreso = 100
     return render(request, "perfil/docente/perfil.html", {"usuario": usuario, "progress": progreso})
+
+@role_login_required(Usuario.ADMINISTRADOR, login_url_name="login_administrador")
+def perfil_administrador(request):
+    """Renderiza la página de perfil del docente.
+
+    Muestra los datos personales del usuario autenticado (nombre, apellido,
+    cédula y correo electrónico) en un formato no editable, similar al
+    perfil del estudiante.  También se puede proporcionar un valor de
+    progreso (por ejemplo, porcentaje de preparación o avance en la
+    planificación), aunque por defecto se establece en 100% para no
+    mostrar avances parciales.
+
+    Args:
+        request: objeto ``HttpRequest`` de Django.
+
+    Returns:
+        ``HttpResponse`` con la plantilla renderizada.
+    """
+    usuario = request.user
+    progreso = 100
+    return render(request, "perfil/administrador/perfil.html", {"usuario": usuario, "progress": progreso})
 #####################
 #Ejercicio 2
 #####################

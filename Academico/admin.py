@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 ################
-from .models import Materia, Contenido, Usuario, PasswordResetCode, Docente, Estudiante
+from .models import Materia, Contenido, Usuario, PasswordResetCode, Docente, Estudiante, Administrador
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import ExerciseAttempt, ExplanationRequest, ActionLog, ResultSummary
@@ -34,6 +34,7 @@ class UsuarioAdmin(BaseUserAdmin):
 admin.site.register(PasswordResetCode)
 admin.site.register(Docente)
 admin.site.register(Estudiante)
+admin.site.register(Administrador)
 
 
 #######################

@@ -1,0 +1,118 @@
+{% extends "base.html" %} {% load static %} {% block body %}
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Menú de Inicio</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: linear-gradient(to right, #ffcf48, #f9962e);
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+      }
+      .menu-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 30px;
+        padding: 50px 20px;
+      }
+      .menu-item {
+        background-color: #fff;
+        border: 3px solid #5ead00;
+        border-radius: 10px;
+        text-align: center;
+        padding: 20px;
+        width: 180px;
+        box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s, box-shadow 0.2s;
+        color: #212529; /* Texto normal */
+        text-decoration: none;
+      }
+      .menu-item:hover {
+        transform: scale(1.08);
+        box-shadow: 6px 6px 18px rgba(0, 0, 0, 0.3);
+      }
+      .menu-item h5 {
+      margin-top: 10px;
+      color: #212529;
+    }
+      .menu-item img {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 10px;
+        animation: bounce 2s infinite;
+      }
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sonido al cargar -->
+    <audio autoplay>
+      <source src="/static/audio/bienvenida.mp3" type="audio/mpeg" />
+      Tu navegador no soporta audio HTML5.
+    </audio>
+
+    <!-- Click Sound Script -->
+    <audio id="clickSound">
+      <source src="/static/audio/click.mp3" type="audio/mpeg" />
+    </audio>
+
+    <div class="container">
+      <h1 class="text-center mt-4 text-white">
+        Bienvenido a la Guia de Aprendizaje Personalizado
+      </h1>
+      <div class="menu-container">
+        <a href="{% url 'guia_aprendizaje' %}" class="menu-item" onclick="playClick()">
+          <img src="/static/icons/guia.png" alt="Guía" />
+          <h5>Guía de Aprendizaje</h5>
+        </a>
+        <a href="{% url 'biblioteca' %}" class="menu-item" onclick="playClick()">
+          <img src="/static/icons/biblioteca.png" alt="Biblioteca" />
+          <h5>Biblioteca Virtual</h5>
+        </a>
+        <a href="{% url 'evaluaciones_admin' %}" class="menu-item" onclick="playClick()">
+          <img src="/static/icons/calificaciones.png" alt="Calificaciones" />
+          <h5>Evaluaciones</h5>
+        </a>
+        <a href="{% url 'calendario' %}" class="menu-item" onclick="playClick()">
+          <img src="/static/icons/calendario.jpeg" alt="Calendario" />
+          <h5>Calendario de Actividades</h5>
+        </a>
+        <a href="{% url 'perfil_administrador' %}" class="menu-item" onclick="playClick()">
+          <img src="/static/icons/perfil.png" alt="Perfil" />
+          <h5>Perfil</h5>
+        </a>
+        {% comment %}
+        <div class="menu-item" onclick="playClick()">
+          <img src="/static/icons/reportes.png" alt="Reportes" />
+          <h5>Reportes</h5>
+        </div>
+        {% endcomment %}
+      </div>
+    </div>
+
+    <script>
+      function playClick() {
+        const clickSound = document.getElementById("clickSound");
+        clickSound.currentTime = 0;
+        clickSound.play();
+      }
+    </script>
+  </body>
+</html>
+{% endblock %}

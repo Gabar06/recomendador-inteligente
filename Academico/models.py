@@ -82,7 +82,7 @@ class UsuarioManager(BaseUserManager):
         u.save(using=self._db)
         return u
 
-    def create_superuser(self, cedula, email, nombre="Admin", apellido="User", role="DOCENTE", password=None):
+    def create_superuser(self, cedula, email, nombre="Admin", apellido="User", role="ADMINISTRADOR", password=None):
         u = self.create_user(cedula, email, nombre, apellido, role, password)
         u.is_staff = True
         u.is_superuser = True
@@ -92,13 +92,14 @@ class UsuarioManager(BaseUserManager):
 class Usuario(AbstractBaseUser, PermissionsMixin):
     DOCENTE = "DOCENTE"
     ESTUDIANTE = "ESTUDIANTE"
-    ROLE_CHOICES = [(DOCENTE, "Docente"), (ESTUDIANTE, "Estudiante")]
+    ADMINISTRADOR = "ADMINISTRADOR"
+    ROLE_CHOICES = [(DOCENTE, "Docente"), (ESTUDIANTE, "Estudiante"),(ADMINISTRADOR, "Administrador")]
 
     cedula = models.CharField("Cédula de Identidad", max_length=20, unique=True)
     email = models.EmailField("Correo Electrónico", unique=True)
     nombre = models.CharField(max_length=80)
     apellido = models.CharField(max_length=80)
-    role = models.CharField(max_length=12, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     is_active = models.BooleanField(default=True)
     is_staff  = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
@@ -130,6 +131,12 @@ class Docente(models.Model):
 
 class Estudiante(models.Model):
     user = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='estudiante')
+    cedula = models.CharField(max_length=20, unique=True, db_index=True)
+    nombre = models.CharField(max_length=80)
+    apellido = models.CharField(max_length=80)
+
+class Administrador(models.Model):
+    user = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='administrador')
     cedula = models.CharField(max_length=20, unique=True, db_index=True)
     nombre = models.CharField(max_length=80)
     apellido = models.CharField(max_length=80)
