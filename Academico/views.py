@@ -269,7 +269,6 @@ def vista_resultado(request):
             title='Ejercicio Final de Acentuación completado',
             description=description
         )
-        mark_completed(request.user, "u1_final")
         # ... renderizado de resultado, recomendaciones, etc.
         return render(request, 'acento/final_resultado.html', {'resultado': resultado_html})
 
@@ -3644,6 +3643,7 @@ UNIT_CHAINS = {
 MC_TO_PROGRESS = {
     # Unidad I (puntuación)
     "acentuacion2": "u1_e2",
+    "acentuacion3": "u1_final",
     # Unidad II (puntuación)
     "puntuacion1": "u2_e1",
     "puntuacion2": "u2_e2",
