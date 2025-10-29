@@ -93,15 +93,26 @@ ASGI_APPLICATION = 'core.asgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 
-
-DATABASES = {
-    'default': dj_database_url.config(
-        # Replace this value with your local database's connection string.
-        #default='postgresql://recomendador_db_6i2z_user:U9yqjyySYrK6XiLRb1bd28YJwaFxTjul@dpg-d3qrgaripnbc73aojaog-a.oregon-postgres.render.com/recomendador_db_6i2z',
-        default='postgresql://postgres:postgres@localhost:5432/mysite',
-        conn_max_age=600
-    )
-}
+if not DEBUG:
+    DATABASES = {
+        'default': dj_database_url.config(
+            # Replace this value with your local database's connection string.
+            #default='postgresql://recomendador_db_6i2z_user:U9yqjyySYrK6XiLRb1bd28YJwaFxTjul@dpg-d3qrgaripnbc73aojaog-a.oregon-postgres.render.com/recomendador_db_6i2z',
+            default='postgresql://postgres:postgres@localhost:5432/mysite',
+            conn_max_age=600
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': os.getenv('DB_PORT'),
+        }
+    }
 
 
 # Password validation
