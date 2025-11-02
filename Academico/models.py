@@ -505,3 +505,44 @@ class FinalEvalLock(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     taken = models.BooleanField(default=False)
     taken_at = models.DateTimeField(null=True, blank=True)
+
+
+#Ejercicios dinámicos en la Guía de Aprendizaje
+class ExerciseUnit(models.TextChoices):
+    U1 = "u1", "Acentuación"
+    U2 = "u2", "Puntuación"
+    U3 = "u3", "Mayúsculas"
+    U4 = "u4", "Letras"
+    FINAL = "final", "Evaluación final"
+
+class BankExercise(models.Model):
+    unit = models.CharField(max_length=10, choices=ExerciseUnit.choices, db_index=True)
+    question = models.TextField("Enunciado")
+    option_a = models.CharField(max_length=255)
+    option_b = models.CharField(max_length=255)
+    option_c = models.CharField(max_length=255)
+    option_d = models.CharField(max_length=255)
+    correct_option = models.CharField(max_length=1, choices=[('a','A'),('b','B'),('c','C'),('d','D')])
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name="created_bank_exercises")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.get_unit_display()}] {self.question[:60]}..."
+
+class StudentExerciseUse(models.Model):
+    """Marca qué ejercicios del banco ya vio un estudiante (para no repetir)."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    unit = models.CharField(max_length=10, choices=ExerciseUnit.choices, db_index=True)
+    exercise = models.ForeignKey(BankExercise, on_delete=models.CASCADE)
+    run_id = models.CharField(max_length=64, blank=True, default="")
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "exercise")
+        indexes = [models.Index(fields=["user", "unit"])]

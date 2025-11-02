@@ -61,6 +61,157 @@
 </head>
 <body>
 
+{# guia_aprendizaje.html #}
+{% if request.user.role == "DOCENTE" %}
+<style>
+  .ga-docente-bar {
+    max-width: 1180px;
+    margin: 18px auto 8px auto;
+  }
+  .ga-docente-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 10px 25px rgba(0,0,0,.05);
+    border: 1px solid rgba(124,195,0,.08);
+    padding: 16px 20px 14px 20px;
+  }
+  .ga-docente-head {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .ga-docente-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: linear-gradient(180deg,#90d74d,#7cc300);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+  .ga-docente-title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+  .ga-docente-sub {
+    margin: 0;
+    font-size: .78rem;
+    color: #6b7280;
+  }
+  .ga-docente-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .ga-docente-item {
+    background: #f8faf2;
+    border: 1px solid rgba(124,195,0,.12);
+    border-radius: 14px;
+    padding: 10px 12px 12px 12px;
+  }
+  .ga-docente-item h6 {
+    font-size: .8rem;
+    font-weight: 700;
+    margin-bottom: 7px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .ga-docente-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .ga-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    border: 1px solid rgba(124,195,0,.7);
+    background: #fff;
+    color: #14552d;
+    font-size: .72rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all .15s ease-out;
+  }
+  .ga-btn.primary {
+    background: linear-gradient(180deg,#98da57,#7cc300);
+    color: #fff;
+  }
+  .ga-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(124,195,0,.15);
+  }
+  @media (max-width: 575px){
+    .ga-docente-head { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+
+<div class="ga-docente-bar">
+  <div class="ga-docente-card">
+    <div class="ga-docente-head">
+      <div class="ga-docente-icon"><i class="fa-solid fa-gear"></i></div>
+      <div>
+        <p class="ga-docente-title">Guía (Docente) — Acciones rápidas</p>
+        <p class="ga-docente-sub">Administra el banco de ejercicios por unidad y carga nuevas preguntas.</p>
+      </div>
+    </div>
+
+    <div class="ga-docente-grid">
+      <div class="ga-docente-item">
+        <h6><i class="fa-solid fa-pen"></i> Unidad I · Acentuación</h6>
+        <div class="ga-docente-actions">
+          <a class="ga-btn primary" href="{% url 'banco_list' unit='u1' %}"><i class="fa-solid fa-database"></i> Banco</a>
+          <a class="ga-btn" href="{% url 'banco_create' unit='u1' %}"><i class="fa-solid fa-plus"></i> Agregar</a>
+        </div>
+      </div>
+
+      <div class="ga-docente-item">
+        <h6><i class="fa-solid fa-circle-dot"></i> Unidad II · Puntuación</h6>
+        <div class="ga-docente-actions">
+          <a class="ga-btn primary" href="{% url 'banco_list' unit='u2' %}"><i class="fa-solid fa-database"></i> Banco</a>
+          <a class="ga-btn" href="{% url 'banco_create' unit='u2' %}"><i class="fa-solid fa-plus"></i> Agregar</a>
+        </div>
+      </div>
+
+      <div class="ga-docente-item">
+        <h6><i class="fa-solid fa-font"></i> Unidad III · Mayúsculas</h6>
+        <div class="ga-docente-actions">
+          <a class="ga-btn primary" href="{% url 'banco_list' unit='u3' %}"><i class="fa-solid fa-database"></i> Banco</a>
+          <a class="ga-btn" href="{% url 'banco_create' unit='u3' %}"><i class="fa-solid fa-plus"></i> Agregar</a>
+        </div>
+      </div>
+
+      <div class="ga-docente-item">
+        <h6><i class="fa-solid fa-book"></i> Unidad IV · Letras</h6>
+        <div class="ga-docente-actions">
+          <a class="ga-btn primary" href="{% url 'banco_list' unit='u4' %}"><i class="fa-solid fa-database"></i> Banco</a>
+          <a class="ga-btn" href="{% url 'banco_create' unit='u4' %}"><i class="fa-solid fa-plus"></i> Agregar</a>
+        </div>
+      </div>
+
+      <div class="ga-docente-item">
+        <h6><i class="fa-solid fa-clipboard-check"></i> Evaluación Final</h6>
+        <div class="ga-docente-actions">
+          <a class="ga-btn primary" href="{% url 'banco_list' unit='final' %}"><i class="fa-solid fa-database"></i> Banco</a>
+          <a class="ga-btn" href="{% url 'banco_create' unit='final' %}"><i class="fa-solid fa-plus"></i> Agregar</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+
+
+
 <div class="container my-4">
 
   <!-- Unidad I: Acentuación -->
@@ -71,7 +222,7 @@
   <div class="connector"></div>
 
   {% if unlocks.u1_e1 %}
-    <a href="{% url 'exercise1' %}" class="level-box">Ejercicio 1</a>
+    <a href="/mc/acentuacion1/1/" class="level-box">Ejercicio 1</a>
   {% else %}
     <span class="level-box disabled" title="Leé la instrucción para desbloquear">
       <i class="fa-solid fa-lock me-1"></i> Ejercicio 1

@@ -638,7 +638,8 @@ def exercise1(request: HttpRequest) -> HttpResponse:
     # distinto por usuario: reordenamos
     options.sort(key=lambda x: (hash(request.user.id + hash(run_id + x)) % 10))
     context = {"options": options}
-    return render(request, "acento/ejercicio_1/e1.html", context)
+    #return render(request, "acento/ejercicio_1/e1.html", context)
+    return redirect("mc_question", slug="acentuacion1", qnum=1)
 
 @login_required
 @require_http_methods(["POST"])
@@ -758,7 +759,8 @@ def exercise3(request: HttpRequest) -> HttpResponse:
     # reordenamos categorías para “ser diferente” por usuario
     cats = CATEGORIES3[:]
     cats.sort(key=lambda c: (hash(request.user.id + hash(run_id + c)) % 10))
-    return render(request, "acento/ejercicio_1/e3.html", {"word": QUESTION3["word"], "categories": cats})
+    #return render(request, "acento/ejercicio_1/e3.html", {"word": QUESTION3["word"], "categories": cats})
+    return redirect("mc_question", slug="acentuacion3", qnum=1)
 
 @login_required
 @require_http_methods(["POST"])
@@ -1957,6 +1959,45 @@ def _ensure_mc_run_id(request):
 #       como HTML seguro.
 
 MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
+    # Ejercicio 1 de acentuación
+    "acentuacion1": {
+        1: {
+            "question": "¿Cuál es la forma correcta?",
+            "options": {
+                "a": "rapido",
+                "b": "rapidó",
+                "c": "rápido",
+                "d": "rapído",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la forma correcta es <strong>rápido</strong>.",
+        },
+        2: {
+            "question": "¿Cuál de estas formas demostrativas está correctamente acentuada?",
+            "options": {
+                "a": "Este libro es mejor que ése.",
+                "b": "Éste libro es mejor que ese.",
+                "c": "Este libro es mejor que ese.",
+                "d": "Éste libro es mejor que ése.",
+            },
+            "correct": "c",
+            "feedback_correct": "¡Correcto!",
+            "feedback_incorrect": "¡Incorrecto!, la oración correcta es <strong>Este libro es mejor que ese.</strong>",
+        },
+        3: {
+            "question": "La palabra exhibición es…",
+            "options": {
+                "a": "Aguda",
+                "b": "Esdrújula",
+                "c": "Llana",
+                "d": "Sobresdrújula",
+            },
+            "correct": "a",
+            "feedback_correct": "¡Así se hace!",
+            "feedback_incorrect": "¡Incorrecto!, la palabra exhibición es <strong>Aguda</strong>",
+        },
+    },
     # Ejercicio 2 de acentuación
     "acentuacion2": {
         1: {
@@ -2160,7 +2201,7 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
                 "a": "La Ley de Educación Superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
                 "b": "La ley de Educación Superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
                 "c": "La Ley de educación superior tiene por objeto la formación personal, académica y profesional de los estudiantes.",
-                "d": "La Ley de Educación Superior tiene por objeto la formación Personal, Académica y Profesional de los estudiantes",
+                "d": "La Ley de Educación Superior tiene por objeto la formación Personal, Académica y Profesional de los estudiantes.",
             },
             # Según el enunciado proporcionado por el usuario, la segunda oración es la correcta.
             "correct": "b",
@@ -2729,6 +2770,7 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
 # Títulos descriptivos para cada ejercicio.  Se muestran en la cabecera de
 # las páginas de pregunta y en la página de resultados.
 EXERCISE_TITLES: Dict[str, str] = {
+    "acentuacion1": "Ejercicio 1 de Acentuación",
     "acentuacion2": "Ejercicio 2 de Acentuación",
     "acentuacion3": "Ejercicio 3 de Acentuación",
     "puntuacion1": "Ejercicio 1 de Puntuación",
@@ -2747,6 +2789,10 @@ EXERCISE_TITLES: Dict[str, str] = {
 # Recomendaciones por ejercicio para mostrar al final en caso de no obtener
 # el 100 %.  Se pueden personalizar con referencias a libros o capítulos.
 EXERCISE_RECOMMENDATIONS: Dict[str, str] = {
+    "acentuacion1": (
+        "Recomendación: repasa el capítulo dedicado a los signos de acentuación en un buen libro de ortografía, "
+        "por ejemplo en la 'Ortografía de la lengua española' de la Real Academia Española."
+    ),
     "acentuacion2": (
         "Recomendación: repasa el capítulo dedicado a los signos de acentuación en un buen libro de ortografía, "
         "por ejemplo en la 'Ortografía de la lengua española' de la Real Academia Española."
@@ -2833,64 +2879,167 @@ def _get_mc_question_context(slug: str, number: int) -> Dict[str, Any]:
     return context
 
 @login_required
-def mc_question_view(request: HttpRequest, slug: str, qnum: int) -> HttpResponse:
-    # Candado de flujo
+def mc_question_view(request, slug, qnum):
+    user = request.user
     unlocks = compute_unlocks(request.user)
 
+    # mismas validaciones que ya tenías...
     if slug == "evaluacionfinal":
         if not unlocks["final_eval"]:
             messages.warning(request, "Primero completá todos los ejercicios de las cuatro unidades.")
             return redirect("guia_aprendizaje")
     else:
-        # Para MCs normales: debe estar habilitado el hito actual
-        needed = MC_TO_PROGRESS.get(slug)  # u2_e1, u3_e2, etc.
+        needed = MC_TO_PROGRESS.get(slug)
         if needed and not unlocks.get(needed, False):
             messages.info(request, "Todavía no se desbloqueó este ejercicio.")
             return redirect("guia_aprendizaje")
-    
+
+    # validar que exista
     if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
         return HttpResponse("Ejercicio o pregunta no encontrada", status=404)
 
-    # Al entrar a la primera pregunta, empezar un run nuevo
+    # al entrar a la 1 empieza un run
     if qnum == 1:
-        request.session.pop('mc_run_id', None)
-    _ensure_mc_run_id(request)  # crea uno si no existe
+        request.session.pop("mc_run_id", None)
+    run_id = _ensure_mc_run_id(request)
 
-    context = _get_mc_question_context(slug, qnum)
+    # 1) RAMA DINÁMICA (banco)
+    if _bank_enabled(slug):
+        # asegurar selección fija para este run
+        sel = _ensure_bank_selection(request, slug)
+        if len(sel) < 3:           # o el número que uses
+            return redirect("guia_aprendizaje")
+
+        try:
+            ex = BankExercise.objects.get(pk=sel[qnum - 1], is_active=True)
+        except BankExercise.DoesNotExist:
+            return HttpResponse("Ejercicio no disponible.", status=404)
+
+        q_data = _qdata_from_bank(ex)
+        context = {
+            "exercise_slug": slug,
+            "exercise_title": EXERCISE_TITLES.get(slug, slug),
+            "trainer_title": "Entrenador",
+            "num": qnum,
+            "question": q_data["question"],
+            "options": q_data["options"],
+            "submit_url": reverse("mc_submit", args=(slug, qnum)),
+            "explain_endpoint": reverse("mc_explain"),
+        }
+        return render(request, "mc/question.html", context)
+
+    # 2) RAMA ESTÁTICA (lo que ya tenías antes)
+    q_data = MC_QUESTIONS[slug][qnum]
+    context = {
+        "exercise_slug": slug,
+        "exercise_title": EXERCISE_TITLES.get(slug, slug),
+        "trainer_title": "Entrenador",
+        "num": qnum,
+        "question": q_data["question"],
+        "options": q_data["options"],      # tu dict A/B/C/D
+        "submit_url": reverse("mc_submit", args=(slug, qnum)),
+        "explain_endpoint": reverse("mc_explain"),
+    }
     return render(request, "mc/question.html", context)
 
 
 
-@require_POST
-@login_required
-def mc_submit_view(request: HttpRequest, slug: str, qnum: int) -> JsonResponse:
-    if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
-        return JsonResponse({"error": "Ejercicio o pregunta no encontrada."}, status=404)
+#En caso de éstatico
 
-    run_id = _ensure_mc_run_id(request)
-    selected_option = request.POST.get("option")
-    if not selected_option:
-        return JsonResponse({"error": "No se recibió ninguna opción."}, status=400)
-
-    q_data = MC_QUESTIONS[slug][qnum]
-    correct_option = q_data["correct"]
-    is_correct = (selected_option == correct_option)
-
-    attempt = MultipleChoiceAttempt.objects.create(
-        user=request.user,
+def _store_mc_result(user, slug, run_id):
+    attempts = MultipleChoiceAttempt.objects.filter(
+        user=user,
         exercise_slug=slug,
-        question_number=qnum,
-        selected_option=selected_option,
-        correct_option=correct_option,
-        is_correct=is_correct,
-        run_id=run_id,                   # ← clave del run
+        run_id=run_id,
     )
 
-    total_questions = len(MC_QUESTIONS.get(slug, {}))
-    next_url = reverse("mc_question", args=(slug, qnum + 1)) if qnum < total_questions else reverse("mc_result", args=(slug,))
+    if _bank_enabled(slug):
+        total_questions = 3   # o el número que uses para el banco
+    else:
+        total_questions = len(MC_QUESTIONS.get(slug, {}))
+
+    correct_answers = sum(1 for a in attempts if a.is_correct)
+    percentage = (correct_answers / total_questions) * 100 if total_questions else 0
+
+    MultipleChoiceResult.objects.update_or_create(
+        user=user,
+        exercise_slug=slug,
+        run_id=run_id,
+        defaults={
+            "total_questions": total_questions,
+            "correct_answers": correct_answers,
+            "percentage": percentage,
+            "recommendation": "",
+        },
+    )
+
+
+@login_required
+@require_POST
+def mc_submit_view(request, slug, qnum):
+    user = request.user
+
+    # 1) asegurar run_id
+    run_id = request.session.get("mc_run_id")
+    if not run_id:
+        import uuid
+        run_id = uuid.uuid4().hex[:12]
+        request.session["mc_run_id"] = run_id
+
+    # 2) opción enviada por el JS
+    selected = request.POST.get("option")
+    if not selected:
+        return JsonResponse({"ok": False, "error": "No se recibió ninguna opción."}, status=400)
+
+    # 3) obtener la pregunta (banco o estática)
+    if _bank_enabled(slug):
+        sel = _ensure_bank_selection(request, slug)   # ← este es tu helper real
+        if qnum < 1 or qnum > len(sel):
+            return JsonResponse({"ok": False, "error": "Pregunta no disponible."}, status=404)
+
+        ex = BankExercise.objects.filter(pk=sel[qnum - 1], is_active=True).first()
+        if not ex:
+            return JsonResponse({"ok": False, "error": "Pregunta no disponible."}, status=404)
+
+        q_data = _qdata_from_bank(ex)
+    else:
+        # preguntas fijas del dict (indexadas por número, no por posición 0)
+        if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
+            return JsonResponse({"ok": False, "error": "Ejercicio o pregunta no encontrada."}, status=404)
+        q_data = MC_QUESTIONS[slug][qnum]
+
+    correct_option = q_data["correct"]
+    is_correct = (selected == correct_option)
+
+    # 4) guardar intento
+    attempt = MultipleChoiceAttempt.objects.create(
+        user=user,
+        exercise_slug=slug,
+        question_number=qnum,
+        selected_option=selected,
+        correct_option=correct_option,
+        is_correct=is_correct,
+        run_id=run_id,
+    )
+
+    # 5) cuántas preguntas tiene este ejercicio
+    if _bank_enabled(slug):
+        total_questions = 3  # o len(sel) si querés hacerlo variable
+    else:
+        total_questions = len(MC_QUESTIONS[slug])
+
+    # 6) mensaje correcto, ahora sí corresponde a la pregunta mostrada
     message = q_data["feedback_correct"] if is_correct else q_data["feedback_incorrect"]
 
+    # 7) armar siguiente URL
+    if qnum >= total_questions:
+        _store_mc_result(user, slug, run_id)
+        next_url = reverse("mc_result", args=[slug])
+    else:
+        next_url = reverse("mc_question", args=[slug, qnum + 1])
+
     return JsonResponse({
+        "ok": True,
         "correct": is_correct,
         "message": message,
         "next_url": next_url,
@@ -2898,15 +3047,9 @@ def mc_submit_view(request: HttpRequest, slug: str, qnum: int) -> JsonResponse:
     })
 
 
-
-
 @login_required
 def mc_explain(request: HttpRequest) -> JsonResponse:
-    """Devuelve una explicación para un intento de un ejercicio de opción múltiple.
 
-    Utiliza la API de OpenAI para generar una explicación personalizada.
-    Si no se dispone de la API, se devuelve una explicación genérica.
-    """
     attempt_id = request.GET.get("attempt_id")
     if not attempt_id:
         return JsonResponse({"error": "Falta attempt_id"}, status=400)
@@ -2917,11 +3060,29 @@ def mc_explain(request: HttpRequest) -> JsonResponse:
     # Obtener datos de la pregunta y las opciones
     slug = attempt.exercise_slug
     qnum = attempt.question_number
-    q_data = MC_QUESTIONS.get(slug, {}).get(qnum)
-    if not q_data:
-        return JsonResponse({"error": "Pregunta no encontrada"}, status=404)
+    #########
+    
+    if _bank_enabled(slug):
+        # misma selección que usaste en mc_question / mc_submit
+        sel = _ensure_bank_selection(request, slug)
+        if qnum < 1 or qnum > len(sel):
+            return JsonResponse({"error": "No se encontró la pregunta del banco."}, status=404)
+
+        ex = BankExercise.objects.filter(pk=sel[qnum - 1], is_active=True).first()
+        if not ex:
+            return JsonResponse({"error": "Pregunta del banco no disponible."}, status=404)
+
+        q_data = _qdata_from_bank(ex)
+    else:
+        # modo estático (como lo tenías)
+        q_data = MC_QUESTIONS.get(slug, {}).get(qnum)
+        if not q_data:
+            return JsonResponse({"error": "Pregunta no encontrada."}, status=404)
+
+    # textos que realmente vio el alumno
     selected_text = q_data["options"].get(attempt.selected_option, "")
     correct_text = q_data["options"].get(q_data["correct"], "")
+    #########
 
     # Construir prompt genérico para OpenAI
     prompt = (
@@ -2993,6 +3154,20 @@ def mc_result_view(request: HttpRequest, slug: str) -> HttpResponse:
         run_id=run_id,
     )
 
+    # Dentro de mc_result_view (después de calcular percentage/guardar result):
+    if _bank_enabled(slug):
+        run_id = request.session.get('mc_run_id') or _ensure_mc_run_id(request)
+        sel = request.session.get(f"bank_selection:{slug}:{run_id}", [])
+        unit = BANK_SLUG_TO_UNIT[slug]
+        for ex_id in sel:
+            StudentExerciseUse.objects.get_or_create(
+                user=request.user, unit=unit, exercise_id=ex_id,
+                defaults={"run_id": run_id}
+            )
+        # limpiar selección al cerrar el run
+        request.session.pop(f"bank_selection:{slug}:{run_id}", None)
+
+    
     # Registrar la actividad en el calendario.  Identificamos el slug para
     # asignar un título amigable según el ejercicio o evaluación final.
     try:
@@ -3642,6 +3817,7 @@ UNIT_CHAINS = {
 # Qué MC slug mapea a qué hito de progreso
 MC_TO_PROGRESS = {
     # Unidad I (puntuación)
+    "acentuacion1": "u1_e1",
     "acentuacion2": "u1_e2",
     "acentuacion3": "u1_final",
     # Unidad II (puntuación)
@@ -3689,3 +3865,240 @@ def compute_unlocks(user):
     # Encuesta: solo si final ya rendido (no importa si repetida)
     unlocked["survey"] = FinalEvalLock.objects.filter(user=user, taken=True).exists()
     return unlocked
+
+######################
+# Rutas para gestión del banco de preguntas (Docente)
+######################
+# views.py (imports)
+import random
+from django.utils import timezone
+from django.core.paginator import Paginator
+from django.db.models import Q
+from .models import BankExercise, StudentExerciseUse, ExerciseUnit, MultipleChoiceAttempt, MultipleChoiceResult
+
+# Slugs existentes → unidad del banco
+BANK_SLUG_TO_UNIT = {
+    # Acentuación
+    "acentuacion1": ExerciseUnit.U1,
+    "acentuacion2": ExerciseUnit.U1,
+    "acentuacion3": ExerciseUnit.U1,
+    # Puntuación
+    "puntuacion1": ExerciseUnit.U2,
+    "puntuacion2": ExerciseUnit.U2,
+    "puntuacion3": ExerciseUnit.U2,
+    # Mayúsculas
+    "mayus1": ExerciseUnit.U3,
+    "mayus2": ExerciseUnit.U3,
+    "mayus3": ExerciseUnit.U3,
+    # Letras
+    "letras1": ExerciseUnit.U4,
+    "letras2": ExerciseUnit.U4,
+    "letras3": ExerciseUnit.U4,
+    # Final
+    "evaluacionfinal": ExerciseUnit.FINAL,
+}
+
+def _bank_enabled(slug: str) -> bool:
+    return slug in BANK_SLUG_TO_UNIT
+
+def _ensure_bank_selection(request, slug: str) -> list[int]:
+    """
+    Guarda en sesión 3 IDs de BankExercise para este slug/run,
+    sin repetir para este estudiante hasta agotar el banco de esa unidad.
+    """
+    run_id = _ensure_mc_run_id(request)
+    sess_key = f"bank_selection:{slug}:{run_id}"
+    sel = request.session.get(sess_key)
+    if sel:
+        return sel
+
+    unit = BANK_SLUG_TO_UNIT[slug]
+    used_ids = set(StudentExerciseUse.objects.filter(user=request.user, unit=unit)
+                   .values_list("exercise_id", flat=True))
+    qs = BankExercise.objects.filter(unit=unit, is_active=True).exclude(id__in=used_ids)
+    total_restantes = qs.count()
+
+    # Si no alcanza para 3, reiniciamos rotación borrando usos previos de esa unidad
+    if total_restantes < 3:
+        StudentExerciseUse.objects.filter(user=request.user, unit=unit).delete()
+        qs = BankExercise.objects.filter(unit=unit, is_active=True)
+        total_restantes = qs.count()
+
+    if total_restantes < 3:
+        # No hay suficientes preguntas en el banco → mensaje y abortar
+        from django.contrib import messages
+        messages.warning(request, "No hay suficientes ejercicios activos en el banco (mínimo 3).")
+        return []
+
+    ids = list(qs.values_list("id", flat=True))
+    random.shuffle(ids)
+    sel = ids[:3]
+    request.session[sess_key] = sel
+    request.session.modified = True
+    return sel
+
+def _qdata_from_bank(ex: BankExercise) -> dict:
+    # armamos las opciones una sola vez
+    options = {
+        "a": ex.option_a,
+        "b": ex.option_b,
+        "c": ex.option_c,
+        "d": ex.option_d,
+    }
+    correct_letter = (ex.correct_option or "a").lower()
+    correct_text = options.get(correct_letter, "").strip()
+
+    return {
+        "question": ex.question,
+        "options": options,
+        "correct": correct_letter,          # seguimos guardando la letra
+        "feedback_correct": "¡Bien hecho!",
+        # ahora mostramos el TEXTO de la opción correcta en negrita
+        "feedback_incorrect": (
+            f"Incorrecto. La respuesta correcta es <strong>{correct_text}</strong>."
+            if correct_text
+            else f"Incorrecto. La respuesta correcta es <strong>{correct_letter.upper()}</strong>."
+        ),
+    }
+
+# views.py — DOCENTE CRUD Banco
+
+
+UNIT_LABELS = {
+    "u1": "Acentuación",
+    "u2": "Puntuación",
+    "u3": "Mayúsculas",
+    "u4": "Letras",
+    "final": "Evaluación final",
+}
+
+# --- helper para sembrar el banco con las preguntas que ya existen en el sistema
+def _seed_bank_from_mc(unit: str, user=None) -> int:
+    slugs_de_la_unidad = [slug for slug, u in BANK_SLUG_TO_UNIT.items() if u.value == unit]
+    creados = 0
+    for slug in slugs_de_la_unidad:
+        preguntas = MC_QUESTIONS.get(slug, {})
+        for qnum, qdata in preguntas.items():
+            enunciado = qdata["question"]
+            opts = qdata["options"]
+
+            # 🔴 antes comparabas solo por question
+            ya_existe = BankExercise.objects.filter(
+                unit=unit,
+                question=enunciado,
+                option_a=opts["a"],
+                option_b=opts["b"],
+                option_c=opts["c"],
+                option_d=opts["d"],
+            ).exists()
+            if ya_existe:
+                continue
+
+            BankExercise.objects.create(
+                unit=unit,
+                question=enunciado,
+                option_a=opts["a"],
+                option_b=opts["b"],
+                option_c=opts["c"],
+                option_d=opts["d"],
+                correct_option=qdata["correct"],
+                is_active=True,
+                created_by=user,
+            )
+            creados += 1
+    return creados
+
+
+
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def banco_list(request, unit: str):
+    if unit not in UNIT_LABELS:
+        return HttpResponse("Unidad inválida.", status=400)
+
+    # 👉 solo si no hay nada en esa unidad, sembramos desde MC_QUESTIONS
+    if not BankExercise.objects.filter(unit=unit).exists():
+        _seed_bank_from_mc(unit, request.user)
+
+    q = request.GET.get("q", "").strip()
+    per = request.GET.get("per", "10")
+
+    qs = BankExercise.objects.filter(unit=unit).order_by("-created_at")
+    if q:
+        qs = qs.filter(
+            Q(question__icontains=q)
+            | Q(option_a__icontains=q)
+            | Q(option_b__icontains=q)
+            | Q(option_c__icontains=q)
+            | Q(option_d__icontains=q)
+        )
+
+    if per == "all":
+        items = list(qs)
+        page_obj = None
+    else:
+        paginator = Paginator(qs, 10)
+        page_obj = paginator.get_page(request.GET.get("page"))
+        items = page_obj.object_list
+
+    return render(request, "menu/docente/banco_list.html", {
+        "unit": unit,
+        "unit_label": UNIT_LABELS[unit],
+        "items": items,
+        "page_obj": page_obj,
+        "q": q,
+        "per": per,
+    })
+
+
+
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def banco_create(request, unit: str):
+    if unit not in UNIT_LABELS:
+        return HttpResponse("Unidad inválida.", status=400)
+    if request.method == "POST":
+        data = request.POST
+        BankExercise.objects.create(
+            unit=unit,
+            question=data.get("question","").strip(),
+            option_a=data.get("option_a","").strip(),
+            option_b=data.get("option_b","").strip(),
+            option_c=data.get("option_c","").strip(),
+            option_d=data.get("option_d","").strip(),
+            correct_option=data.get("correct_option","a"),
+            is_active=bool(data.get("is_active")),
+            created_by=request.user
+        )
+        messages.success(request, "Ejercicio creado.")
+        return redirect("banco_list", unit=unit)
+    return render(request, "menu/docente/banco_form.html", {
+        "mode": "create", "unit": unit, "unit_label": UNIT_LABELS[unit],
+    })
+
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def banco_edit(request, unit: str, pk: int):
+    ex = get_object_or_404(BankExercise, pk=pk, unit=unit)
+    if request.method == "POST":
+        data = request.POST
+        ex.question = data.get("question","").strip()
+        ex.option_a = data.get("option_a","").strip()
+        ex.option_b = data.get("option_b","").strip()
+        ex.option_c = data.get("option_c","").strip()
+        ex.option_d = data.get("option_d","").strip()
+        ex.correct_option = data.get("correct_option","a")
+        ex.is_active = bool(data.get("is_active"))
+        ex.save()
+        messages.success(request, "Ejercicio actualizado.")
+        return redirect("banco_list", unit=unit)
+    return render(request, "menu/docente/banco_form.html", {
+        "mode": "edit", "unit": unit, "unit_label": UNIT_LABELS[unit], "ex": ex,
+    })
+
+@role_login_required(Usuario.DOCENTE, login_url_name="login_docente")
+def banco_delete(request, unit: str, pk: int):
+    ex = get_object_or_404(BankExercise, pk=pk, unit=unit)
+    if request.method == "POST":
+        ex.delete()
+        messages.success(request, "Ejercicio eliminado.")
+        return redirect("banco_list", unit=unit)
+    return render(request, "menu/docente/banco_confirm_delete.html", {"ex": ex, "unit": unit, "unit_label": UNIT_LABELS[unit]})
+

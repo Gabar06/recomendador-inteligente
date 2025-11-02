@@ -112,9 +112,9 @@ urlpatterns = [
     # Ejercicios de opción múltiple genéricos (puntuación, mayúsculas y letras)
     # Se utilizan rutas dinámicas basadas en el identificador del ejercicio
     # (p.ej. 'puntuacion1', 'mayus2', 'letras1') y el número de pregunta.
-    path("mc/<slug:slug>/<int:qnum>/", views.mc_question_view, name="mc_question"),
-    path("mc/<slug:slug>/<int:qnum>/submit/", views.mc_submit_view, name="mc_submit"),
     path("mc/explain/", views.mc_explain, name="mc_explain"),
+    path("mc/<slug:slug>/<int:qnum>/submit/", views.mc_submit_view, name="mc_submit"),
+    path("mc/<slug:slug>/<int:qnum>/", views.mc_question_view, name="mc_question"),
     path("mc/<slug:slug>/result/", views.mc_result_view, name="mc_result"),
     
     #Instrucciones para los ejercicios de opción múltiple
@@ -151,4 +151,12 @@ urlpatterns += [
     path("usuarios/create/", views_evaluaciones.usuario_create, name="usuario_create"),
     path("usuarios/<int:pk>/edit/", views_evaluaciones.usuario_edit, name="usuario_edit"),
     path("usuarios/<int:pk>/delete/", views_evaluaciones.usuario_delete, name="usuario_delete"),
+]
+
+urlpatterns += [
+    # Banco por unidad (Docente)
+    path("docente/banco/<slug:unit>/", views.banco_list, name="banco_list"),
+    path("docente/banco/<slug:unit>/crear/", views.banco_create, name="banco_create"),
+    path("docente/banco/<slug:unit>/<int:pk>/editar/", views.banco_edit, name="banco_edit"),
+    path("docente/banco/<slug:unit>/<int:pk>/eliminar/", views.banco_delete, name="banco_delete"),
 ]

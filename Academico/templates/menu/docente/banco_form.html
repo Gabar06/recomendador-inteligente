@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body %}
+<style>
+  .wrap{max-width:900px; margin:0 auto}
+  .card{background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,.04)}
+  .card-hd{display:flex; align-items:center; gap:10px; margin-bottom:12px}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .grid .full{grid-column:1/-1}
+  label{font-weight:700}
+  input[type=text], textarea, select{width:100%; height:46px; border:1.5px solid #e5e7eb; border-radius:12px; padding:10px 12px; outline:0}
+  textarea{height:120px; resize:vertical}
+  .actions{display:flex; gap:10px; justify-content:flex-end; margin-top:16px}
+  .btn{display:inline-flex; align-items:center; gap:.55rem; padding:10px 14px; border-radius:12px; font-weight:700; border:1px solid #7CC300; background:linear-gradient(180deg,#96da54,#7CC300); color:#fff; text-decoration:none}
+  .btn.out{background:#fff; color:#00471b}
+</style>
+<div class="wrap">
+  <div class="card">
+    <div class="card-hd">
+      <i class="fa-solid fa-database"></i>
+      <h2>{% if mode == "create" %}Agregar ejercicio{% else %}Editar ejercicio{% endif %} — {{ unit_label }}</h2>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="grid">
+        <div class="full">
+          <label>Enunciado</label>
+          <textarea name="question" required>{{ ex.question|default:"" }}</textarea>
+        </div>
+        <div>
+          <label>Opción A</label>
+          <input type="text" name="option_a" value="{{ ex.option_a|default:"" }}" required>
+        </div>
+        <div>
+          <label>Opción B</label>
+          <input type="text" name="option_b" value="{{ ex.option_b|default:"" }}" required>
+        </div>
+        <div>
+          <label>Opción C</label>
+          <input type="text" name="option_c" value="{{ ex.option_c|default:"" }}" required>
+        </div>
+        <div>
+          <label>Opción D</label>
+          <input type="text" name="option_d" value="{{ ex.option_d|default:"" }}" required>
+        </div>
+        <div>
+          <label>Correcta</label>
+          <select name="correct_option">
+            {% for k in "abcd" %}
+              <option value="{{ k }}" {% if ex.correct_option|default:"a" == k %}selected{% endif %}>{{ k|upper }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Activo</label>
+          <select name="is_active">
+            <option value="1" {% if ex.is_active|default:1 %}selected{% endif %}>Sí</option>
+            <option value="0" {% if not ex.is_active|default:1 %}selected{% endif %}>No</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn out" href="{% url 'banco_list' unit=unit %}"><i class="fa-solid fa-arrow-left-long"></i> Volver</a>
+        <button class="btn" type="submit"><i class="fa-regular fa-floppy-disk"></i> Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

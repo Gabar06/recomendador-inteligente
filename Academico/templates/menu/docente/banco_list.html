@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body %}
+<style>
+  :root{ --g-500:#7CC300; --g-700:#00471b; --line:#e5e7eb }
+  .sheet{margin:0 auto; max-width:1200px}
+  .toolbar{display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center}
+  .title h2{margin:0}
+  .searchbar{display:flex; gap:10px; align-items:center}
+  .input-wrap{position:relative}
+  .search-input{height:46px; width:320px; border:1.5px solid var(--line); border-radius:12px; padding:10px 44px 10px 14px; outline:0}
+  .search-btn{position:absolute; right:6px; top:50%; transform:translateY(-50%); height:36px; width:36px; border-radius:10px; border:1.5px solid var(--g-500); background:#fff; color:var(--g-700); cursor:pointer}
+  .per-select{height:46px; border:1.5px solid var(--line); border-radius:12px; padding:0 12px}
+  .tool-buttons{display:flex; align-items:center; gap:12px}
+  .btn{display:inline-flex; align-items:center; gap:.5rem; height:48px; padding:0 16px; border-radius:12px; border:1px solid var(--g-500);
+       background:linear-gradient(180deg,#96da54, var(--g-500)); color:#fff; text-decoration:none; font-weight:700; box-shadow:0 4px 10px rgba(124,195,0,25)}
+  .btn:hover{transform:translateY(-1px)}
+  .btn-mini{display:inline-flex; align-items:center; gap:.45rem; height:38px; padding:0 12px; border-radius:10px; border:1.5px solid var(--g-500); background:#fff; color:var(--g-700); font-weight:700; text-decoration:none; cursor:pointer}
+  .btn-mini.outline{background:#fff}
+  .btn-mini.danger{background:#ef4444; border-color:#ef4444; color:#fff}
+  table{ width:100%; border-collapse:separate; border-spacing:0; min-width:980px; margin-top:12px }
+  th, td{ padding:10px 12px; border-bottom:1px solid var(--line); white-space:nowrap }
+  th{ position:sticky; top:0; background:linear-gradient(180deg,#8dd43a,#7CC300); color:#fff; font-weight:800 }
+  td:first-child, th:first-child{ position:sticky; left:0 }
+</style>
+
+<div class="sheet">
+  <div class="toolbar">
+    <div class="title"><h2>Banco de Ejercicios — {{ unit_label }}</h2></div>
+
+    <form method="get" action="" class="searchbar" role="search">
+      <div class="input-wrap">
+        <input class="search-input" type="search" name="q" value="{{ q }}" placeholder="Buscar enunciado u opciones…">
+        <button class="search-btn" type="submit" aria-label="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </div>
+      <select class="per-select" name="per" onchange="this.form.submit()">
+        <option value="10" {% if per != 'all' %}selected{% endif %}>10 por página</option>
+        <option value="all" {% if per == 'all' %}selected{% endif %}>Ver todo</option>
+      </select>
+    </form>
+
+    <div class="tool-buttons">
+      <a class="btn" href="{% url 'banco_create' unit=unit %}"><i class="fa-solid fa-plus"></i> Agregar ejercicio</a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left">Enunciado</th>
+          <th>Correcta</th>
+          <th>Activo</th>
+          <th>Creado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+        <tr>
+          <td style="text-align:left; max-width:650px; overflow:hidden; text-overflow:ellipsis;">
+            {{ it.question }}
+          </td>
+          <td style="text-align:center">{{ it.correct_option|upper }}</td>
+          <td style="text-align:center">{{ it.is_active|yesno:"Sí,No" }}</td>
+          <td style="text-align:center">{{ it.created_at|date:"d/m/Y H:i" }}</td>
+          <td style="text-align:center">
+            <a class="btn-mini outline" href="{% url 'banco_edit' unit=unit pk=it.id %}"><i class="fa-regular fa-pen-to-square"></i> Editar</a>
+            <a class="btn-mini danger" href="{% url 'banco_delete' unit=unit pk=it.id %}"><i class="fa-regular fa-trash-can"></i> Eliminar</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center; padding:20px">No hay ejercicios aún.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if per != 'all' %}
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px">
+      {% if page_obj.has_previous %}
+        <a class="btn-mini" href="?q={{ q }}&per={{ per }}&page={{ page_obj.previous_page_number }}">&larr; Anterior</a>
+      {% endif %}
+      <span style="align-self:center">Página {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a class="btn-mini" href="?q={{ q }}&per={{ per }}&page={{ page_obj.next_page_number }}">Siguiente &rarr;</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+      <div class="text-center">
+        <a href="{% url 'guia_aprendizaje' %}" class="btn primary">Regresar a la guía</a>
+      </div>
+</div>
+{% endblock %}
