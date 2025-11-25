@@ -171,11 +171,11 @@ if not DEBUG:
 
 #########################
 #########################
-
+"""
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/'  # o donde quieras redirigir luego del login
 MEDIA_URL = '/libros/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/libros')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/libros')"""
 
  # Para desarrollo, después hazlo seguro
 
