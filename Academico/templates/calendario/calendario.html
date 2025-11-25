@@ -1,96 +1,188 @@
-{% extends './calendario_base.html' %}
+{% extends '../base.html' %}
 {% load static %}
 
 {% block title %}Calendario de Actividades{% endblock %}
 
-{% block content %}
+{% block body %}
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
 <style>
-  /* Distribución en columnas */
-  .cal-wrap{display:grid;grid-template-columns:420px 1fr;gap:18px;width:100%}
-  /* Panel lateral como tarjeta */
-  .side{border:1px solid #dae4f2;border-radius:10px;background:#fff;padding:12px;
-        box-shadow:0 8px 24px rgba(0,0,0,.06)}
-  .side-title{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:800;color:#2a5686}
-  .side-date{font-weight:700;color:#2a5686;margin:6px 0 10px}
-  /* Tabla dentro del panel lateral */
-  .side-table{border:1px solid #e5ebf5;border-radius:8px;overflow:visible;min-width: 660px;}
-  .side-table .head-row{display:grid;grid-template-columns: 1fr 120px 120px;
-                        background:#eff4fb;font-weight:800;color:#2a5686;border-bottom:1px solid #e5ebf5}
-  .side-table .head-row .col{padding:10px 12px}
-
-  /* Dale un mínimo a las columnas para que no se aplasten */
-  .side-table .head-row,
-  .side-table .row{
-    grid-template-columns: minmax(280px,1fr) 140px 140px;
+  /* Contenedor principal del calendario + actividades */
+  .cal-wrap{
+    display: grid;
+    grid-template-columns: 420px minmax(0, 1fr);
+    gap: 24px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 2.5rem auto 2.5rem;   /* 🔹 espacio arriba/abajo respecto al navbar y al footer */
   }
 
-  /* Mostramos el título completo al hacer scroll, sin elipsis */
+  /* Panel lateral (Actividades del día) */
+  .side{
+    border: 1px solid #dae4f2;
+    border-radius: 10px;
+    background: #fff;
+    padding: 16px 14px;           /* 🔹 un poco más de “aire” interno */
+    box-shadow: 0 8px 24px rgba(0,0,0,.06);
+  }
+
+  .side-title{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 800;
+    color: #2a5686;
+  }
+
+  .side-date{
+    font-weight: 700;
+    color: #2a5686;
+    margin: 4px 0 12px;
+  }
+
+  /* Tabla dentro del panel lateral */
+  .side-table{
+    border: 1px solid #e5ebf5;
+    border-radius: 8px;
+    min-width: 660px;
+    background: #fff;
+  }
+
+  .side-table .head-row{
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) 140px 140px;
+    background: #eff4fb;
+    font-weight: 800;
+    color: #2a5686;
+    border-bottom: 1px solid #e5ebf5;
+  }
+
+  .side-table .head-row .col{
+    padding: 10px 12px;
+  }
+
+  .side-table .row{
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) 140px 140px;
+    border-bottom: 1px dashed #e9eef5;
+    align-items: flex-start;
+  }
+
+  .side-table .row:last-child{
+    border-bottom: 0;
+  }
+
+  .side-table .row .col{
+    padding: 10px 12px;
+  }
+
+  .side-table .row.empty{
+    padding: 12px;
+    color: #6b7485;
+  }
+
   .side-table .col.ev{
     white-space: nowrap;
-    overflow: visible;
-    text-overflow: clip;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-      
 
-  .side-table .row{display:grid;grid-template-columns: 1fr 120px 120px;
-                   border-bottom:1px dashed #e9eef5;align-items:center}
-  .side-table .row:last-child{border-bottom:0}
-  .side-table .row .col{padding:10px 12px}
-  .side-table .row.empty{padding:12px;color:#6b7485}
-  .side-table .col.ev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .side-table .col.t{text-align:center}
-  /* Estilos para el título y descripción dentro de la columna de evento */
-  .side-table .event-title{font-weight:600;}
-  .side-table .event-desc{font-size:0.8rem;color:#6b7485;}
-  
-  /* Contenedor con scroll horizontal */
+  .side-table .col.t{
+    text-align: center;
+  }
+
+  .side-table .event-title{
+    font-weight: 600;
+  }
+
+  .side-table .event-desc{
+    font-size: 0.8rem;
+    color: #6b7485;
+  }
+
+  /* Scroll horizontal para la tabla cuando se pasa del ancho del panel */
   .side-scroll{
-    overflow-x:auto;            /* la clave */
-    overflow-y:visible;
+    overflow-x: auto;
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
-    padding-bottom:6px;         /* espacio para la barra */
+    padding-bottom: 6px;
   }
 
-  /* Mejora la scrollbar (opcional) */
-  .side-scroll::-webkit-scrollbar{ height:8px }
+  .side-scroll::-webkit-scrollbar{
+    height: 8px;
+  }
+
   .side-scroll::-webkit-scrollbar-thumb{
-    background:#c7d4e6; border-radius:999px
+    background: #c7d4e6;
+    border-radius: 999px;
   }
 
+  /* Contenedor del calendario (derecha) */
+  #calendar{
+    background: #fff;
+    border: 1px solid #d9e3ef;
+    border-radius: 12px;
+    padding: 16px 14px 18px;      /* 🔹 más padding: se ve menos apretado */
+    box-shadow: 0 10px 28px rgba(0,0,0,.08);
+  }
 
-  /* Contenedor del calendario */
-  #calendar{background:#fff;border:1px solid #d9e3ef;border-radius:12px;padding:8px;
-            box-shadow:0 10px 28px rgba(0,0,0,.08)}
-  /* Estilos de la barra del calendario */
+  /* Barra azul del calendario (FullCalendar) */
   .fc .fc-toolbar.fc-header-toolbar{
-    background:linear-gradient(180deg,#2f68a8,#2a5686);
-    color:#fff;border-radius:10px;padding:10px 16px;margin-bottom:8px
+    background: linear-gradient(180deg,#2f68a8,#2a5686);
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 12px;          /* 🔹 separa la barra de las celdas */
   }
-  .fc .fc-toolbar-title{font-size:1.4rem;font-weight:800}
-  /* Estilo de los eventos como badge (usamos fc-daygrid-event) */
-  .fc-daygrid-event{border:none;background:#2a5686;color:#fff;border-radius:999px;padding:2px 7px;
-                    font-weight:700;font-size:.75rem;display:inline-block}
+
+  .fc .fc-toolbar-title{
+    font-size: 1.4rem;
+    font-weight: 800;
+  }
+
+  /* Quitar links azules horribles dentro del calendario */
+  .fc a{
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Badge redondo de cantidad de actividades por día */
+  .fc-daygrid-event{
+    border: none;
+    background: #2a5686;
+    color: #fff;
+    border-radius: 999px;
+    padding: 2px 7px;
+    font-weight: 700;
+    font-size: .75rem;
+    display: inline-block;
+  }
 </style>
 
-<div class="cal-wrap">
-  <aside class="side">
-    <div class="side-title">
-      <span>👤</span>
-      <h3>Actividades del día</h3>
-    </div>
-    <div id="side-date" class="side-date">Seleccioná una fecha</div>
-    
-    <div class="side-scroll">
-      <div id="side-list" class="side-table">
-        <div class="row empty">—</div>
+
+
+<main class="site-main">
+
+  <div class="cal-wrap">
+    <aside class="side">
+      <div class="side-title">
+        <span>👤</span>
+        <h3>Actividades del día</h3>
       </div>
-    </div>
+      <div id="side-date" class="side-date">Seleccioná una fecha</div>
 
-  </aside>
+      <div class="side-scroll">
+        <div id="side-list" class="side-table">
+          <div class="row empty">—</div>
+        </div>
+      </div>
+    </aside>
 
-  <div id="calendar"></div>
-</div>
+    <div id="calendar"></div>
+  </div>
+
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script>
@@ -106,15 +198,37 @@ document.addEventListener('DOMContentLoaded', function() {
     height: 'auto',
     headerToolbar: { left: 'prev', center: 'title', right: 'next' },
     events: '{% url "calendario_events" %}',
-    // Representamos cada día con el número de actividades realizadas
+
+    // ✅ Poner la primera letra del mes en mayúscula
+    datesSet: function(info) {
+    const titleEl = document.querySelector('.fc-toolbar-title');
+    if (!titleEl) return;
+
+    // Tomamos la fecha actual de la vista
+    const fecha = info.view.currentStart;
+    const year = fecha.getFullYear();
+    const mes = fecha.toLocaleDateString('es-ES', { month: 'long' });
+
+    // Primera letra del mes en mayúscula
+    const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
+
+    // Sobrescribimos el título (no concatenamos nada)
+    titleEl.textContent = `${mesCap} de ${year}`;
+  },
+
+    // Badge con el número de actividades
     eventContent: function(arg){
       return { html: `<span class="fc-daygrid-event">${arg.event.title}</span>` };
     },
+
     dateClick: function(info){
       const d = info.date;
       const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      // Mostrar la fecha seleccionada en español
-      sideDate.textContent = d.toLocaleDateString('es-PY', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+      sideDate.textContent = d.toLocaleDateString('es-PY', {
+        weekday:'long', year:'numeric', month:'long', day:'numeric'
+      });
+
       loadDay(iso);
     }
   });
