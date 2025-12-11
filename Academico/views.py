@@ -2907,8 +2907,14 @@ def mc_question_view(request, slug, qnum):
     if _bank_enabled(slug):
         # asegurar selección fija para este run
         sel = _ensure_bank_selection(request, slug)
-        if len(sel) < 3:           # o el número que uses
+        if not sel:
+            # ya se mostró el mensaje de "no hay suficientes ejercicios"
             return redirect("guia_aprendizaje")
+
+        # validar rango de pregunta para este run
+        if qnum < 1 or qnum > len(sel):
+            return HttpResponse("Ejercicio no disponible.", status=404)
+
 
         try:
             ex = BankExercise.objects.get(pk=sel[qnum - 1], is_active=True)
@@ -2927,6 +2933,7 @@ def mc_question_view(request, slug, qnum):
             "explain_endpoint": reverse("mc_explain"),
         }
         return render(request, "mc/question.html", context)
+
 
     # 2) RAMA ESTÁTICA (lo que ya tenías antes)
     q_data = MC_QUESTIONS[slug][qnum]
@@ -2954,7 +2961,8 @@ def _store_mc_result(user, slug, run_id):
     )
 
     if _bank_enabled(slug):
-        total_questions = 3   # o el número que uses para el banco
+        # En modo banco usamos cuántas preguntas se contestaron en este run
+        total_questions = attempts.count()
     else:
         total_questions = len(MC_QUESTIONS.get(slug, {}))
 
@@ -2974,6 +2982,7 @@ def _store_mc_result(user, slug, run_id):
     )
 
 
+
 @login_required
 @require_POST
 def mc_submit_view(request, slug, qnum):
@@ -2989,23 +2998,45 @@ def mc_submit_view(request, slug, qnum):
     # 2) opción enviada por el JS
     selected = request.POST.get("option")
     if not selected:
-        return JsonResponse({"ok": False, "error": "No se recibió ninguna opción."}, status=400)
+        return JsonResponse(
+            {"ok": False, "error": "No se recibió ninguna opción."},
+            status=400,
+        )
+
+    bank_sel = None
 
     # 3) obtener la pregunta (banco o estática)
     if _bank_enabled(slug):
-        sel = _ensure_bank_selection(request, slug)   # ← este es tu helper real
-        if qnum < 1 or qnum > len(sel):
-            return JsonResponse({"ok": False, "error": "Pregunta no disponible."}, status=404)
+        bank_sel = _ensure_bank_selection(request, slug)
+        if not bank_sel:
+            return JsonResponse(
+                {"ok": False, "error": "No hay suficientes preguntas en el banco."},
+                status=400,
+            )
 
-        ex = BankExercise.objects.filter(pk=sel[qnum - 1], is_active=True).first()
+        if qnum < 1 or qnum > len(bank_sel):
+            return JsonResponse(
+                {"ok": False, "error": "Pregunta no disponible."},
+                status=404,
+            )
+
+        ex = BankExercise.objects.filter(
+            pk=bank_sel[qnum - 1],
+            is_active=True,
+        ).first()
         if not ex:
-            return JsonResponse({"ok": False, "error": "Pregunta no disponible."}, status=404)
-
+            return JsonResponse(
+                {"ok": False, "error": "Pregunta no disponible."},
+                status=404,
+            )
         q_data = _qdata_from_bank(ex)
     else:
         # preguntas fijas del dict (indexadas por número, no por posición 0)
         if slug not in MC_QUESTIONS or qnum not in MC_QUESTIONS[slug]:
-            return JsonResponse({"ok": False, "error": "Ejercicio o pregunta no encontrada."}, status=404)
+            return JsonResponse(
+                {"ok": False, "error": "Ejercicio o pregunta no encontrada."},
+                status=404,
+            )
         q_data = MC_QUESTIONS[slug][qnum]
 
     correct_option = q_data["correct"]
@@ -3024,27 +3055,34 @@ def mc_submit_view(request, slug, qnum):
 
     # 5) cuántas preguntas tiene este ejercicio
     if _bank_enabled(slug):
-        total_questions = 3  # o len(sel) si querés hacerlo variable
+        total_questions = len(bank_sel) if bank_sel is not None else 0
     else:
         total_questions = len(MC_QUESTIONS[slug])
 
-    # 6) mensaje correcto, ahora sí corresponde a la pregunta mostrada
-    message = q_data["feedback_correct"] if is_correct else q_data["feedback_incorrect"]
+    # 6) mensaje correcto / incorrecto
+    message = (
+        q_data["feedback_correct"]
+        if is_correct
+        else q_data["feedback_incorrect"]
+    )
 
-    # 7) armar siguiente URL
+    # 7) decidir siguiente URL
     if qnum >= total_questions:
         _store_mc_result(user, slug, run_id)
         next_url = reverse("mc_result", args=[slug])
     else:
         next_url = reverse("mc_question", args=[slug, qnum + 1])
 
-    return JsonResponse({
-        "ok": True,
-        "correct": is_correct,
-        "message": message,
-        "next_url": next_url,
-        "attempt_id": attempt.id,
-    })
+    return JsonResponse(
+        {
+            "ok": True,
+            "correct": is_correct,
+            "message": message,
+            "next_url": next_url,
+            "attempt_id": attempt.id,
+        }
+    )
+
 
 
 @login_required
@@ -3856,11 +3894,11 @@ def compute_unlocks(user):
         # Cada paso depende del inmediatamente anterior
         for prev, cur in zip(chain, chain[1:]):
             unlocked[cur] = has_completed(user, prev)
-
+    #AQUI SE REALIZA EL BLOQUWEO DE LA EVALUACION FINAL Y ENCUESTA QUITAR # PARA BLOQUEAR linea 3900 y 3901
     # Final global: requiere todos los ejercicios (no instrucciones) y no haberlo rendido aún
     ready_for_final = all(has_completed(user, s) for s in REQUIRED_BEFORE_FINAL)
-    already_taken = FinalEvalLock.objects.filter(user=user, taken=True).exists()
-    unlocked["final_eval"] = ready_for_final and not already_taken
+    #already_taken = FinalEvalLock.objects.filter(user=user, taken=True).exists()
+    unlocked["final_eval"] = ready_for_final #and not already_taken
 
     # Encuesta: solo si final ya rendido (no importa si repetida)
     unlocked["survey"] = FinalEvalLock.objects.filter(user=user, taken=True).exists()
@@ -3901,10 +3939,24 @@ BANK_SLUG_TO_UNIT = {
 def _bank_enabled(slug: str) -> bool:
     return slug in BANK_SLUG_TO_UNIT
 
+def _bank_questions_per_run(slug: str) -> int:
+    """
+    Cantidad de preguntas del banco que se muestran por intento (run)
+    según el slug del ejercicio.
+    """
+    if slug == "evaluacionfinal":
+        return 25          # Evaluación Final: 25 preguntas
+    return 3               # Ejercicios de unidad: 3 preguntas
+
+
 def _ensure_bank_selection(request, slug: str) -> list[int]:
     """
-    Guarda en sesión 3 IDs de BankExercise para este slug/run,
+    Guarda en sesión N IDs de BankExercise para este slug/run,
     sin repetir para este estudiante hasta agotar el banco de esa unidad.
+
+    N depende del ejercicio:
+      - 3 para las unidades
+      - 25 para la Evaluación Final
     """
     run_id = _ensure_mc_run_id(request)
     sess_key = f"bank_selection:{slug}:{run_id}"
@@ -3913,29 +3965,38 @@ def _ensure_bank_selection(request, slug: str) -> list[int]:
         return sel
 
     unit = BANK_SLUG_TO_UNIT[slug]
-    used_ids = set(StudentExerciseUse.objects.filter(user=request.user, unit=unit)
-                   .values_list("exercise_id", flat=True))
+    target = _bank_questions_per_run(slug)
+
+    used_ids = set(
+        StudentExerciseUse.objects
+        .filter(user=request.user, unit=unit)
+        .values_list("exercise_id", flat=True)
+    )
+
     qs = BankExercise.objects.filter(unit=unit, is_active=True).exclude(id__in=used_ids)
     total_restantes = qs.count()
 
-    # Si no alcanza para 3, reiniciamos rotación borrando usos previos de esa unidad
-    if total_restantes < 3:
+    # Si no alcanza para N, reiniciamos la rotación borrando usos previos
+    if total_restantes < target:
         StudentExerciseUse.objects.filter(user=request.user, unit=unit).delete()
         qs = BankExercise.objects.filter(unit=unit, is_active=True)
         total_restantes = qs.count()
 
-    if total_restantes < 3:
-        # No hay suficientes preguntas en el banco → mensaje y abortar
+    if total_restantes < target:
         from django.contrib import messages
-        messages.warning(request, "No hay suficientes ejercicios activos en el banco (mínimo 3).")
+        messages.warning(
+            request,
+            f"No hay suficientes ejercicios activos en el banco (mínimo {target})."
+        )
         return []
 
     ids = list(qs.values_list("id", flat=True))
     random.shuffle(ids)
-    sel = ids[:3]
+    sel = ids[:target]
     request.session[sess_key] = sel
     request.session.modified = True
     return sel
+
 
 def _qdata_from_bank(ex: BankExercise) -> dict:
     # armamos las opciones una sola vez
