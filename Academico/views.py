@@ -2414,7 +2414,7 @@ MC_QUESTIONS: Dict[str, Dict[int, Dict[str, Any]]] = {
                 "c": "Se requieren precisión y expresión en los informes; conozco el proceso y los peces del estanque; las luses del pasillo fallan a veces.",
                 "d": "Se requieren presición y espresión en los informes; conozco el procezo y los peces del estanque; las luces del pasillo fallan a veces.",
             },
-            "correct": "b",
+            "correct": "a",
             "feedback_correct": "¡Correcto!",
             "feedback_incorrect": "¡Incorrecto!, la <strong>segunda oración</strong> es la correcta.",
         },
