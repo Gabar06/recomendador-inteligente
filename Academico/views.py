@@ -3897,8 +3897,8 @@ def compute_unlocks(user):
     #AQUI SE REALIZA EL BLOQUWEO DE LA EVALUACION FINAL Y ENCUESTA QUITAR # PARA BLOQUEAR linea 3900 y 3901
     # Final global: requiere todos los ejercicios (no instrucciones) y no haberlo rendido aún
     ready_for_final = all(has_completed(user, s) for s in REQUIRED_BEFORE_FINAL)
-    #already_taken = FinalEvalLock.objects.filter(user=user, taken=True).exists()
-    unlocked["final_eval"] = ready_for_final #and not already_taken
+    already_taken = FinalEvalLock.objects.filter(user=user, taken=True).exists()
+    unlocked["final_eval"] = ready_for_final and not already_taken
 
     # Encuesta: solo si final ya rendido (no importa si repetida)
     unlocked["survey"] = FinalEvalLock.objects.filter(user=user, taken=True).exists()
