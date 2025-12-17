@@ -304,6 +304,9 @@ def evaluaciones_report(request):
         # Utilizamos ReportLab y la clase Canvas para generar un informe
         # con un diseño similar al de la segunda imagen proporcionada.
         c = rl_canvas.Canvas(buffer, pagesize=A4)
+        #Titulo de la página del pdf
+        c.setTitle("Reporte de Evaluaciones")
+        
         width, height = A4
 
         # Definimos márgenes y configuramos colores principales
@@ -501,11 +504,13 @@ def evaluaciones_report(request):
             plt.close(fig)
         pdf_data = buffer.getvalue()
         buffer.close()
+        
     # Devolvemos el PDF como respuesta HTTP
     from django.http import HttpResponse
-    response = HttpResponse(pdf_data, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="reporte_evaluaciones.pdf"'
+    response = HttpResponse(pdf_data, content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="Reporte_de_Evaluaciones.pdf"'
     return response
+
 
 #########################################
 # -----------------------------------------------------------------------------
@@ -690,13 +695,13 @@ def evaluaciones_docente_report(request):
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib import colors
         from reportlab.lib.units import mm
-
+        
         # Paleta
         GREEN    = colors.HexColor('#7CC300')
         DARK     = colors.HexColor('#00471b')
         BAND     = colors.HexColor('#e6f4d7')  # banda de cabecera (suave)
         STRIPE   = colors.HexColor('#f5fdf0')  # cebreado filas
-
+    
         # Doc
         doc = SimpleDocTemplate(
             buffer, pagesize=A4,
@@ -717,6 +722,12 @@ def evaluaciones_docente_report(request):
         # Encabezado: banda + info del educador
         def _header(canvas, doc):
             canvas.saveState()
+            # 🔑 METADATA DEL PDF
+            canvas.setTitle("Reporte de Evaluaciones - Docente")
+            canvas.setAuthor("Sistema Académico")
+            canvas.setSubject("Reporte General de Evaluaciones")
+            
+            
             # Banda verde clara
             x = doc.leftMargin
             w = W - doc.leftMargin - doc.rightMargin
@@ -1080,6 +1091,12 @@ def evaluaciones_administrador_report(request):
 
         def _header(canvas, doc):
             canvas.saveState()
+            
+            # 🔑 METADATA
+            canvas.setTitle("Reporte de Evaluaciones - Administrador")
+            canvas.setAuthor("Sistema Académico")
+            canvas.setSubject("Reporte Global de Evaluaciones")
+            
             x = doc.leftMargin
             w = W - doc.leftMargin - doc.rightMargin
             canvas.setFillColor(colors.HexColor("#e6f4d7"))
