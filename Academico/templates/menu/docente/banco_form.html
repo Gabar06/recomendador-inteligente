@@ -55,7 +55,7 @@
           <label>Activo</label>
           <select name="is_active">
             <option value="1" {% if ex.is_active|default:1 %}selected{% endif %}>Sí</option>
-            <option value="0" {% if not ex.is_active|default:1 %}selected{% endif %}>No</option>
+            <option value="0" {% if not ex.is_active|default:0 %}selected{% endif %}>No</option>
           </select>
         </div>
       </div>

@@ -4126,7 +4126,7 @@ def banco_create(request, unit: str):
             option_c=data.get("option_c","").strip(),
             option_d=data.get("option_d","").strip(),
             correct_option=data.get("correct_option","a"),
-            is_active=bool(data.get("is_active")),
+            is_active = request.POST.get("is_active") == "1",
             created_by=request.user
         )
         messages.success(request, "Ejercicio creado.")
@@ -4146,7 +4146,7 @@ def banco_edit(request, unit: str, pk: int):
         ex.option_c = data.get("option_c","").strip()
         ex.option_d = data.get("option_d","").strip()
         ex.correct_option = data.get("correct_option","a")
-        ex.is_active = bool(data.get("is_active"))
+        ex.is_active = request.POST.get("is_active") == "1"
         ex.save()
         messages.success(request, "Ejercicio actualizado.")
         return redirect("banco_list", unit=unit)
