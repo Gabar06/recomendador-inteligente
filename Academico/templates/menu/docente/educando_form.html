@@ -58,10 +58,6 @@
     </div>
 
     <div class="card-bd">
-      {# mensajes del backend (errores/ok) #}
-      {% if messages %}
-        {% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}
-      {% endif %}
 
       <form method="post" autocomplete="off">
         {% csrf_token %}
