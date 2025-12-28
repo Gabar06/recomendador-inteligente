@@ -28,6 +28,13 @@
       </div>
 
       <div class="field">
+        <label for="id_fecha_nacimiento">Fecha de nacimiento</label>
+        {{ form.fecha_nacimiento }}
+        <div class="help">Selecciona tu fecha de nacimiento.</div>
+        {% for error in form.fecha_nacimiento.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}
+      </div>
+
+      <div class="field">
         {{ form.email.label_tag }}
         {{ form.email }}
         {% for error in form.email.errors %}<small style="color:#ffd4d4">{{ error }}</small>{% endfor %}

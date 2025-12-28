@@ -67,15 +67,21 @@
             <label for="cedula">Cédula</label>
             <i class="icon-in fa-solid fa-id-card"></i>
             <input id="cedula" name="cedula" class="input" type="text"
-                   value="{{ u.cedula|default:'' }}" required>
+              value="{{ u.cedula|default:'' }}" required
+              pattern="\d*" inputmode="numeric" maxlength="20"
+              placeholder="Solo dígitos">
+              <small class="help">Sin puntos ni guiones. Solo números.</small>
+          </div>
+          
+          <!-- nuevo campo fecha -->
+          <div class="field">
+            <label for="fecha_nacimiento">Fecha de nacimiento</label>
+            <i class="icon-in fa-solid fa-cake-candles"></i>
+            <input id="fecha_nacimiento" name="fecha_nacimiento" class="input" type="date"
+                  value="{{ u.fecha_nacimiento|date:'Y-m-d' }}">
+            <!--<div class="help">Selecciona la fecha. (opcional)</div>-->
           </div>
 
-          <div class="field">
-            <label for="email">Email</label>
-            <i class="icon-in fa-regular fa-envelope"></i>
-            <input id="email" name="email" class="input" type="email"
-                   value="{{ u.email|default:'' }}" required>
-          </div>
 
           <div class="field">
             <label for="nombre">Nombre</label>
@@ -89,6 +95,13 @@
             <i class="icon-in fa-regular fa-user"></i>
             <input id="apellido" name="apellido" class="input" type="text"
                    value="{{ u.apellido|default:'' }}" required>
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <i class="icon-in fa-regular fa-envelope"></i>
+            <input id="email" name="email" class="input" type="email"
+                   value="{{ u.email|default:'' }}" required>
           </div>
 
           {% if mode == "create" %}
@@ -105,11 +118,12 @@
               <input id="password2" name="password2" class="input" type="password" required>
             </div>
           {% else %}
-            <div class="field" style="grid-column:1/-1">
+            <!--<div class="field" style="grid-column:1/-1">
               <label for="password">Nueva contraseña <span class="help">(opcional)</span></label>
               <i class="icon-in fa-solid fa-key"></i>
               <input id="password" name="password" class="input" type="password" placeholder="Deja vacío para mantener la actual">
-            </div>
+            </div>-->
+
           {% endif %}
         </div>
 
@@ -126,4 +140,28 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const cedInput = document.getElementById('cedula');
+  if (cedInput){
+    cedInput.addEventListener('input', function(e){
+      // elimina cualquier caracter que no sea dígito
+      this.value = this.value.replace(/\D+/g, '');
+    });
+  }
+
+  const fecha = document.getElementById('fecha_nacimiento');
+  if (fecha){
+    // opcional: limitar fecha máxima a hoy - 5 años (ejemplo)
+    const hoy = new Date();
+    const anoMin = new Date(hoy.getFullYear()-5, hoy.getMonth(), hoy.getDate());
+    fecha.max = hoy.toISOString().split('T')[0];
+    // si querés forzar mínima edad:
+    // fecha.max = anoMin.toISOString().split('T')[0];
+  }
+});
+</script>
+
+
 {% endblock %}

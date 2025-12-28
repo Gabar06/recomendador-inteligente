@@ -494,6 +494,7 @@ def _register_role(request, role, title):
     if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
+            fecha_nac = form.cleaned_data.get("fecha_nacimiento")
             user = Usuario.objects.create_user(
                 cedula=form.cleaned_data['cedula'],
                 email=form.cleaned_data['email'],
@@ -502,12 +503,16 @@ def _register_role(request, role, title):
                 role=role,
                 password=form.cleaned_data['password1'],
             )
+            if fecha_nac:
+                user.fecha_nacimiento = fecha_nac
+                user.save()
+            
             if role == Usuario.DOCENTE:
-                Docente.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido)
+                Docente.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido, fecha_nacimiento=fecha_nac)
             elif role == Usuario.ADMINISTRADOR:
-                Administrador.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido)
+                Administrador.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido, fecha_nacimiento=fecha_nac)
             else:
-                Estudiante.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido)
+                Estudiante.objects.create(user=user, cedula=user.cedula, nombre=user.nombre, apellido=user.apellido, fecha_nacimiento=fecha_nac)
         
             messages.success(request, "Cuenta creada. Ya podés iniciar sesión.")
             return redirect("login_docente" if role == Usuario.DOCENTE else "login_estudiante" if role == Usuario.ESTUDIANTE else "login_administrador")

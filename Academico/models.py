@@ -4,13 +4,15 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 from django.conf import settings
-
+from django.core.validators import RegexValidator
 
 
 #########################
 
 # Create your models here.
 
+# validator global
+solo_numeros = RegexValidator(r'^\d+$', message='La cédula debe contener solo dígitos.')
 
 CURSOS = [
     ('1', '1er Curso'),
@@ -95,10 +97,17 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     ADMINISTRADOR = "ADMINISTRADOR"
     ROLE_CHOICES = [(DOCENTE, "Docente"), (ESTUDIANTE, "Estudiante"),(ADMINISTRADOR, "Administrador")]
 
-    cedula = models.CharField("Cédula de Identidad", max_length=20, unique=True)
+    cedula = models.CharField(
+        "Cédula de Identidad",
+        max_length=20,
+        unique=True,
+        validators=[solo_numeros],   # <-- validación servidor
+        help_text="Solo números, sin puntos ni guiones."
+    )
     email = models.EmailField("Correo Electrónico", unique=True)
     nombre = models.CharField(max_length=80)
     apellido = models.CharField(max_length=80)
+    fecha_nacimiento = models.DateField("Fecha de Nacimiento", null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     is_active = models.BooleanField(default=True)
     is_staff  = models.BooleanField(default=False)
@@ -128,18 +137,21 @@ class Docente(models.Model):
     cedula = models.CharField(max_length=20, unique=True, db_index=True)
     nombre = models.CharField(max_length=80)
     apellido = models.CharField(max_length=80)
+    fecha_nacimiento = models.DateField("Fecha de Nacimiento", null=True, blank=True)
 
 class Estudiante(models.Model):
     user = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='estudiante')
     cedula = models.CharField(max_length=20, unique=True, db_index=True)
     nombre = models.CharField(max_length=80)
     apellido = models.CharField(max_length=80)
+    fecha_nacimiento = models.DateField("Fecha de Nacimiento", null=True, blank=True)
 
 class Administrador(models.Model):
     user = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='administrador')
     cedula = models.CharField(max_length=20, unique=True, db_index=True)
     nombre = models.CharField(max_length=80)
     apellido = models.CharField(max_length=80)
+    fecha_nacimiento = models.DateField("Fecha de Nacimiento", null=True, blank=True)
 
 
 #######################

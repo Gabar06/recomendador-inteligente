@@ -824,6 +824,7 @@ def educando_create(request):
         nombre = request.POST.get("nombre", "").strip()
         apellido = request.POST.get("apellido", "").strip()
         email = request.POST.get("email", "").strip()
+        fecha_nacimiento = request.POST.get("fecha_nacimiento")
         password1 = request.POST.get("password1", "")
         password2 = request.POST.get("password2", "")
 
@@ -837,11 +838,20 @@ def educando_create(request):
         User = get_user_model()
         # Crea la cuenta del sistema con rol ESTUDIANTE
         user = User.objects.create_user(
-            cedula=cedula, email=email, nombre=nombre, apellido=apellido,
-            role=Usuario.ESTUDIANTE, password=password1
+            cedula=cedula,
+            email=email,
+            nombre=nombre,
+            apellido=apellido,
+            role=Usuario.ESTUDIANTE,
+            password=password1
         )
+
+        # ✅ guardar fecha en Usuario
+        if fecha_nacimiento:
+            user.fecha_nacimiento = fecha_nacimiento
+            user.save()
         # Crea el perfil Estudiante espejo de datos
-        Estudiante.objects.create(user=user, cedula=cedula, nombre=nombre, apellido=apellido)
+        Estudiante.objects.create(user=user, cedula=cedula, nombre=nombre, apellido=apellido, fecha_nacimiento=fecha_nacimiento or None)
 
         messages.success(request, "Educando creado correctamente.")
         return redirect("evaluaciones_docente")
@@ -861,6 +871,7 @@ def educando_edit(request, user_id):
         nombre = request.POST.get("nombre", "").strip()
         apellido = request.POST.get("apellido", "").strip()
         email = request.POST.get("email", "").strip()
+        fecha_nacimiento = request.POST.get("fecha_nacimiento") 
         password = request.POST.get("password", "")
 
         # Actualizar datos reales del login
@@ -868,6 +879,8 @@ def educando_edit(request, user_id):
         user.nombre = nombre
         user.apellido = apellido
         user.email = email
+        if fecha_nacimiento:
+            user.fecha_nacimiento = fecha_nacimiento
         if password:
             user.set_password(password)
         user.save()
@@ -878,6 +891,7 @@ def educando_edit(request, user_id):
             est.cedula = cedula
             est.nombre = nombre
             est.apellido = apellido
+            est.fecha_nacimiento = fecha_nacimiento or None
             est.save()
         except Estudiante.DoesNotExist:
             pass
@@ -920,20 +934,28 @@ from .models import (
     Usuario, Docente, Estudiante, Administrador,
     MultipleChoiceResult, PunctuationResult, ResultSummary, CalendarActivity
 )
-
+Usuario = get_user_model()
 # ---------- Formulario base para CRUD de Usuario ----------
 class UsuarioForm(forms.ModelForm):
+    fecha_nacimiento = forms.DateField(
+        required=False,
+        widget=forms.DateInput(
+            attrs={'type': 'date', 'class': 'input', 'id': 'fecha_nacimiento'},
+            format='%Y-%m-%d'    # obliga a renderizar value en yyyy-mm-dd
+        ),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
+    )
+
     class Meta:
         model = Usuario
-        fields = ["cedula", "email", "nombre", "apellido", "role", "is_active"]
+        fields = ['cedula', 'email', 'nombre', 'apellido', 'role', 'is_active', 'fecha_nacimiento']
         widgets = {
-            "cedula": forms.TextInput(attrs={"class":"input"}),
-            "email": forms.EmailInput(attrs={"class":"input"}),
-            "nombre": forms.TextInput(attrs={"class":"input"}),
-            "apellido": forms.TextInput(attrs={"class":"input"}),
-            "role": forms.Select(attrs={"class":"input"}),
+            'cedula': forms.TextInput(attrs={'class': 'input'}),
+            'email': forms.EmailInput(attrs={'class': 'input'}),
+            'nombre': forms.TextInput(attrs={'class': 'input'}),
+            'apellido': forms.TextInput(attrs={'class': 'input'}),
+            'role': forms.Select(attrs={'class': 'input'}),
         }
-
 # Helper para mantener sincronizado el perfil OneToOne según el rol
 def _ensure_profile(user: Usuario) -> None:# ---------- Cálculo de métricas por usuario (igual que en estudiante/docente) ----------
     # Elimina perfiles cruzados, crea el correcto si falta

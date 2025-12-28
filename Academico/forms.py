@@ -4,9 +4,11 @@ from .models import Contenido, Docente, Estudiante
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
+from django.core.validators import RegexValidator
 
 Usuario = get_user_model()
 
+solo_numeros = RegexValidator(r'^\d+$', message='La cédula debe contener solo dígitos.')
 
 class ContenidoForm(forms.ModelForm):
     class Meta:
@@ -35,18 +37,61 @@ class ContenidoForm(forms.ModelForm):
         return archivo
 
 ################
+
+class UsuarioForm(forms.ModelForm):
+    fecha_nacimiento = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
+    )
+
+    class Meta:
+        model = Usuario
+        fields = ['cedula', 'email', 'nombre', 'apellido', 'role', 'is_active', 'fecha_nacimiento']
+    
+    def clean_cedula(self):
+        ced = self.cleaned_data.get('cedula','').strip()
+        if not ced.isdigit():
+            raise forms.ValidationError("La cédula debe contener solo dígitos.")
+        return ced
+
 class LoginForm(forms.Form):
-    cedula = forms.CharField(label="Cédula de Identidad")
+    cedula = forms.CharField(
+        label="Cédula",
+        max_length=20,
+        validators=[solo_numeros],
+        widget=forms.TextInput(attrs={"placeholder":"Ej: 12345678", "inputmode":"numeric"})
+    )
     password = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
     
 
 class RegisterForm(forms.ModelForm):
+    cedula = forms.CharField(
+        label="Cédula",
+        max_length=20,
+        validators=[solo_numeros],
+        widget=forms.TextInput(attrs={"placeholder":"Solo dígitos", "inputmode":"numeric"})
+    )
+    fecha_nacimiento = forms.DateField(
+        label="Fecha de nacimiento",
+        required=False,
+        widget=forms.DateInput(attrs={"type":"date"})
+    )
     password1 = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
     password2 = forms.CharField(widget=forms.PasswordInput, label="Confirmar contraseña")
 
     class Meta:
         model = Usuario
         fields = ['cedula', 'email', 'nombre', 'apellido']
+    
+    def clean_cedula(self):
+        ced = self.cleaned_data.get("cedula","").strip()
+        if not ced.isdigit():
+            raise forms.ValidationError("La cédula debe contener solo dígitos.")
+        # opcional: chequear unicidad
+        if Usuario.objects.filter(cedula=ced).exists():
+            raise forms.ValidationError("Ya existe un usuario con esa cédula.")
+        return ced
 
     def clean(self):
         cleaned = super().clean()

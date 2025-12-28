@@ -30,6 +30,30 @@
   .btn:hover{ transform:translateY(-1px); box-shadow:0 10px 18px rgba(124,195,0,.36); }
   .btn.out{ background:#fff; color:var(--g-700); border-color:var(--g-500); }
   .msg{ margin:-6px 0 14px; padding:10px 12px; border-radius:10px; border:1px solid #fed7aa; background:#fff7ed; color:#7c2d12; font-weight:600; }
+  /* Normalizar input date para que se vea como los demás */
+input[type="date"].input {
+  padding-left: 40px;        /* igual que otros inputs */
+  padding-right: 12px;
+  line-height: 24px;
+}
+
+/* Ajustar posición del icono en inputs date */
+.field input[type="date"] + .icon-in,
+.field .icon-in {
+  top: 41px;
+}
+
+/* Forzar alineación vertical consistente */
+input[type="date"]::-webkit-datetime-edit {
+  line-height: 24px;
+}
+
+/* Quitar estilos raros del calendario en Chrome */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+}
+
 </style>
 
 <div class="wrap">
@@ -48,7 +72,15 @@
           <div class="field">
             <label for="id_cedula">Cédula</label>
             <i class="icon-in fa-solid fa-id-card"></i>
-            {{ form.cedula }}
+            {{ form.cedula }} <!-- si usás widgets desde forms.py este ya tendrá inputmode y pattern -->
+            <small class="help">Solo dígitos.</small>
+          </div>
+
+          <div class="field">
+            <label for="id_fecha_nacimiento">Fecha de nacimiento</label>
+            <i class="icon-in fa-solid fa-cake-candles"></i>
+            {{ form.fecha_nacimiento }}
+            <!--<div class="help">Selecciona la fecha. (opcional)</div>-->
           </div>
 
           <div class="field">
@@ -116,5 +148,27 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const cedInput = document.getElementById('cedula');
+  if (cedInput){
+    cedInput.addEventListener('input', function(e){
+      // elimina cualquier caracter que no sea dígito
+      this.value = this.value.replace(/\D+/g, '');
+    });
+  }
+
+  const fecha = document.getElementById('fecha_nacimiento');
+  if (fecha){
+    // opcional: limitar fecha máxima a hoy - 5 años (ejemplo)
+    const hoy = new Date();
+    const anoMin = new Date(hoy.getFullYear()-5, hoy.getMonth(), hoy.getDate());
+    fecha.max = hoy.toISOString().split('T')[0];
+    // si querés forzar mínima edad:
+    // fecha.max = anoMin.toISOString().split('T')[0];
+  }
+});
+</script>
 
 {% endblock %}
