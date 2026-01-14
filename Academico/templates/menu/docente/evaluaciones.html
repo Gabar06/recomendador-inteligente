@@ -407,6 +407,9 @@ a.btn-mini:link, a.btn-mini:visited{ color:inherit; text-decoration:none; }
                 <i class="fa-solid fa-trash"></i> Eliminar
               </button>
             </form>
+            <a class="btn-mini" href="{% url 'evaluaciones_docente_individual_report' stu.user_id %}" title="Descargar reporte individual">
+              <i class="fa-solid fa-file-arrow-down"></i> Reporte
+            </a>
           </div>
         </td>
 

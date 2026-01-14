@@ -145,6 +145,9 @@ urlpatterns += [
     path("evaluaciones/docente/educandos/crear/", views_evaluaciones.educando_create, name="educando_create"),
     path("evaluaciones/docente/educandos/<int:user_id>/editar/", views_evaluaciones.educando_edit, name="educando_edit"),
     path("evaluaciones/docente/educandos/<int:user_id>/eliminar/", views_evaluaciones.educando_delete, name="educando_delete"),
+    path('docente/evaluaciones/<int:user_id>/report/', views_evaluaciones.evaluaciones_docente_individual_report,
+         name='evaluaciones_docente_individual_report'),
+    
     # Gestión de usuarios (CRUD) para administradores
     path("evaluaciones/administrador/", views_evaluaciones.evaluaciones_administrador_view, name="evaluaciones_admin"),
     path("evaluaciones/administrador/report/", views_evaluaciones.evaluaciones_administrador_report, name="evaluaciones_administrador_report"),  # ← NUEVO
