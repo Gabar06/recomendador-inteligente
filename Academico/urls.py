@@ -154,6 +154,8 @@ urlpatterns += [
     path("usuarios/create/", views_evaluaciones.usuario_create, name="usuario_create"),
     path("usuarios/<int:pk>/edit/", views_evaluaciones.usuario_edit, name="usuario_edit"),
     path("usuarios/<int:pk>/delete/", views_evaluaciones.usuario_delete, name="usuario_delete"),
+    path('administrador/evaluaciones/<int:user_id>/report/', views_evaluaciones.evaluaciones_administrador_individual_report,
+         name='evaluaciones_administrador_individual_report'),
 ]
 
 urlpatterns += [

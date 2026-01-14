@@ -7,57 +7,212 @@
     --g-700:#00471b; --g-600:#2b7a2b; --g-500:#7CC300;
     --line:#d9efbb; --bg:#f6faf3; --panel:#ffffff; --text:#0f172a;
   }
-  body{background:var(--bg); font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; color:var(--text);}
-  .sheet{max-width:1200px; margin:28px auto; padding:22px; background:var(--panel);
-         border:1px solid var(--g-500); border-radius:16px; box-shadow:0 12px 28px rgba(0,0,0,.08);}
-  .header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:10px}
-  .h-title{font-size:1.6rem; color:var(--g-700); letter-spacing:.2px}
+  body{ background:var(--bg); font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; color:var(--text); }
+
+  .sheet{
+    max-width:1200px; margin:28px auto; padding:22px; background:var(--panel);
+    border:1px solid var(--g-500); border-radius:16px; box-shadow:0 12px 28px rgba(0,0,0,.08);
+  }
+
+  /* ===== Toolbar nuevo ===== */
+  .toolbar{
+    display:grid;
+    grid-template-columns: 1fr minmax(380px, 1.4fr) auto;
+    gap:16px;
+    align-items:center;
+    padding:16px 18px;
+    border:2px solid var(--g-500);
+    border-radius:18px;
+    background:linear-gradient(180deg, #f6fff0, #eef9e3);
+    box-shadow:0 10px 24px rgba(124,195,0,.10) inset;
+  }
+
+  .title h2{
+    margin:0;
+    font-size:2rem;
+    line-height:1.1;
+    color:var(--g-700);
+    letter-spacing:.2px;
+  }
+
+  /* ===== Search group ===== */
+  .searchbar{
+    display:grid;
+    grid-template-columns: 1fr auto;
+    align-items:center;
+    gap:12px;
+  }
+  .input-wrap{ position:relative; }
+  .search-input{
+    width:100%;
+    height:48px;
+    border-radius:28px;
+    border:2px solid var(--g-500);
+    padding:0 64px 0 16px;
+    outline:0;
+    background:#fff;
+    box-shadow:0 6px 18px rgba(124,195,0,.08) inset;
+  }
+  .search-input:focus{ box-shadow:0 0 0 3px rgba(124,195,0,.18); }
+  .search-btn{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:48px; height:36px; border-radius:20px; border:0; cursor:pointer;
+    background:linear-gradient(180deg,#96da54, var(--g-500)); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 10px rgba(124,195,0,.25);
+  }
+  .search-btn:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 6px 16px rgba(124,195,0,.35); }
+
+  .per-select{
+    height:48px; border-radius:14px; border:2px solid var(--g-500);
+    background:#fff; padding:0 12px; min-width:152px; font-weight:600; color:#184a22;
+  }
+
+  /* ===== Botones acción ===== */
+  .tool-buttons{ display:flex; align-items:center; gap:12px; }
   .btn{
-    display:inline-flex; align-items:center; gap:.5rem; padding:10px 16px; border-radius:10px;
-    border:1px solid var(--g-500); background:linear-gradient(180deg,#96da54, var(--g-500));
-    color:#fff; text-decoration:none; font-weight:600; box-shadow:0 4px 10px rgba(124,195,0,.25);
+    display:inline-flex; align-items:center; gap:.5rem; height:48px;
+    padding:0 16px; border-radius:12px;
+    border:1px solid var(--g-500);
+    background:linear-gradient(180deg,#96da54, var(--g-500));
+    color:#fff; text-decoration:none; font-weight:700;
+    box-shadow:0 4px 10px rgba(124,195,0,.25);
     transition:transform .15s ease, box-shadow .15s ease;
+    white-space:nowrap;
   }
-  .btn:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(124,195,0,.35)}
-  .legend{display:flex; gap:12px; align-items:center; margin:6px 0 14px}
-  .legend span{display:inline-flex; align-items:center; gap:6px; font-size:.8rem; color:#475569}
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(124,195,0,.35) }
+  .btn i{ font-size:1.05rem; }
+
+  /* Leyenda y tabla (tuyo, solo un tweak) */
+  .legend{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:14px 2px 14px}
   .legend .dot{width:10px; height:10px; border-radius:50%}
-  .table-wrap{position:relative; overflow:auto; border:1px solid var(--line); border-radius:12px}
-  .shadow-mask{
-    mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
-  }
-  table{width:100%; border-collapse:separate; border-spacing:0; min-width:980px}
-  th, td{padding:10px 12px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap}
+
+  table{ width:100%; border-collapse:separate; border-spacing:0; min-width:980px }
+  th, td{ padding:10px 12px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap }
   th{
     position:sticky; top:0; z-index:2;
     background:linear-gradient(180deg,#8dd43a,#7CC300); color:#fff; font-weight:800; letter-spacing:.2px;
   }
-  tr:hover td{background:#fbfff5}
-  td:first-child, th:first-child{position:sticky; left:0; z-index:3; text-align:left}
-  td:first-child{background:#ffffff}
-  th:first-child{background:linear-gradient(180deg,#8dd43a,#7CC300)}
-  .pill{display:inline-block; padding:.25rem .6rem; border-radius:999px; font-weight:700; font-size:.78rem; border:1px solid transparent}
+  td:first-child, th:first-child{ position:sticky; left:0; z-index:3; text-align:left }
+  td:first-child{ background:#ffffff } th:first-child{ background:linear-gradient(180deg,#8dd43a,#7CC300) }
+
+  .meter{ height:8px; background:#eef7e3; border-radius:999px; position:relative; overflow:hidden }
+  .meter .bar{ height:100%; border-radius:inherit; background:var(--g-500) }
+
+  .pill{ display:inline-block; padding:.25rem .6rem; border-radius:999px; font-weight:700; font-size:.78rem; border:1px solid transparent }
   .pill.excelente{background:#eaffea; color:#176d37; border-color:#b7ecb7}
   .pill.muy-bueno{background:#f0fdfa; color:#0f766e; border-color:#99f6e4}
   .pill.bueno{background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe}
   .pill.insuficiente{background:#ffecec; color:#9f1111; border-color:#ffb3b3}
-  .pill.basico{background:#fff7e6; color:#975a16, border-color:#ffd89b}
+  .pill.basico{background:#fff7e6; color:#975a16; border-color:#ffd89b} /* ← fix comma */
   .pill.na{background:#f3f4f6; color:#374151; border-color:#e5e7eb}
-  .meter{height:8px; background:#eef7e3; border-radius:999px; position:relative; overflow:hidden}
-  .meter .bar{height:100%; border-radius:inherit; background:var(--g-500)}
-  .meter-label{font-size:.78rem; color:#334155; margin-top:4px}
-  .cell-meter{min-width:120px}
-  .last-activity{font-size:.82rem; line-height:1.2; color:#475569}
-  .actions{display:flex; gap:8px; align-items:center}
-  .input{padding:10px 12px; border:1px solid var(--line); border-radius:10px}
-  .btn-sm{padding:6px 10px; border-radius:8px; border:1px solid var(--g-500); background:#7CC300; color:#fff; text-decoration:none}
-  .btn-outline{background:#fff; color:var(--g-700)}
-  .btn-danger{background:#ef4444; border-color:#ef4444}
-  .footerbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px}
-  .pager a{margin:0 4px; text-decoration:none; color:var(--g-700); font-weight:700}
 
-  .pager{
+  /* Responsive */
+  @media (max-width: 980px){
+    .toolbar{ grid-template-columns: 1fr; row-gap:12px; }
+    .tool-buttons{ justify-content:flex-start; }
+  }
+  /* ===== Acciones en tabla ===== */
+.actions{
+  display:flex; align-items:center; justify-content:flex-end; gap:10px;
+}
+
+.inline-form{ display:inline; margin:0; }     /* Para que el form no rompa el layout */
+.inline-form button{ margin:0; }              /* Reseteo mínimo */
+
+/* Botón mini consistente para <a> y <button> */
+.btn-mini{
+  display:inline-flex; align-items:center; gap:.45rem;
+  height:38px; padding:0 12px;
+  border-radius:10px; border:1.5px solid var(--g-500);
+  background:#fff; color:var(--g-700);
+  font-weight:700; text-decoration:none; cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease, filter .12s ease;
+  box-shadow:0 2px 6px rgba(124,195,0,.15);
+  line-height:1;
+}
+.btn-mini i{ font-size:1rem; }
+.btn-mini:hover{ transform:translateY(-1px); box-shadow:0 4px 10px rgba(124,195,0,.22); }
+
+.btn-mini.outline{ /* Editar */
+  background:#fff; border-color:var(--g-500); color:var(--g-700);
+}
+.btn-mini.outline:hover{ background:#f3ffe6; }
+
+.btn-mini.danger{  /* Eliminar */
+  background:#ef4444; border-color:#ef4444; color:#fff;
+}
+.btn-mini.danger:hover{ filter:brightness(1.05); }
+
+/* Quitar subrayado y color de enlace heredando del botón */
+a.btn-mini:link, a.btn-mini:visited{ color:inherit; text-decoration:none; }
+
+/* Focus visible lindo */
+.btn-mini:focus{ outline:2px solid rgba(124,195,0,.35); outline-offset:2px; }
+.btn-mini.danger:focus{ outline-color:#fecaca; }
+
+/* (de paso arreglito de tu pill "Básico") */
+.pill.basico{background:#fff7e6; color:#975a16; border-color:#ffd89b}
+
+/* ===== Leyenda mejorada ===== */
+.legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 18px;
+  align-items:center;
+  margin:12px 0 18px;
+  font-size:0.95rem;
+  color:var(--g-700);
+}
+.legend-list{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.legend-item{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:rgba(255,255,255,0.6);
+  padding:6px 10px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,0.04);
+  box-shadow:0 2px 6px rgba(0,0,0,0.03);
+}
+.legend-swatch{
+  width:12px;
+  height:12px;
+  border-radius:3px;
+  box-shadow:0 1px 0 rgba(0,0,0,0.06) inset;
+  flex:0 0 12px;
+}
+
+/* info pequeña a la derecha (explicación compacta) */
+.legend-note{
+  margin-left:auto;
+  font-size:0.85rem;
+  color:rgba(15,23,42,0.6);
+}
+
+/* ===== Pie de página mejorado ===== */
+.footerbar{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:18px;
+  padding:12px 14px;
+  border-top:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(124,195,0,0.02), transparent);
+  border-radius:0 0 12px 12px;
+  flex-wrap:wrap;
+}
+.footerbar > div{ display:flex; align-items:center; gap:10px; }
+
+.pager{
   color:var(--g-700);
   font-weight:700;
   text-decoration:none;
@@ -67,77 +222,66 @@
 }
 .pager:hover{ background:#f3fff0; border-color:rgba(124,195,0,0.15) }
 
-  /* Botones con icono */
-.btn.btn-icon { display:inline-flex; align-items:center; gap:.55rem; }
-.btn.btn-icon i { font-size:1.05rem; }
-
-/* Buscador cápsula estilo imagen */
-.searchbar{ display:flex; align-items:center; gap:10px; }
-.search-input{
-  width:min(42vw, 520px);
-  height:48px;
-  border-radius:28px;
-  border:2px solid var(--g-500);
-  padding:0 64px 0 16px; /* espacio para el botón de la lupa */
-  outline:0;
+/* botones pequeños (reemplazan btn-sm si no existe) */
+.btn-sm{
+  height:36px;
+  padding:6px 12px;
+  border-radius:10px;
+  border:1.5px solid var(--g-500);
   background:#fff;
-  box-shadow:0 6px 18px rgba(124,195,0,.08) inset;
-}
-.search-input:focus{ box-shadow:0 0 0 3px rgba(124,195,0,.18); }
-.search-btn{
-  position:relative;
-  margin-left:-70px;      /* se apoya sobre el borde derecho del input */
-  width:56px; height:40px;
-  border-radius:24px;
-  border:0;
-  background:linear-gradient(180deg,#96da54, var(--g-500));
-  color:#fff;
-  display:inline-flex; align-items:center; justify-content:center;
+  color:var(--g-700);
+  font-weight:700;
   cursor:pointer;
-  box-shadow:0 4px 10px rgba(124,195,0,.25);
 }
-.search-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(124,195,0,.35); }
-
-.per-select{
-  height:48px;
-  border-radius:12px;
-  border:1px solid var(--line);
-  padding:0 12px;
-  background:#fff;
+.btn-sm.active{
+  background:linear-gradient(180deg,#96da54,var(--g-500));
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 4px 10px rgba(124,195,0,0.18);
 }
 
-/* Botones de acciones por fila */
-.btn-sm i{ margin-right:.4rem; }
-.btn-danger i{ margin-right:.4rem; }
+/* info de resumen */
+.footer-stats{ font-size:0.92rem; color:rgba(15,23,42,0.75); }
+
+/* responsive: apila elementos si la pantalla es chica */
+@media (max-width:720px){
+  .legend-note{ display:block; width:100%; margin-top:6px; }
+  .footerbar{ gap:8px; padding:10px; }
+  .footerbar > div{ width:100%; justify-content:space-between; }
+}
 
 .pill.rol-admin{ background:#fff3e0; color:#9a3412; border-color:#fdba74; }
 .pill.rol-docente{ background:#e0f2fe; color:#075985; border-color:#bae6fd; }
 .pill.rol-estudiante{ background:#eaffea; color:#176d37; border-color:#b7ecb7; }
 
+
 </style>
 
 <div class="sheet">
-  <div class="header">
-  <h2 class="h-title">Administrar Usuarios</h2>
-
-  <div class="actions">
+  <div class="toolbar">
+  <div class="title">
+    <h2>Administrar Usuarios</h2>
+  </div>
     {# Buscador tipo “cápsula” con ícono submit #}
     <form method="get" action="" class="searchbar" role="search">
-      <input class="search-input" type="search" name="q" value="{{ q }}" 
-             placeholder="Buscar por nombre, cédula o email…" />
-      <button class="search-btn" type="submit" aria-label="Buscar">
-        <i class="fa-solid fa-magnifying-glass"></i>
-      </button>
-      {# selector 10 por página | todo #}
-      <select class="per-select" name="per" onchange="this.form.submit()">
-        <option value="10" {% if per != 'all' %}selected{% endif %}>10 por página</option>
-        <option value="all" {% if per == 'all' %}selected{% endif %}>Ver todo</option>
-      </select>
+      <div class="input-wrap">
+        <input class="search-input" type="search" name="q" value="{{ q }}" 
+              placeholder="Buscar por nombre, cédula o email…" />
+        <button class="search-btn" type="submit" aria-label="Buscar">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+      </div>
+        {# selector 10 por página | todo #}
+        <select class="per-select" name="per" onchange="this.form.submit()">
+          <option value="10" {% if per != 'all' %}selected{% endif %}>10 por página</option>
+          <option value="all" {% if per == 'all' %}selected{% endif %}>Ver todo</option>
+        </select>
     </form>
 
-    <a class="btn btn-icon" href="{% url 'evaluaciones_administrador_report' %}">
-      <i class="fa-solid fa-file-arrow-down"></i><span>Descargar PDF</span>
-    </a>
+    <div class="tool-buttons">
+      <a class="btn btn-icon" href="{% url 'evaluaciones_administrador_report' %}">
+        <i class="fa-solid fa-file-arrow-down"></i><span>Descargar PDF</span>
+      </a>
 
     <a class="btn btn-icon" href="{% url 'usuario_create' %}">
       <i class="fa-solid fa-user-plus"></i><span>Agregar Usuario</span>
@@ -146,14 +290,18 @@
 </div>
 </div>
 
-  <div class="legend">
-  <span><span class="dot" style="background:#b7ecb7"></span>Excelente</span>
-  <span><span class="dot" style="background:#99f6e4"></span>Muy Bueno</span>
-  <span><span class="dot" style="background:#bfdbfe"></span>Bueno</span>
-  <span><span class="dot" style="background:#ffd89b"></span>Básico</span>
-  <span><span class="dot" style="background:#ffb3b3"></span>Insuficiente</span>
-  <span><span class="dot" style="background:#e5e7eb"></span>N/A</span>
-</div>
+  <!-- ===== Leyenda accesible y compacta ===== -->
+<nav class="legend" aria-label="Leyenda de evaluaciones">
+  <ul class="legend-list" role="list">
+    <li class="legend-item"><span class="legend-swatch" style="background:#b7ecb7"></span> <strong>Excelente</strong></li>
+    <li class="legend-item"><span class="legend-swatch" style="background:#99f6e4"></span> <strong>Muy bueno</strong></li>
+    <li class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span> <strong>Bueno</strong></li>
+    <li class="legend-item"><span class="legend-swatch" style="background:#ffd89b"></span> <strong>Básico</strong></li>
+    <li class="legend-item"><span class="legend-swatch" style="background:#ffb3b3"></span> <strong>Insuficiente</strong></li>
+    <li class="legend-item"><span class="legend-swatch" style="background:#e5e7eb"></span> <strong>N/A</strong></li>
+  </ul>
+
+</nav>
 
  <div class="table-wrap shadow-mask">
     <table>
@@ -263,21 +411,24 @@
 
           <td>
             <div class="actions">
-              <a class="btn-sm btn-outline" href="{% url 'usuario_edit' stu.user_id %}">
+              <a class="btn-mini outline" href="{% url 'usuario_edit' stu.user_id %}">
                 <i class="fa-regular fa-pen-to-square"></i>Editar
               </a>
-              <form method="post" action="{% url 'usuario_delete' stu.user_id %}"
+              <form class="inline-form" method="post" action="{% url 'usuario_delete' stu.user_id %}"
                     onsubmit="return confirm('Vas a eliminar a este usuario y perderá el acceso. ¿Seguro?');">
                 {% csrf_token %}
-                <button class="btn-sm btn-danger" type="submit">
+                <button class="btn-mini danger" type="submit">
                   <i class="fa-solid fa-trash"></i>Eliminar
                 </button>
               </form>
+              <a class="btn-mini" href="{% url 'evaluaciones_administrador_individual_report' stu.user_id %}" title="Descargar reporte individual">
+                <i class="fa-solid fa-file-arrow-down"></i> Reporte
+              </a>
             </div>
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="15">No hay usuarios registrados.</td></tr>
+        <tr><td colspan="14">No hay usuarios registrados.</td></tr>
       {% endfor %}
       </tbody>
     </table>
